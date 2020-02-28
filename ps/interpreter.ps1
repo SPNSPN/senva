@@ -457,11 +457,6 @@ function processor ()
 	return new-object symb "powershell";
 }
 
-function lexit ()
-{
-	exit;
-}
-
 function seekenv ($env, $key)
 {
 	for ($rest = $env; -not (atom $rest); $rest = (cdr $rest))
@@ -1201,7 +1196,6 @@ regist_subr $genv { param($args_);
 regist_subr $genv { param($args_); return (getat (car $args_) (car (cdr $args_))) } "getat";
 regist_subr $genv { param($args_); return (setat (car $args_) (car (cdr $args_)) (car (cdr (cdr $args_)))); } "setat";
 regist_subr $genv { param($args_); return (processor); } "processor";
-regist_subr $genv { param($args_); return (lexit); } "exit";
 regist_subr $genv { param($args_); return (getc); } "getc";
 
 
