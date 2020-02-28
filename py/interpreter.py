@@ -1146,7 +1146,7 @@ def rep_file (script, read_dbg):
 
 
 def repl (read_dbg):
-	prompt = "rdbg> " if read_dbg else "mal> "
+	prompt = "rdbg> " if read_dbg else "senva> "
 	while True:
 		sys.stdout.write(prompt)
 		try:
@@ -1163,7 +1163,7 @@ def repl (read_dbg):
 def parse_cmd_args ():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-r", "--readonly", action = "store_true", help = "the flag to debug befunge reader")
-	parser.add_argument("-s", "--script", help = "mal script file name")
+	parser.add_argument("-s", "--script", help = "senva script file name")
 
 	return parser.parse_args()
 
