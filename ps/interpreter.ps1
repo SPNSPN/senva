@@ -1527,7 +1527,7 @@ function repl ()
 	{
 		try
 		{
-			write-host -nonewline "mal> ";
+			write-host -nonewline "senva> ";
 			$in = (read-host);
 			if (-not $in) { return; }
 			write-host (lprint (leval (lreadtop $in) $genv));

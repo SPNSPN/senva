@@ -133,7 +133,7 @@ check "``',(car '(a . d))" (list (new-object symb "quote") (new-object symb "a")
 check "((lambda (head . rest) rest) 1 2 3 4)" (list 2 3 4);
 check "((lambda all all) 1 2 3 4)" (list 1 2 3 4);
 check "((lambda ((pa (pb pc) pd)) pc) (list 1 (list 2 3) 4))" 3;
-check "(load `"mal/matrix.mal`") (matrix::determinant '((3 1 1 2 1) (5 1 3 4 1) (2 0 1 0 3) (1 3 2 1 1) (2 1 5 10 1)))" -292;
+check "(load `"senva/matrix.snv`") (matrix::determinant '((3 1 1 2 1) (5 1 3 4 1) (2 0 1 0 3) (1 3 2 1 1) (2 1 5 10 1)))" -292;
 echeck "(throw 1 `"an error occured!`")" 1 "an error occured!";
 echeck "(do 1 (throw 2 `"an error occured!`") 3)" 2 "an error occured!";
 echeck "(if (throw 3 `"an error occured!`") 3 4)" 3 "an error occured!";
@@ -209,7 +209,7 @@ echeck "(setat `"ABC`" 1 '(1 . 2))" $erroid["Type"] "cannot setat (1 . 2) to `"A
 check "(to-list `"a\nb\tc\0`")" (list 97 10 98 9 99 0);
 check "``[1 2 ,3 ,(+ 2 2) @(if (> 3 1) '(5 6) nil) @(cons 7 ``(8 ,(* 3 3))) 10]" (vect 1 2 3 4 5 6 7 8 9 10);
 check "(processor)" (new-object symb powershell);
-check "(load `"mal/test.mal`")" $nil;
+check "(load `"senva/test.snv`")" $nil;
 
 check "(reverse (list 1 2 3 4))" (list 4 3 2 1);
 check "(append (list 1 2 3 4) (list 5 6 7 8))" (list 1 2 3 4 5 6 7 8);
