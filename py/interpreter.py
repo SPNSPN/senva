@@ -1102,6 +1102,7 @@ def initenv ():
 	ienv = cons(cons(Symb("getat"), lgetat), ienv)
 	ienv = cons(cons(Symb("setat"), lsetat), ienv)
 	ienv = cons(cons(Symb("processor"), processor), ienv)
+	ienv = cons(cons(Symb("exit"), (lambda: exit())), ienv)
 	ienv = cons(cons(Symb("if"), Spfm(lif, "if")), ienv)
 	ienv = cons(cons(Symb("lambda")
 				, Spfm((lambda env, args: Func(car(args), car(cdr(args)), env))

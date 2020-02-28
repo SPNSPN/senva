@@ -13,7 +13,7 @@ JETCE := $(BLD)/jetcevm
 REPL := $(BLD)/repl
 
 .PHONY: all
-all: $(DERXI) $(JETCE) $(REPL)
+all: $(REPL) $(DERXI) #$(JETCE) 
 
 .PHONY: derxi jetce repl
 derxi: $(DERXI)

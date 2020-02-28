@@ -53,6 +53,7 @@ Interpreter::Interpreter ()
 	subr.push_back(&Interpreter::subr_getat);
 	subr.push_back(&Interpreter::subr_setat);
 	subr.push_back(&Interpreter::subr_processor);
+	subr.push_back(&Interpreter::subr_exit);
 	subr.push_back(&Interpreter::subr_throw);
 	subr.push_back(&Interpreter::subr_symbol);
 	subr.push_back(&Interpreter::subr_queu);
@@ -240,6 +241,11 @@ Interpreter::Interpreter ()
 				pool.make_cons(pool.make_symb("processor")
 					, pool.make_subr("processor"
 						, findidx<Subr>(subr, &Interpreter::subr_processor)))
+				, pool.getcar(genv)));
+	pool.setcar(genv, pool.make_cons(
+				pool.make_cons(pool.make_symb("exit")
+					, pool.make_subr("exit"
+						, findidx<Subr>(subr, &Interpreter::subr_exit)))
 				, pool.getcar(genv)));
 	pool.setcar(genv, pool.make_cons(
 				pool.make_cons(pool.make_symb("throw")
@@ -971,6 +977,12 @@ Addr Interpreter::subr_setat (Addr args)
 Addr Interpreter::subr_processor (Addr args)
 {
 	return pool.make_symb("c++");
+}
+
+Addr Interpreter::subr_exit (Addr args)
+{
+	exit(0);
+	return Pool::nil;
 }
 
 Addr Interpreter::subr_throw (Addr args)
