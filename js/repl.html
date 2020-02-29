@@ -5,11 +5,14 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <script src="interpreter.js"></script>
 <script>
-var run = function ()
+const run = function ()
 {
-	var code = document.getElementById("senva-input").value;
-	var result = lprint(leval(lreadtop(code), genv));
-	document.getElementById("senva-output").innerHTML = result;
+	let elem = document.getElementById("senva-input-form");
+	let code = elem.value;
+	elem.value = "";
+	let result = lprint(leval(lreadtop(code), genv));
+	document.getElementById("input").innerHTML =  `input : ${code}`;
+	document.getElementById("output").innerHTML = `output: ${result}`;
 };
 </script>
 <title>Senva</title>
@@ -17,10 +20,10 @@ var run = function ()
 <body>
 <p>REPL</p>
 <div>
-senva>
-<input id="senva-input" type="text"></input>
-<button id="senva-run" type="button" onclick="run()">run</button>
+<form onsubmit="run(); return false;">senva> <input id="senva-input-form" type="text"></form>
 </div>
-<div id="senva-output"></div>
+<div id="senva-output-form">
+<ul><li id="input"></li><li id="output"></li></ul>
+</div>
 </body>
 </html>

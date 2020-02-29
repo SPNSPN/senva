@@ -594,8 +594,7 @@ def seek_dup (expr, printed, dup):
 	if atom(expr):
 		return dup
 	pd = cons(expr, printed)
-	return append(seek_dup(car(expr), pd, dup)
-			, seek_dup(cdr(expr), pd, dup))
+	return append(seek_dup(car(expr), pd, dup), seek_dup(cdr(expr), pd, dup))
 
 def lprint_rec (expr, dup, rec):
 	idx = findidx_eq(expr, dup)
@@ -603,7 +602,7 @@ def lprint_rec (expr, dup, rec):
 		return "$" + str(idx)
 	if expr is nil:
 		return "NIL"
-	elif atom(expr):
+	if atom(expr):
 		if isinstance(expr, Symb):
 			return expr.name
 		elif isinstance(expr, str):
@@ -838,7 +837,7 @@ def find (val, coll):
 	rest = coll
 	while not isnil(rest):
 		if val == car(rest):
-			return val
+			return t
 		rest = cdr(rest)
 	return nil
 
