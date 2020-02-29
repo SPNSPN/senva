@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script src="interpreter.js"></script>
+<script>
+var run = function ()
+{
+	var code = document.getElementById("senva-input").value;
+	var result = lprint(leval(lreadtop(code), genv));
+	document.getElementById("senva-output").innerHTML = result;
+};
+</script>
+<title>Senva</title>
+</head>
+<body>
+<p>REPL</p>
+<div>
+senva>
+<input id="senva-input" type="text"></input>
+<button id="senva-run" type="button" onclick="run()">run</button>
+</div>
+<div id="senva-output"></div>
+</body>
+</html>

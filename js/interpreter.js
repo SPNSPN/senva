@@ -1,60 +1,72 @@
-let nil = false;
-let t = true;
+const nil = false;
+const t = true;
 
-function Cons (a, d)
+const Symb = function (name_)
+{
+	this.name = name_;
+};
+
+const Cons = function (a, d)
 {
 	this.car = a;
 	this.cdr = d;
 	this.type = "cons";
-}
+};
 
-function cons (a, d)
+let genv = new Cons(nil, nil);
+
+const cons = function (a, d)
 {
 	return new Cons(a, d);
-}
+};
 
-function car (o)
+const car = function (o)
 {
 	if (isnil(o)) { return nil; }
 	return o.car;
-}
+};
 
-function cdr (o)
+const cdr = function (o)
 {
 	if (isnil(o)) { return nil; }
 	return o.cdr;
-}
+};
 
-function eq (a, b)
+const eq = function (a, b)
 {
 	if (a === b) { return t; }
 	return nil;
-}
+};
 
-function equal (a, b)
+const equal = function (a, b)
 {
 	if (a == b) { return t; }
 	return nil;
-}
+};
 
-function atom (o)
+const atom = function (o)
 {
 	if (consp(o)) { return nil; }
 	return t;
-}
+};
 
-function lread (code)
+const lread = function (code)
 {
 	return nil; // TODO
-}
+};
 
-function leval (expr)
+const lreadtop = function (code)
+{
+	return nil; // TODO
+};
+
+const leval = function (expr)
 {
 	return expr; // TODO
-}
+};
 
-function lprint (expr)
+const lprint = function (expr)
 {
 	return "nil"; // TODO
-}
+};
 
