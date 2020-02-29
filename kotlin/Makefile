@@ -1,12 +1,19 @@
-SRC := $(wildcard *.kt)
-LPRJ := $(patsubst %.kt,%,$(SRC))
-PRJ = $(shell echo $(LPRJ) | sed 's/\(.\)\(.*\)/\U\1\L\2/g')
-LIB := $(shell echo ${KOTLIN_LIB}/kotlin-runtime.jar:.)
+.PHONY: all
+all: repl.jar test.jar
 
-$(LPRJ).jar: $(SRC)
-	kotlinc-jvm $^ -module-name $(PRJ) -include-runtime -d $(LPRJ).jar
+repl.jar: repl.kt interpreter/interpreter.kt
+	kotlinc-jvm $^ -module-name Repl -include-runtime -d repl.jar
 
-.PHONY: run
-run: $(LPRJ).jar
-	java -jar $(LPRJ).jar $(ARGS)
+test.jar: test.kt interpreter/interpreter.kt
+	kotlinc-jvm $^ -module-name Test -include-runtime -d test.jar
+
+.PHONY: repl test clean
+repl: repl.jar
+	java -jar repl.jar $(ARGS)
+
+test: test.jar
+	java -jar test.jar
+
+clean:
+	rm repl.jar test.jar
 
