@@ -4,15 +4,32 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <script src="interpreter.js"></script>
+<script src="util.js"></script>
 <script>
 const run = function ()
 {
-	let elem = document.getElementById("senva-input-form");
-	let code = elem.value;
-	elem.value = "";
-	let result = lprint(leval(lreadtop(code), genv));
-	document.getElementById("input").innerHTML =  `input : ${code}`;
-	document.getElementById("output").innerHTML = `output: ${result}`;
+	document.getElementById("input").innerHTML  = "input :";
+	document.getElementById("output").innerHTML = "output:";
+	document.getElementById("error").innerHTML  = "error :";
+	try
+	{
+		let elem = document.getElementById("senva-input-form");
+		let code = elem.value;
+		elem.value = "";
+		let expr = lreadtop(code);
+		let eexpr = leval(expr, genv);
+		let result = lprint(eexpr);
+		document.getElementById("input").innerHTML =  `input : ${escapeHTML(code)}`;
+		document.getElementById("output").innerHTML = `output: ${escapeHTML(result)}`;
+	}
+	catch (erro)
+	{
+		console.error(erro);
+		if (erro instanceof Erro)
+		{
+			document.getElementById("error").innerHTML = `error : ${escapeHTML(erro.emess)}`;
+		}
+	}
 };
 </script>
 <title>Senva</title>
@@ -20,10 +37,10 @@ const run = function ()
 <body>
 <p>REPL</p>
 <div>
-<form onsubmit="run(); return false;">senva> <input id="senva-input-form" type="text"></form>
+<form onsubmit="run(); return false;">senva&gt <input id="senva-input-form" type="text"></form>
 </div>
 <div id="senva-output-form">
-<ul><li id="input"></li><li id="output"></li></ul>
+<ul><li id="input">input : </li><li id="output">output: </li><li id="error">error : </li></ul>
 </div>
 </body>
 </html>

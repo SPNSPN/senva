@@ -456,7 +456,7 @@ def leval (expr, env):
 				proc = leval(car(expr), env)
 				if isinstance(proc, Func):
 					expr = proc.body
-					env = cons(bind_tree(proc.args, mapeval(args, env)),  proc.env)
+					env = cons(bind_tree(proc.args, mapeval(args, env)), proc.env)
 				elif isinstance(proc, Spfm):
 					if "if" == proc.name:
 						if leval(car(args), env) is nil:

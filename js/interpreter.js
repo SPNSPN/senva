@@ -85,6 +85,7 @@ class Erro extends Error
 	{
 		super(emess);
 		this.eid = eid;
+		this.emess = emess;
 	}
 }
 
@@ -191,7 +192,17 @@ function isnil (o)
 
 function l ()
 {
-	return arguments.reverse().reduce((acc, e) => cons(e, acc), nil);
+	return Array.from(arguments).reduceRight((acc, e) => cons(e, acc), nil);
+}
+
+function mapeval (args, env)
+{
+	let eargs = nil;
+	for (let rest = args; ! isnil(rest); rest = cdr(rest))
+	{
+		eargs = cons(leval(car(rest), env), eargs);
+	}
+	return reverse(eargs);
 }
 
 function append (colla, collb)
@@ -244,6 +255,30 @@ function rplacd (c, o)
 {
 	c.cdr = o;
 	return c;
+}
+
+function add ()
+{
+	let nums = Array.from(arguments);
+	return nums.reduce(function (acc, n)
+			{
+				if (! Number.isFinite(n))
+				{
+					throw new Erro(ErroId.Type
+							, `cannot add ${lprint(array2cons(nums))}`);
+				}
+				return acc + n;
+			}
+			, 0);
+}
+
+function ldo (env, args)
+{
+	for (let rest = args; ! isnil(rest) && ! isnil(cdr(rest)); rest = cdr(rest))
+	{
+		leval(car(rest), env);
+	}
+	return leval(car(rest), env);
 }
 
 
@@ -342,6 +377,79 @@ function find_co_bracket (code)
 		if (layer < 1) { return idx; }
 	}
 	throw new Erro(ErroId.Syntax, "not found close brackets.");
+}
+
+function cons2array (c)
+{
+	arr = [];
+	for (let rest = c; ! isnil(rest); rest = cdr(rest))
+	{
+		arr.push(car(rest));
+	}
+	return arr;
+}
+
+function array2cons (l)
+{
+	return reverse(l.reduce((acc, e) => cons(e, acc), nil));
+}
+
+function bind_tree (treea, treeb)
+{
+	if (treea)
+	{
+		if (atom(treea)) { return l(cons(treea, treeb)); }
+		if (atom(treeb) && treeb)
+		{
+			throw new Erro(ErroId.Syntax
+					, `cannot bind: ${lprint(treea)} and ${lprint(treeb)}`);
+		}
+		try
+		{
+			return append(bind_tree(car(treea), car(treeb))
+					, bind_tree(cdr(treea), cdr(treeb)));
+		}
+		catch (erro)
+		{
+			if (erro instanceof Erro)
+			{
+				throw new Erro(ErroId.Syntax
+						, `cannot bind: ${lprint(treea)} and ${lprint(treeb)}`);
+			}
+			throw erro;
+		}
+	}
+	return nil;
+}
+
+function assoc (alist, key)
+{
+	for (let rest = alist; ! isnil(rest); rest = cdr(rest))
+	{
+		let e = car(rest);
+		if (equal(car(e), key)) { return e; }
+	}
+	return null;
+}
+
+function assocdr (alist, key)
+{
+	let asc = assoc(alist, key);
+	if (asc) { return cdr(asc) }
+	return null;
+}
+
+function seekenv (env, sym)
+{
+	for (let rest = env; ! isnil(rest); rest = cdr(rest))
+	{
+		let val = assocdr(car(rest), sym);
+		if (val != null)
+		{
+			return val;
+		}
+	}
+	throw new Erro(ErroId.Symbol, `${lprint(sym)} is not defined.`);
 }
 
 function wrap_readmacros (tree, rmacs)
@@ -451,9 +559,75 @@ function lreadtop (code)
 	return cons(new Symb("do"), lread(code));
 }
 
-function leval (expr)
+function leval (expr, env)
 {
-	return expr; // TODO
+	while (true)
+	{
+		if (expr instanceof Cons)
+		{
+			let args = cdr(expr);
+			let proc = leval(car(expr), env);
+			if (proc instanceof Func)
+			{
+				let expr = proc.body;
+				let env = cons(bind_tree(proc.args, mapeval(args, env)), proc.env);
+			}
+			else if (proc instanceof Spfm)
+			{
+				if ("if" == proc.name)
+				{
+					expr = (isnil(leval(car(args), env)))
+						? car(cdr(cdr(args))) : car(cdr(args));
+				}
+				else if ("do" == proc.name)
+				{
+					let rest = args;
+					for (; cdr(rest) instanceof Cons; rest = cdr(rest))
+					{
+						leval(car(rest), env);
+					}
+					expr = car(rest);
+				}
+				else if ("!" == proc.name)
+				{
+					expr = lapply(leval(car(args), env), cdr(args));
+				}
+				else
+				{
+					return proc(args, env);
+				}
+			}
+			else if (proc instanceof Function || (typeof proc) == "function")
+			{
+				return lapply(proc, mapeval(args, env));
+			}
+			else
+			{
+				throw new Erro(ErroId.UnCallable, `${lprint(proc)} is not callable.`);
+			}
+		}
+		else if (expr instanceof Symb)
+		{
+			return seekenv(env, expr);
+		}
+		else
+		{
+			return expr;
+		}
+	}
+}
+
+function lapply (proc, args)
+{
+	if (proc instanceof Func)
+	{
+		return leval(proc.body, cons(bind_tree(proc.args, args), proc.env));
+	}
+	if (proc instanceof Function || (typeof proc) == "function")
+	{
+		return proc.apply(null, cons2array(args));
+	}
+	throw new Erro(ErroId.UnCallable, `${lprint(proc)} is not callable.`);
 }
 
 function lprint (expr)
@@ -487,7 +661,7 @@ function lprint_rec (expr, dup, rec)
 		{
 			return expr.name;
 		}
-		if (typeof expr == "string" || expr instanceof String)
+		if (expr instanceof String || (typeof expr) == "string")
 		{
 			return `\"${expr}\"`;
 		}
@@ -507,7 +681,7 @@ function lprint_rec (expr, dup, rec)
 		{
 			return `<Spfm ${expr.name}>`;
 		}
-		if (typeof expr == "function" || expr instanceof Function)
+		if (expr instanceof Function || (typeof expr) == "function")
 		{
 			return `<Subr ${expr.name}>`;
 		}
@@ -536,3 +710,22 @@ function printcons_rec (coll, dup, rec)
 	return `(${lprint_rec(a, dup, rec)} ${lprint_rec(d, dup, rec)})`;
 }
 
+function regist (name, obj)
+{
+	rplaca(genv, cons(cons(new Symb(name), obj), car(genv)));
+}
+
+regist("nil", nil);
+regist("t", t);
+regist("T", t);
+regist("cons", cons);
+regist("car", car);
+regist("cdr", cdr);
+regist("eq", eq);
+regist("equal", equal);
+regist("atom", atom);
+regist("list", l);
+regist("+", add);
+// TODO
+		
+regist("do", new Spfm(ldo, "do"));
