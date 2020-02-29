@@ -43,3 +43,18 @@ function atom (o)
 	return t;
 }
 
+function lread (code)
+{
+	return nil; // TODO
+}
+
+function leval (expr)
+{
+	return expr; // TODO
+}
+
+function lprint (expr)
+{
+	return "nil"; // TODO
+}
+

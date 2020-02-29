@@ -26,17 +26,17 @@ public val nil: Nil = Nil()
 
 fun lread (code: String): ICons
 {
-	return nil
+	return nil // TODO
 }
 
 fun leval (expr: ICons): ICons
 {
-	return expr
+	return expr // TODO
 }
 
 fun lprint (expr: ICons): String
 {
-	return "nil"
+	return "nil" // TODO
 }
 
 fun main(args : Array<String>)
