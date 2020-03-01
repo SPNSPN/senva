@@ -1,19 +1,22 @@
+SRC := src
+BLD := build
+
 .PHONY: all
-all: repl.jar test.jar
+all: $(BLD)/repl.jar $(BLD)/test.jar
 
-repl.jar: repl.kt interpreter/interpreter.kt
-	kotlinc-jvm $^ -module-name Repl -include-runtime -d repl.jar
+$(BLD)/repl.jar: $(SRC)/repl.kt $(SRC)/interpreter.kt
+	kotlinc-jvm $^ -module-name Repl -include-runtime -d $(BLD)/repl.jar
 
-test.jar: test.kt interpreter/interpreter.kt
-	kotlinc-jvm $^ -module-name Test -include-runtime -d test.jar
+$(BLD)/test.jar: $(SRC)/test.kt $(SRC)/interpreter.kt
+	kotlinc-jvm $^ -module-name Test -include-runtime -d $(BLD)/test.jar
 
 .PHONY: repl test clean
-repl: repl.jar
-	java -jar repl.jar $(ARGS)
+repl: $(BLD)/repl.jar
+	java -jar $^ $(ARGS)
 
-test: test.jar
-	java -jar test.jar
+test: $(BLD)/test.jar
+	java -jar $^
 
 clean:
-	rm repl.jar test.jar
+	rm $(BLD)/*
 

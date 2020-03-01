@@ -25,14 +25,24 @@ const do_check = function ()
 		{
 			let code = check_list[idx][1];
 			let succ = check_list[idx][2];
-			let s = lprint(leval(lreadtop(code), genv));
-			document.getElementById("senva-test").insertAdjacentHTML("beforeend"
-					, `<li>CHECK: "${code}" -> ${s}</li>`);
-			if (succ && s != succ)
+			try
 			{
-				document.getElementById(
-						"senva-test").insertAdjacentHTML("beforeend"
-							, `<li>Fail CHECK.</li>`);
+				let s = lprint(leval(lreadtop(code), genv));
+				document.getElementById("senva-test").insertAdjacentHTML("beforeend"
+						, `<li>CHECK: "${code}" -> ${s}</li>`);
+				if (succ && s != succ)
+				{
+					document.getElementById(
+							"senva-test").insertAdjacentHTML("beforeend"
+								, `<li>Fail CHECK.</li>`);
+					break;
+				}
+			}
+			catch (erro)
+			{
+				console.error(erro);
+				document.getElementById("senva-test").insertAdjacentHTML("beforeend"
+						, `<li>CHECK: "${code}" -> ${lprint(erro)}</li><li>Fail CHECK.</li>`);
 				break;
 			}
 		}

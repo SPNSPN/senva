@@ -202,6 +202,12 @@ ECHECK("(setat \"ABC\" 1 '(1 . 2))", ErroId.Type, "cannot setat (1 . 2) to \"ABC
 CHECK("(to-list \"a\\nb\\tc\\0\")", "(97 10 98 9 99 0)")
 CHECK("`[1 2 ,3 ,(+ 2 2) @(if (> 3 1) '(5 6) nil) @(cons 7 `(8 ,(* 3 3))) 10]"
 		, "[1 2 3 4 5 6 7 8 9 10]")
+CHECK("((lambda (c) (list (list c c) (cons c c))) (list 1 2))"\
+		, "$0 = (1 2)\n(($0 $0) ($0 . $0))")
+CHECK("((lambda (c v) [v c [[v c] (list v c)] (list (list c v) [c v])]) (list 1 2) [1 2])"\
+		, "$0 = (1 2)\n$1 = [1 2]\n[$1 $0 [[$1 $0] ($1 $0)] (($0 $1) [$0 $1])]")
+CHECK("((lambda (rpc) (rplacd rpc rpc)) (list 1 2))", "$0 = (1 . $0)\n$0")
+CHECK("((lambda (rpv) (setat rpv 1 rpv)) [1 2])", "$0 = [1 $0]\n$0")
 CHECK("(processor)", "python")
 CHECK("(load \"senva/test.snv\")", "NIL")
 
@@ -209,7 +215,7 @@ CHECK("(reverse (list 1 2 3 4))", "(4 3 2 1)")
 CHECK("(append (list 1 2 3 4) (list 5 6 7 8))", "(1 2 3 4 5 6 7 8)")
 CHECK("(take (list 1 2 3 4) 2)", "(1 2)")
 CHECK("(drop (list 1 2 3 4) 2)", "(3 4)")
+CHECK("(environment)", lprint(genv))
 CHECK("((py len) (vect 1 2 3 4 5))", "5")
-CHECK("(environment)", None)
 CHECK("(define m (import \"math\")) ((-> m ceil) 2.3)", "3")
 

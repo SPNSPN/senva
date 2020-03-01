@@ -30,10 +30,10 @@ class Cons:
 		self.cdr = d
 	
 	def __eq__ (self, a):
-		return isinstance(a, Cons) and self.car == a.car and self.cdr == a.cdr
+		return (self is a) or (isinstance(a, Cons) and self.car == a.car and self.cdr == a.cdr)
 
 	def __str__ (self):
-		return "({0} . {1})".format(lprint(self.car), lprint(self.cdr))
+		return lprint(self)
 
 class Queu:
 	def __init__ (self):
@@ -387,8 +387,8 @@ def lread (code):
 	while idx < len(code):
 		c = code[idx]
 		if "(" == c:
-			tree = growth(tree, buff)
 			co = find_co_paren(code[idx + 1:])
+			tree = growth(tree, buff)
 			tree = cons(wrap_readmacros(lread(code[idx + 1: idx + co + 1])
 						, buff[1]), tree)
 			buff = ["", nil]
@@ -574,27 +574,36 @@ def processor ():
 	return Symb("python")
 
 def lprint (expr):
-	dup = seek_dup(expr, nil, nil)
+	printed, dup = seek_dup(expr, nil, nil)
 	s = ""
-	try:
-		rest = dup
-		idx = 0
-		while not isnil(rest):
-			s += "$" + str(idx) + " = " + lprint_rec(car(rest), dup, False) + "\n"
-			rest = cdr(rest)
-			idx += 1
-		s += lprint_rec(expr, dup, True)
-	except RecursionError as e:
-		print("RecursionError")
+	rest = dup
+	idx = 0
+	while not isnil(rest):
+		s += "$" + str(idx) + " = " + lprint_rec(car(rest), dup, False) + "\n"
+		rest = cdr(rest)
+		idx += 1
+	s += lprint_rec(expr, dup, True)
 	return s
 
 def seek_dup (expr, printed, dup):
 	if find(expr, printed):
-		return cons(expr, dup)
-	if atom(expr):
-		return dup
-	pd = cons(expr, printed)
-	return append(seek_dup(car(expr), pd, dup), seek_dup(cdr(expr), pd, dup))
+		if find(expr, dup):
+			return printed, dup
+		else:
+			return printed, cons(expr, dup)
+	if (isinstance(expr, Cons)):
+		printed, dup = seek_dup(car(expr), cons(expr, printed), dup)
+		return seek_dup(cdr(expr), printed, dup)
+	elif (isinstance(expr, Queu)):
+		return seek_dup(expr.exit, cons(expr, printed), dup)
+	elif (isinstance(expr, list)):
+		printed = cons(expr, printed)
+		for elm in expr:
+			printed, dup = seek_dup(elm, printed, dup)
+		return printed, dup
+	elif (isinstance(expr, Erro)):
+		return seek_dup(expr.estr, cons(expr, printed), dup)
+	return printed, dup
 
 def lprint_rec (expr, dup, rec):
 	idx = findidx_eq(expr, dup)
@@ -608,11 +617,13 @@ def lprint_rec (expr, dup, rec):
 		elif isinstance(expr, str):
 			return "\"" + expr + "\""
 		elif isinstance(expr, list):
-			return "[{0}]".format(" ".join([lprint(e) for e in expr]))
+			return "[{0}]".format(" ".join([lprint_rec(e, dup, True) for e in expr]))
 		elif isinstance(expr, Queu):
-			return "/{0}/".format(lprint(expr.exit))
+			return "/{0}/".format(lprint_rec(expr.exit, dup, True))
 		elif isinstance(expr, Func):
-			return "<Func {0} {1}>".format(lprint(expr.args), lprint(expr.body))
+			return "<Func {0} {1}>".format(
+					lprint_rec(expr.args, dup, True)
+					, lprint_rec(expr.body, dup, True))
 		elif isinstance(expr, Spfm):
 			return "<Spfm {0}>".format(expr.name)
 		elif callable(expr):
@@ -629,10 +640,10 @@ def printcons_rec (coll, dup, rec):
 		return "(" + lprint_rec(a, dup, rec) + ")"
 	elif atom(d):
 		return "(" + lprint_rec(a, dup, rec) + " . " + lprint_rec(d, dup, rec) + ")"
-	elif findidx_eq(d, dup) is nil:
-	 	return "(" + lprint_rec(a, dup, rec) + " " + lprint_rec(d, dup, rec)[1:]
+	elif find(d, dup):
+		return "(" + lprint_rec(a, dup, rec) + " . " + lprint_rec(d, dup, rec) + ")"
 	else:
-		return "(" + lprint_rec(a, dup, rec) + " " + lprint_rec(d, dup, rec) + ")"
+	 	return "(" + lprint_rec(a, dup, rec) + " " + lprint_rec(d, dup, rec)[1:]
 
 def lprint_raw (expr):
 	if expr is nil:
@@ -688,8 +699,8 @@ def growth (tree, buff):
 		return cons(wrap_readmacros(Symb(buf), rmacs), tree)
 	return tree
 
-def wrap_readmacros (tree, rmacs):
-	wraped = tree
+def wrap_readmacros (o, rmacs):
+	wraped = o
 	rest = rmacs
 	while not isnil(rest):
 		wraped = l(car(rest), wraped)

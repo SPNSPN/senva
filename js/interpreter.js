@@ -342,10 +342,7 @@ function find_co_paren (code)
 			sflg = ! sflg;
 		}
 
-		if (layer < 1)
-		{
-			return idx;
-		}
+		if (layer < 1) { return idx; }
 	}
 	throw new Erro(ErroId.Syntax, "not found close parenthesis.");
 }
@@ -452,10 +449,9 @@ function seekenv (env, sym)
 	throw new Erro(ErroId.Symbol, `${lprint(sym)} is not defined.`);
 }
 
-function wrap_readmacros (tree, rmacs)
+function wrap_readmacros (o, rmacs)
 {
-	let wraped = tree;
-	let rest = rmacs;
+	let wraped = o;
 	for (let rest = rmacs; ! isnil(rest); rest = cdr(rest))
 	{
 		wraped = l(car(rest), wraped);
@@ -472,8 +468,8 @@ function lread (code)
 		let c = code.charAt(idx);
 		if ("(" == c)
 		{
-			tree = growth(tree, buff);
 			let co = find_co_paren(code.substring(idx + 1));
+			tree = growth(tree, buff)
 			tree = cons(wrap_readmacros(lread(code.substring(idx + 1, idx + co + 1))
 						, buff[1]), tree);
 			buff = ["", nil];
@@ -485,13 +481,13 @@ function lread (code)
 		}
 		else if ("[" == c)
 		{
-			tree = growth(tree, buff);
 			let co = find_co_bracket(code.substring(idx + 1));
+			tree = growth(tree, buff);
 			buff[0] = lread(code.substring(idx + 1, idx + co + 1));
 			if (buff[1])
 			{
-				tree = cons(l(new Symb("to-vect"), wrap_readmacros(buff[0], buff[1]))
-						, tree);
+				tree = cons(l(new Symb("to-vect")
+							, wrap_readmacros(buff[0], buff[1])), tree);
 			}
 			else
 			{

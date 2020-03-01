@@ -27,7 +27,8 @@ const run = function ()
 		console.error(erro);
 		if (erro instanceof Erro)
 		{
-			document.getElementById("error").innerHTML = `error : ${escapeHTML(erro.emess)}`;
+			document.getElementById("error").innerHTML
+				= `error : ${escapeHTML(erro.estr)}`;
 		}
 	}
 };
