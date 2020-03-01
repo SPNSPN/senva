@@ -17,13 +17,13 @@ def ECHECK (code, ceid, succ):
 		s = lprint(leval(cons(Symb("do"), lread(code)), genv))
 		print(s)
 	except Erro as erro:
-		print("<Erro \"{0}\">".format(erro.message))
+		print("<Erro \"{0}\">".format(erro.estr))
 		if ceid != erro.eid:
 			raise Erro(444, "expect code: {0}, but got code: {1}".format(
 						ceid, erro.eid))
-		if succ != erro.message:
+		if succ != erro.estr:
 			raise Erro(444, "expect mess: {0}, but got mess: {1}".format(
-						succ, erro.message))
+						succ, erro.estr))
 		return nil
 	raise Erro(4444, "not got erro!")
 			

@@ -1,10 +1,12 @@
-const nil = false;
-const t = true;
-
 function Symb (name_)
 {
 	this.name = name_;
 }
+
+const nil = false;
+const NIL = nil;
+const t = new Symb("T");
+const T = t;
 
 function Cons (a, d)
 {
@@ -81,11 +83,11 @@ function Func (args, body, env)
 
 class Erro extends Error
 {
-	constructor (eid, emess)
+	constructor (eid, estr)
 	{
-		super(emess);
+		super(estr);
 		this.eid = eid;
-		this.emess = emess;
+		this.estr = estr;
 	}
 }
 
@@ -218,11 +220,9 @@ function append (colla, collb)
 function reverse (coll)
 {
 	let rev = nil;
-	let rest = coll;
 	for (let rest = coll; ! isnil(rest); rest = cdr(rest))
 	{
-		let e = car(rest);
-		rev = cons(e, rev);
+		rev = cons(car(rest), rev);
 	}
 	return rev;
 }

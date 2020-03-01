@@ -10,9 +10,9 @@
 (define echeck
   (lambda (code ceid succ)
 	(do (prin "ECHECK: \"" code "\" -> ")
-	  (catch (lambda (eid message)
-				 (do (print "<Erro \"" message "\">")
-				   (if (and (equal ceid eid) (equal message succ))
+	  (catch (lambda (eid estr)
+				 (do (print "<Erro \"" estr "\">")
+				   (if (and (equal ceid eid) (equal estr succ))
 					 nil
 					 (throw 444 (sprint "expect code: " ceid
 										", but got code: " eid)))))
@@ -28,9 +28,9 @@
 
 (define evcheck
   (lambda (code ceid succ)
-	(catch (lambda (eid message)
-			 (do (print "EVCHECK: " code " -> <Erro \"" message "\">")
-			   (if (and (equal ceid eid) (equal message succ))
+	(catch (lambda (eid estr)
+			 (do (print "EVCHECK: " code " -> <Erro \"" estr "\">")
+			   (if (and (equal ceid eid) (equal estr succ))
 				 nil
 				 (throw 444 "EFail!"))))
 		   (do (! let ((result ((derxi::vm code) 'run)))

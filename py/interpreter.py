@@ -105,12 +105,12 @@ class Func:
 		return "<Func {0} {1}>".format(lprint(self.args), lprint(self.body))
 
 class Erro (Exception):
-	def __init__ (self, eid, message):
+	def __init__ (self, eid, estr):
 		self.eid = eid
-		self.message = message
+		self.estr = estr
 
 	def __str__ (self):
-		return "<Erro \"{0}\">".format(self.message)
+		return "<Erro \"{0}\">".format(self.estr)
 
 class Void:
 	pass
@@ -518,7 +518,7 @@ def lcatch (env, args):
 	try:
 		return leval(car(cdr(args)), env)
 	except Erro as erro:
-		return lapply(exce, l(erro.eid, leval(erro.message, env)))
+		return lapply(exce, l(erro.eid, leval(erro.estr, env)))
 
 def llprin (*args):
 	for a in args:
