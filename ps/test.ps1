@@ -35,6 +35,16 @@ function echeck ($src, $eid, $emess)
 	throw  "4444,not got erro!";
 }
 
+function pcheck ($src, $succ)
+{
+	$res = (lprint (leval (lreadtop $src) $genv));
+	write-host ("PCHECK: $src -> " + $res);
+	if (-not (equal $succ $res))
+	{
+		throw ("Fail! except: " + $succ + ", but got: " + $res);
+	}
+}
+
 check "" $nil;
 check "nil"  $nil;
 check "()" $nil;
@@ -62,6 +72,7 @@ check "(list 5 4 3 2 1)" (list 5 4 3 2 1);
 check "(rplaca (cons nil 44) 34)" (cons 34 44);
 check "(rplacd (cons 44 55) (cons 3 nil))" (list 44 3);
 check "(nconc (list 1 2 3) (list 4 5))" (list 1 2 3 4 5);
+check "(nreverse (list 1 2 3 4))" (list 4 3 2 1);
 check "(/ (+ 71 55) (- (* 2 3) 3))" 42;
 check "(/ 3 2)" 1;
 check "(/ 3 2.0)" 1.5;
@@ -208,13 +219,13 @@ echeck "(setat (list 1 2 3) 2 44)" $erroid["Type"] "cannot apply setat to (1 2 3
 echeck "(setat `"ABC`" 1 '(1 . 2))" $erroid["Type"] "cannot setat (1 . 2) to `"ABC`"";
 check "(to-list `"a\nb\tc\0`")" (list 97 10 98 9 99 0);
 check "``[1 2 ,3 ,(+ 2 2) @(if (> 3 1) '(5 6) nil) @(cons 7 ``(8 ,(* 3 3))) 10]" (vect 1 2 3 4 5 6 7 8 9 10);
+pcheck "((lambda (c) (list (list c c) (cons c c))) (list 1 2))" "$0 = (1 2)\n(($0 $0) ($0 . $0))";
+pcheck "((lambda (c v) [v c [[v c] (list v c)] (list (list c v) [c v])]) (list 1 2) [1 2])" "$0 = (1 2)\n$1 = [1 2]\n[$1 $0 [[$1 $0] ($1 $0)] (($0 $1) [$0 $1])]";
+pcheck "((lambda (rpc) (rplacd rpc rpc)) (list 1 2))" "$0 = (1 . $0)\n$0";
+pcheck "((lambda (rpv) (setat rpv 1 rpv)) [1 2])" "$0 = [1 2]\n$0";
 check "(processor)" (new-object symb powershell);
+check "(environment)" $genv;
 check "(load `"senva/test.snv`")" $nil;
 
-check "(reverse (list 1 2 3 4))" (list 4 3 2 1);
-check "(append (list 1 2 3 4) (list 5 6 7 8))" (list 1 2 3 4 5 6 7 8);
-check "(take (list 1 2 3 4) 2)" (list 1 2);
-check "(drop (list 1 2 3 4) 2)" (list 3 4);
 check "(ps [math]::pi)" 3.141592;
-check "(environment)";
 

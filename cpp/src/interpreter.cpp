@@ -33,6 +33,7 @@ Interpreter::Interpreter ()
 	subr.push_back(&Interpreter::subr_rplacd);
 	subr.push_back(&Interpreter::subr_last);
 	subr.push_back(&Interpreter::subr_nconc);
+	subr.push_back(&Interpreter::subr_nreverse);
 	subr.push_back(&Interpreter::subr_add);
 	subr.push_back(&Interpreter::subr_sub);
 	subr.push_back(&Interpreter::subr_mul);
@@ -141,6 +142,11 @@ Interpreter::Interpreter ()
 				pool.make_cons(pool.make_symb("nconc")
 					, pool.make_subr("nconc"
 						, findidx<Subr>(subr, &Interpreter::subr_nconc)))
+				, pool.getcar(genv)));
+	pool.setcar(genv, pool.make_cons(
+				pool.make_cons(pool.make_symb("nreverse")
+					, pool.make_subr("nreverse"
+						, findidx<Subr>(subr, &Interpreter::subr_nreverse)))
 				, pool.getcar(genv)));
 	pool.setcar(genv, pool.make_cons(
 				pool.make_cons(pool.make_symb("+")
@@ -483,6 +489,20 @@ Addr Interpreter::subr_nconc (Addr args)
 	if (pool.isnil(d)) { return a; }
 
 	return pool.nconccons(a, subr_nconc(d));
+}
+
+Addr Interpreter::subr_nreverse (Addr args)
+{
+	Addr coll = pool.getcar(args);
+	Addr rev = Pool::nil;
+	while (pool.consp(coll))
+	{
+		Addr tmp = pool.getcdr(coll);
+		pool.setcdr(coll, rev);
+		rev = coll;
+		coll = tmp;
+	}
+	return rev;
 }
 
 Addr Interpreter::subr_add (Addr args)
@@ -1212,6 +1232,7 @@ Addr Interpreter::subr_getc (Addr args)
 {
 	return pool.make_inum(getchar());
 }
+
 
 Addr Interpreter::spfm_if (Addr args, Addr env)
 {

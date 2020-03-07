@@ -1,3 +1,4 @@
+ps senvaのrecursive lprint
 is-definedにより、util.snvで、定義されていない場合のみappend、reverse、take、dropを最定義するようにする
 型チェックしている関数を専用型関数に分解してlispから呼べるようにする、コンパイル時に最適化できるようにする
 getlines EOFまでreadし結果のlistを返す

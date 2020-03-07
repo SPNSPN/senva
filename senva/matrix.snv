@@ -4,9 +4,9 @@
 (define matrix::eye
   (lambda (n)
 	(! let ((row (lambda (i)
-						(nconc (times i 0)
-							   (list 1)
-							   (times (- n i) 0)))))
+						(append (times i 0)
+								(list 1)
+								(times (- n i) 0)))))
 			(map row (range n)))))
 
 (define matrix::transverse
@@ -45,7 +45,7 @@
 (define matrix::determinant
   (lambda (mat)
 	(! let* ((n (length mat))
-				  (idxs (range 0 n)))
+			 (idxs (range 0 n)))
 			(! letrec
 			  ((mul-sig (lambda (mat sig acc)
 						  (if sig

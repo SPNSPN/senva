@@ -107,7 +107,7 @@ fun cdr (o: ICons): Any = o.cdr()
 fun eq (a: Any, b: Any): Any = if (a === b) t else nil
 fun atom (o: Any): Any = if (o is Cons) nil else t
 
-fun append (colla: ICons, collb: ICons): ICons
+fun append1 (colla: ICons, collb: ICons): ICons
 {
 	var app = collb
 	var rest = reverse(colla)
@@ -158,8 +158,8 @@ fun find (v: Any, coll: ICons): Any
 	var rest = coll
 	while (! isnil(rest))
 	{
-		if (equal(v, car(rest)) { return t }
-		rest = cdr(rest)
+		if (v == car(rest)) { return t }
+		rest = cdr(rest) as ICons
 	}
 	return nil
 }
@@ -172,7 +172,7 @@ fun findidx_eq (v: Any, coll: ICons): Any
 	{
 		if (v === car(rest)) { return idx }
 		++idx
-		rest = cdr(rest)
+		rest = cdr(rest) as ICons
 	}
 	return nil
 }
@@ -281,14 +281,14 @@ fun lread (code: String): ICons
 		{
 			val co = find_co_bracket(code.substring((idx + 1)..(code.length)))
 			tree = growth(tree, buff)
-			buff.tok = lread(code.substring((idx + 1)..(idx + co + 1)))
+			val invec = lread(code.substring((idx + 1)..(idx + co + 1)))
 			tree = if (isnil(buff.rmacs))
 			{
-				cons(cons(Symb("vect"), buff.tok), tree)
+				cons(cons(Symb("vect"), invec), tree)
 			}
 			else
 			{
-				cons(l(Symb("to-vect"), wrap_readmacros(buff.tok, buff.rmacs)), tree)
+				cons(l(Symb("to-vect"), wrap_readmacros(invec, buff.rmacs)), tree)
 			}
 			buff = ReadBuf("", nil)
 			idx += co + 1
@@ -304,12 +304,12 @@ fun lread (code: String): ICons
 		else if (';' == c)
 		{
 			tree = growth(tree, buff)
-			while (idx < code.length && '\n' != code.charAt(idx)) { ++idx }
+			while (idx < code.length && '\n' != code[idx]) { ++idx }
 		}
 		else if ('"' == c)
 		{
 			tree = growth(tree, buff)
-			(strn, inc) = take_string(code.substring((idx + 1)..(code.length)))
+			val (strn, inc) = take_string(code.substring((idx + 1)..(code.length)))
 			idx += inc
 			tree = cons(strn, tree)
 			buff = ReadBuf("", nil)
@@ -338,7 +338,7 @@ fun lread (code: String): ICons
 		{
 			if (buff.tok.isEmpty())
 			{
-				return append(reverse(cdr(tree)), cons(car(tree)
+				return append1(reverse(cdr(tree) as ICons), cons(car(tree)
 							, car(lread(code.substring((idx + 1)..(code.length))))))
 			}
 			else
@@ -359,7 +359,7 @@ fun lread (code: String): ICons
 
 fun lreadtop (code: String): ICons
 {
-	return cons(Symb("do"), lread(read))
+	return cons(Symb("do"), lread(code))
 }
 
 fun leval (expr: ICons, env: ICons): Any
@@ -377,7 +377,7 @@ fun lprint (expr: Any): String
 	{
 		s += "\$${idx} = ${lprint_rec(car(rest), dup, false)}\n"
 		++idx
-		rest = cdr(rest)
+		rest = cdr(rest) as ICons
 	}
 	s += lprint_rec(expr, dup, true)
 	return s
@@ -388,10 +388,11 @@ fun seek_dup (expr: Any, printed: ICons, dup: ICons): ICons
 	if (! isnil(find(expr, printed))) { return cons(expr, dup) }
 	if (! isnil(atom(expr))) { return dup }
 	val pd = cons(expr,  printed)
-	return append(seek_dup(car(expr), pd, dup), seek_dup(cdr(expr), pd, dup))
+	return append1(seek_dup(car(expr as Cons), pd, dup)
+			, seek_dup(cdr(expr as Cons), pd, dup))
 }
 
-fun lprint_rec (expr: ICons, dup: ICons, rec: Boolean): String // TODO
+fun lprint_rec (expr: Any, dup: ICons, rec: Boolean): String // TODO
 {
 	return ""
 }

@@ -35,6 +35,12 @@
 		(every pred (cdr coll)))
 	  t)))
 
+(define shallow-copy
+  (lambda (coll)
+	(if (atom coll)
+	  coll
+	  (cons (car coll) (copy (cdr coll))))))
+
 (define copy
   (lambda (coll)
 	(if (atom coll)
@@ -59,6 +65,7 @@
 		 (lambda (coll)
 		   (reverse-rec coll nil)))))
  nil)
+;(define reverse (lambda (coll) (nreverse (shallow-copy coll))))
 
 (define map
   (lambda (func coll)
@@ -70,17 +77,19 @@
   (lambda (func coll val)
 	(if coll (reduce func (cdr coll) (func val (car coll))) val)))
 
-((lambda (append1-rec)
-   (do (setq append1-rec
-			 (lambda (rcolla collb)
-			   (if rcolla
-				 (append1-rec (cdr rcolla)
-							 (cons (car rcolla) collb))
-				 collb)))
-	   (define append1
-		 (lambda (colla collb)
-		   (append1-rec (reverse colla) collb)))))
- nil)
+;((lambda (append1-rec)
+;   (do (setq append1-rec
+;			 (lambda (rcolla collb)
+;			   (if rcolla
+;				 (append1-rec (cdr rcolla)
+;							 (cons (car rcolla) collb))
+;				 collb)))
+;	   (define append1
+;		 (lambda (colla collb)
+;		   (append1-rec (reverse colla) collb)))))
+; nil)
+
+(define append1 (lambda (colla collb) (nconc (copy colla) (copy collb))))
 
 (define append
   (lambda colls

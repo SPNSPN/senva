@@ -398,12 +398,12 @@ def lread (code):
 		elif "[" == c:
 			tree = growth(tree, buff)
 			co = find_co_bracket(code[idx + 1:])
-			buff[0] = lread(code[idx + 1: idx + co + 1])
+			invec = lread(code[idx + 1: idx + co + 1])
 			if buff[1]:
-				tree = cons(l(Symb("to-vect"), wrap_readmacros(buff[0], buff[1]))
+				tree = cons(l(Symb("to-vect"), wrap_readmacros(invec, buff[1]))
 						, tree)
 			else:
-				tree = cons(cons(Symb("vect"), buff[0]), tree)
+				tree = cons(cons(Symb("vect"), invec), tree)
 			buff = ["", nil]
 			idx += co + 1
 		elif "]" == c:
@@ -436,7 +436,7 @@ def lread (code):
 			if buff[0]:
 				buff[0] += "."
 			else:
-				return append(reverse(cdr(tree))
+				return append1(reverse(cdr(tree))
 						, cons(car(tree), car(lread(code[idx + 1:]))))
 		else:
 			buff[0] += c
@@ -483,7 +483,7 @@ def leval (expr, env):
 				return expr
 	except Exception as err:
 		# for debug
-		print("E: at {0}".format(lprint(expr)))
+		# print("E: at {0}".format(lprint(expr)))
 		raise err
 
 def lapply (proc, args):
@@ -799,7 +799,7 @@ def bind_tree (treea, treeb):
 			raise Erro(ErroId.Syntax, "cannot bind: {0} and {1}".format(
 						lprint(treea), lprint(treeb)))
 		try:
-			return append(bind_tree(car(treea), car(treeb))
+			return append1(bind_tree(car(treea), car(treeb))
 					, bind_tree(cdr(treea), cdr(treeb)))
 		except Erro as erro:
 			raise Erro(ErroId.Syntax, "cannot bind: {0} and {1}".format(
@@ -827,7 +827,7 @@ def mapeval (args, env):
 		rest = cdr(rest)
 	return reverse(eargs)
 
-def append (colla, collb):
+def append1 (colla, collb):
 	app = collb
 	rest = reverse(colla)
 	while not isnil(rest):
@@ -889,14 +889,29 @@ def last (o):
 	raise Erro(ErroId.Type, "cannot apply last to {0}".format(path))
 	
 
-def nconc (*args):
-	if not args:
-		return nil
-	arr = args[0]
-	for a in args[1:]:
-		if not a is nil:
-			rplacd(last(arr), a)
-	return arr
+def nconc (colla, collb):
+	if isnil(colla):
+		return collb
+	las = last(colla)
+	rplacd(las, collb)
+	return colla
+#def nconc (*args):
+#	if not args:
+#		return nil
+#	arr = args[0]
+#	for a in args[1:]:
+#		if not a is nil:
+#			rplacd(last(arr), a)
+#	return arr
+
+def nreverse (coll):
+	rev = nil
+	while (not atom(coll)):
+		tmp = cdr(coll)
+		rplacd(coll, rev)
+		rev = coll
+		coll = tmp
+	return rev
 
 def lload (path):
 	if not isinstance(path, str):
@@ -1083,14 +1098,15 @@ def initenv ():
 	ienv = cons(cons(Symb("<="), le), ienv)
 	ienv = cons(cons(Symb("int"), lint), ienv)
 	ienv = cons(cons(Symb("float"), lfloat), ienv)
-	ienv = cons(cons(Symb("reverse"), reverse), ienv)
-	ienv = cons(cons(Symb("append"), append), ienv)
-	ienv = cons(cons(Symb("take"), take), ienv)
-	ienv = cons(cons(Symb("drop"), drop), ienv)
+#	ienv = cons(cons(Symb("reverse"), reverse), ienv)
+#	ienv = cons(cons(Symb("append1"), append1), ienv)
+#	ienv = cons(cons(Symb("take"), take), ienv)
+#	ienv = cons(cons(Symb("drop"), drop), ienv)
 	ienv = cons(cons(Symb("rplaca"), rplaca), ienv)
 	ienv = cons(cons(Symb("rplacd"), rplacd), ienv)
 	ienv = cons(cons(Symb("last"), last), ienv)
 	ienv = cons(cons(Symb("nconc"), nconc), ienv)
+	ienv = cons(cons(Symb("nreverse"), nreverse), ienv)
 	ienv = cons(cons(Symb("load"), lload), ienv)
 	ienv = cons(cons(Symb("vect"), vect), ienv)
 	ienv = cons(cons(Symb("queu"), queu), ienv)

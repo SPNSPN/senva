@@ -235,10 +235,10 @@
 (check "(append (list 1 2 3 4) (list 5 6 7 8))" '(1 2 3 4 5 6 7 8))
 (check "(take (list 1 2 3 4) 2)" '(1 2))
 (check "(drop (list 1 2 3 4) 2)" '(3 4))
-(check "(environment)" (environment))
-(if (eq 'python (processor)) (check "((py len) (vect 1 2 3 4 5))" 5))
-(if (eq 'python (processor))
-  (check "(define m (import \"math\")) ((-> m ceil) 2.3)" 3))
+;(check "(environment)" (environment))
+;(if (eq 'python (processor)) (check "((py len) (vect 1 2 3 4 5))" 5))
+;(if (eq 'python (processor))
+;  (check "(define m (import \"math\")) ((-> m ceil) 2.3)" 3))
 
 (! ns derxi
    (do

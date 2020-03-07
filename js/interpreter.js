@@ -207,7 +207,7 @@ function mapeval (args, env)
 	return reverse(eargs);
 }
 
-function append (colla, collb)
+function append1 (colla, collb)
 {
 	let app = collb;
 	for (let rest = reverse(colla); ! isnil(rest); rest = cdr(rest))
@@ -403,7 +403,7 @@ function bind_tree (treea, treeb)
 		}
 		try
 		{
-			return append(bind_tree(car(treea), car(treeb))
+			return append1(bind_tree(car(treea), car(treeb))
 					, bind_tree(cdr(treea), cdr(treeb)));
 		}
 		catch (erro)
@@ -483,15 +483,15 @@ function lread (code)
 		{
 			let co = find_co_bracket(code.substring(idx + 1));
 			tree = growth(tree, buff);
-			buff[0] = lread(code.substring(idx + 1, idx + co + 1));
+			invec = lread(code.substring(idx + 1, idx + co + 1));
 			if (buff[1])
 			{
 				tree = cons(l(new Symb("to-vect")
-							, wrap_readmacros(buff[0], buff[1])), tree);
+							, wrap_readmacros(invec, buff[1])), tree);
 			}
 			else
 			{
-				tree = cons(cons(new Symb("vect"), buff[0]), tree);
+				tree = cons(cons(new Symb("vect"), invec), tree);
 			}
 			buff = ["", nil];
 			idx += co + 1;
@@ -537,7 +537,7 @@ function lread (code)
 			}
 			else
 			{
-				return append(reverse(cdr(tree)), cons(car(tree)
+				return append1(reverse(cdr(tree)), cons(car(tree)
 							, car(lread(code.substring(idx + 1)))));
 			}
 		}
@@ -643,7 +643,7 @@ function seek_dup (expr, printed,  dup)
 	if (find(expr, printed)) { return cons(expr, dup); }
 	if (atom(expr)) { return dup; }
 	let pd = cons(expr, printed);
-	return append(seek_dup(car(expr), pd, dup), seek_dup(cdr(expr), pd, dup));
+	return append1(seek_dup(car(expr), pd, dup), seek_dup(cdr(expr), pd, dup));
 }
 
 function lprint_rec (expr, dup, rec)

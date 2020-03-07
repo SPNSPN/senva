@@ -1291,6 +1291,7 @@ int main (int argc, char **argv)
 	ITP_CHECK("(rplacd (cons 44 55) (cons 3 nil))", "(44 3)");
 	ITP_CHECK("(last (list 3 4 5 6))", "(6)");
 	ITP_CHECK("(nconc (list 1 2 3) (list 4 5))", "(1 2 3 4 5)");
+	ITP_CHECK("(nreverse (list 1 2 3 4))", "(4 3 2 1)");
 	ITP_CHECK("(/ (+ 71 55) (- (* 2 3) 3))", "42");
 	ITP_CHECK("(/ 3 2)", "1");
 	ITP_CHECK("(/ 3 2.0)", "1.500000");
@@ -1459,10 +1460,6 @@ int main (int argc, char **argv)
 	ITP_CHECK("((lambda (rpc) (rplacd rpc rpc)) (list 1 2))", "$0 = (1 . $0)\n$0");
 //	ITP_CHECK("((lambda (rpv) (setat rpv 1 rpv)) [1 2])", "$0 = [1 $0]\n$0");
 	ITP_CHECK("(processor)", "c++");
-	ITP_CHECK("(reverse (list 1 2 3 4))", "(4 3 2 1)");
-	ITP_CHECK("(append (list 1 2 3 4) (list 5 6 7 8))", "(1 2 3 4 5 6 7 8)");
-	ITP_CHECK("(take (list 1 2 3 4) 2)", "(1 2)");
-	ITP_CHECK("(drop (list 1 2 3 4) 2)", "(3 4)");
 //	ITP_CHECK("(environment)", genv);
 	ITP_CHECK("(load \"senva/test.snv\")", "NIL");
 
