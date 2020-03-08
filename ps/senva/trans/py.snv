@@ -178,7 +178,7 @@
 									  (map trans::py::indent
 										   (append (tail-drop ebody 1)
 												   (list (sprint (back ebody)
-																 "(_sys_erro.id, _sys_erro.estr)"))))
+																 "(_sys_erro.id, _sys_erro.message)"))))
 									  (list "except Exception as _sys_erro:")
 									  (map trans::py::indent
 										   (append (tail-drop ebody 1)

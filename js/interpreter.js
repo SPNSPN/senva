@@ -1,12 +1,111 @@
-let nil = false;
-let t = true;
+function Symb (name_)
+{
+	this.name = name_;
+}
+
+const nil = false;
+const NIL = nil;
+const t = new Symb("T");
+const T = t;
 
 function Cons (a, d)
 {
 	this.car = a;
 	this.cdr = d;
-	this.type = "cons";
 }
+
+function Queu ()
+{
+	this.entr = nil;
+	this.exit = this.entr;
+
+	this.push = function (val)
+	{
+		let c = new Cons(val, nil);
+		if (isnil(this.entr))
+		{
+			this.entr = c;
+			this.exit = c;
+		}
+		else
+		{
+			rplacd(this.entr, c);
+			this.entr = c;
+		}
+		return this;
+	};
+
+	this.pop = function ()
+	{
+		if (isnil(this.exit)) { return nil; }
+
+		let e = car(this.exit);
+		if (this.exit === this.entr)
+		{
+			this,exit = nil;
+			this.entr = nil;
+		}
+		else
+		{
+			this.exit = cdr(this.exit);
+		}
+		return e;
+	};
+
+	this.concat = function (queu)
+	{
+		if (isnil(this.entr))
+		{
+			this.entr = queu.entr;
+			this.exit = queu.exit;
+		}
+		else if (! isnil(queu))
+		{
+			rplacd(this.entr, queu.exit);
+		}
+		return this;
+	};
+}
+
+
+function Spfm (proc, name)
+{
+	this.proc = proc;
+	this.name = name;
+}
+
+function Func (args, body, env)
+{
+	this.args = args;
+	this.body = body;
+	this.env = env;
+}
+
+class Erro extends Error
+{
+	constructor (eid, estr)
+	{
+		super(estr);
+		this.eid = eid;
+		this.estr = estr;
+	}
+}
+
+const ErroId =
+{
+	FullMemory: 0
+	, UnknownOpcode: 1
+	, OutOfEnvironment: 2
+	, Type: 3
+	, Symbol: 4
+	, Syntax: 5
+	, UnCallable: 6
+	, ArgsUnmatch: 7
+	, UnEvaluatable: 8
+	, FileNotFound: 9
+};
+
+let genv = new Cons(nil, nil);
 
 function cons (a, d)
 {
@@ -28,18 +127,799 @@ function cdr (o)
 function eq (a, b)
 {
 	if (a === b) { return t; }
+	if ((a instanceof Symb) && (b instanceof Symb) && (a.name == b.name)) { return t; }
 	return nil;
 }
 
 function equal (a, b)
 {
-	if (a == b) { return t; }
+	let cond = false;
+	if (a instanceof Symb && b instanceof Symb)
+	{
+		cond = (a.name == b.name);
+	}
+	else if (a instanceof Cons && b instanceof Cons)
+	{
+		cond = (equal(a.car, b.car) && equal(a.cdr, b.cdr));
+	}
+	else if (a instanceof Queu && b instanceof Queu)
+	{
+		cond = equal(a.exit, b.exit);
+	}
+	else if (a instanceof Func && b instanceof Func)
+	{
+		cond = (equal(a.args, b.args)
+				&& equal(a.body, b.body)
+				&& equal(a.env, b.env));
+	}
+	else if (a instanceof Spfm && b instanceof Spfm)
+	{
+		cond = (equal(a.proc, b.proc)
+				&& equal(a.name, b.name));
+	}
+	else if (Array.isArray(a) && Array.isArray(b))
+	{
+		if (a.length == b.length)
+		{
+			cond = true;
+			for (let idx = 0; idx < a.length; ++idx)
+			{
+				if (! equal(a[idx], b[idx]))
+				{
+					cond = false;
+					break;
+				}
+			}
+		}
+	}
+	else
+	{
+		cond = (a == b);
+	}
+
+	if (cond) { return t; }
 	return nil;
 }
 
 function atom (o)
 {
-	if (consp(o)) { return nil; }
+	if (o instanceof Cons) { return nil; }
 	return t;
 }
+
+function rplaca (c, v)
+{
+	c.car = v;
+}
+
+function rplacd (c, v)
+{
+	c.cdr = v;
+}
+
+function last (o)
+{
+	if (o instanceof Cons)
+	{
+		let rest = o;
+		for (; ! atom(cdr(rest)); rest = cdr(rest)) { ; }
+		return rest;
+	}
+	if (o === nil) { return nil; }
+	if (o instanceof Queu) { return o.entr; }
+	if (o instanceof Symb) { return o.name.slice(-1); }
+	if (o instanceof String
+			|| (typeof o) == "string") { return o.slice(-1); }
+	if (Array.isArray(o)) { return o[o.length - 1]; }
+	throw new Erro(ErroId.Type, `cannot apply last to ${lprint(o)}`);
+}
+
+function nconc (colla, collb)
+{
+	if (atom(colla)) { return  collb; }
+	let las = last(colla);
+	rplacd(las, collb);
+	return colla;
+}
+
+function nreverse (coll)
+{
+	let rev = nil;
+	while (! atom(coll))
+	{
+		let tmp = cdr(coll);
+		rplacd(coll, rev);
+		rev = coll;
+		coll = tmp;
+	}
+	return rev;
+}
+
+function isnil (o)
+{
+	if (o === nil) { return t; }
+	return nil;
+}
+
+function l ()
+{
+	return Array.from(arguments).reduceRight((acc, e) => cons(e, acc), nil);
+}
+
+function mapeval (args, env)
+{
+	let eargs = nil;
+	for (let rest = args; ! atom(rest); rest = cdr(rest))
+	{
+		eargs = cons(leval(car(rest), env), eargs);
+	}
+	return nreverse(eargs);
+}
+
+
+function reverse (coll)
+{
+	let rev = nil;
+	for (let rest = coll; ! atom(rest); rest = cdr(rest))
+	{
+		rev = cons(car(rest), rev);
+	}
+	return rev;
+}
+
+function find (val, coll)
+{
+	for (let rest = coll; ! atom(rest); rest = cdr(rest))
+	{
+		if (equal(val, car(rest))) { return t; }
+	}
+	return nil;
+}
+
+function findidx_eq (val, coll)
+{
+	for (let idx = 0, rest = coll; ! atom(rest); ++idx, rest = cdr(rest))
+	{
+		if (val === car(rest)) { return idx; }
+	}
+	return nil;
+}
+
+function rplaca (c, o)
+{
+	c.car = o;
+	return c;
+}
+
+function rplacd (c, o)
+{
+	c.cdr = o;
+	return c;
+}
+
+function add ()
+{
+	let nums = Array.from(arguments);
+	return nums.reduce(function (acc, n)
+			{
+				if (! Number.isFinite(n))
+				{
+					throw new Erro(ErroId.Type
+							, `cannot add ${lprint(array2cons(nums))}`);
+				}
+				return acc + n;
+			}
+			, 0);
+}
+
+function sub (head)
+{
+	let nums = Array.from(arguments).slice(1);
+	if (! Number.isFinite(head)) { throw new Erro(ErroId.Type
+			, `cannot sub ${lprint(array2cons(nums))}`); }
+	return nums.reduce(function (acc, n)
+			{
+				if (! Number.isFinite(n))
+				{
+					throw new Erro(ErroId.Type
+							, `cannot sub ${lprint(array2cons(nums))}`);
+				}
+				return acc - n;
+			}
+			, head);
+}
+
+function mul ()
+{
+	let nums = Array.from(arguments);
+	return nums.reduce(function (acc, n)
+			{
+				if (! Number.isFinite(n))
+				{
+					throw new Erro(ErroId.Type
+							, `cannot mul ${lprint(array2cons(nums))}`);
+				}
+				return acc * n;
+			}
+			, 1);
+}
+
+function div (head)
+{
+	let nums = Array.from(arguments).slice(1);
+	if (! Number.isFinite(head)) { throw new Erro(ErroId.Type
+			, `cannot div ${lprint(array2cons(nums))}`); }
+	return nums.reduce(function (acc, n)
+			{
+				if (! Number.isFinite(n))
+				{
+					throw new Erro(ErroId.Type
+							, `cannot div ${lprint(array2cons(nums))}`);
+				}
+				return acc / n;
+			}
+			, head);
+}
+
+function ldo (env, args)
+{
+	for (let rest = args; ! atom(rest) && ! atom(cdr(rest)); rest = cdr(rest))
+	{
+		leval(car(rest), env);
+	}
+	return leval(car(rest), env);
+}
+
+
+
+function inumable (str)
+{
+	return /^[+-]?\d+$/.test(str);
+}
+
+function fnumable (str)
+{
+	return /^[+-]?[0-9.]+$/.test(str);
+}
+
+function growth (tree, buff)
+{
+	let buf = buff[0];
+	let rmacs = buff[1];
+	if (buf)
+	{
+		buff[0] = "";
+		buff[1] = nil;
+		if ("nil" == buf || "NIL" == buf)
+		{
+			return cons(wrap_readmacros(nil, rmacs), tree);
+		}
+		if (inumable(buf))
+		{
+			return cons(wrap_readmacros(parseInt(buf, 10), rmacs), tree);
+		}
+		if (fnumable(buf))
+		{
+			return cons(wrap_readmacros(parseFloat(buf), rmacs), tree);
+		}
+		return cons(wrap_readmacros(new Symb(buf), rmacs), tree);
+	}
+	return tree;
+}
+
+function find_co_paren (code)
+{
+	let sflg = false;
+	let layer = 1;
+	for (let idx = 0; idx < code.length; ++idx)
+	{
+		let c = code.charAt(idx);
+		if (! sflg && "(" == c)
+		{
+			++layer;
+		}
+		else if (! sflg && ")" == c)
+		{
+			--layer;
+		}
+		else if ("\\" == c)
+		{
+			++idx;
+		}
+		else if ("\"" == c)
+		{
+			sflg = ! sflg;
+		}
+
+		if (layer < 1) { return idx; }
+	}
+	throw new Erro(ErroId.Syntax, "not found close parenthesis.");
+}
+
+function find_co_bracket (code)
+{
+	let sflg = false;
+	let layer = 1;
+	for (let idx = 0; idx < code.length; ++idx)
+	{
+		let c = code.charAt(idx);
+		if (! sflg && "[" == c)
+		{
+			++layer;
+		}
+		else if (! sflg && "]" == c)
+		{
+			--layer;
+		}
+		else if ("\\" == c)
+		{
+			++idx;
+		}
+		else if ("\"" == c)
+		{
+			sflg = ! sflg;
+		}
+
+		if (layer < 1) { return idx; }
+	}
+	throw new Erro(ErroId.Syntax, "not found close brackets.");
+}
+
+function cons2array (c)
+{
+	arr = [];
+	for (let rest = c; ! atom(rest); rest = cdr(rest))
+	{
+		arr.push(car(rest));
+	}
+	return arr;
+}
+
+function array2cons (l)
+{
+	return nreverse(l.reduce((acc, e) => cons(e, acc), nil));
+}
+
+function bind_tree (treea, treeb)
+{
+	if (treea)
+	{
+		if (atom(treea)) { return l(cons(treea, treeb)); }
+		if (atom(treeb) && treeb)
+		{
+			throw new Erro(ErroId.Syntax
+					, `cannot bind: ${lprint(treea)} and ${lprint(treeb)}`);
+		}
+		try
+		{
+			return nconc(bind_tree(car(treea), car(treeb))
+					, bind_tree(cdr(treea), cdr(treeb)));
+		}
+		catch (erro)
+		{
+			if (erro instanceof Erro)
+			{
+				throw new Erro(ErroId.Syntax
+						, `cannot bind: ${lprint(treea)} and ${lprint(treeb)}`);
+			}
+			throw erro;
+		}
+	}
+	return nil;
+}
+
+function assoc (alist, key)
+{
+	for (let rest = alist; ! atom(rest); rest = cdr(rest))
+	{
+		let e = car(rest);
+		if (equal(car(e), key)) { return e; }
+	}
+	return null;
+}
+
+function assocdr (alist, key)
+{
+	let asc = assoc(alist, key);
+	if (asc) { return cdr(asc) }
+	return null;
+}
+
+function seekenv (env, sym)
+{
+	for (let rest = env; ! atom(rest); rest = cdr(rest))
+	{
+		let val = assocdr(car(rest), sym);
+		if (val != null)
+		{
+			return val;
+		}
+	}
+	throw new Erro(ErroId.Symbol, `${lprint(sym)} is not defined.`);
+}
+
+function wrap_readmacros (o, rmacs)
+{
+	let wraped = o;
+	for (let rest = rmacs; ! atom(rest); rest = cdr(rest))
+	{
+		wraped = l(car(rest), wraped);
+	}
+	return wraped;
+}
+
+function lread (code)
+{
+	let tree = nil;
+	let buff = ["", nil];
+	for (let idx = 0; idx < code.length; ++idx)
+	{
+		let c = code.charAt(idx);
+		if ("(" == c)
+		{
+			let co = find_co_paren(code.slice(idx + 1));
+			tree = growth(tree, buff)
+			tree = cons(wrap_readmacros(lread(code.slice(idx + 1, idx + co + 1))
+						, buff[1]), tree);
+			buff = ["", nil];
+			idx += co + 1
+		}
+		else if (")" == c)
+		{
+			throw new Erro(ErrorId.Syntax, "found excess close parenthesis.");
+		}
+		else if ("[" == c)
+		{
+			let co = find_co_bracket(code.slice(idx + 1));
+			tree = growth(tree, buff);
+			invec = lread(code.slice(idx + 1, idx + co + 1));
+			if (buff[1])
+			{
+				tree = cons(l(new Symb("to-vect")
+							, wrap_readmacros(invec, buff[1])), tree);
+			}
+			else
+			{
+				tree = cons(cons(new Symb("vect"), invec), tree);
+			}
+			buff = ["", nil];
+			idx += co + 1;
+		}
+		else if ("]" == c)
+		{
+			throw new Erro(ErroId.Syntax, "found excess close brackets.");
+		}
+		else if (" " == c)
+		{
+			tree = growth(tree, buff);
+		}
+		else if (";" == c)
+		{
+			tree = growth(tree, buff);
+			for (; idx < code.length && "\n" != code.charAt(idx); ++idx) { ; }
+		}
+		else if ("'" == c)
+		{
+			tree = growth(tree, buff);
+			buff[1] = cons(new Symb("quote"), buff[1]);
+		}
+		else if ("`" == c)
+		{
+			tree = growth(tree, buff);
+			buff[1] = cons(new Symb("quasiquote"), buff[1]);
+		}
+		else if ("," == c)
+		{
+			tree = growth(tree, buff);
+			buff[1] = cons(new Symb("unquote"), buff[1]);
+		}
+		else if ("@" == c)
+		{
+			tree = growth(tree, buff);
+			buff[1] = cons(new Symb("splicing"), buff[1]);
+		}
+		else if ("." == c)
+		{
+			if (buff[0])
+			{
+				buff[0] += ".";
+			}
+			else
+			{
+				return nconc(reverse(cdr(tree)), cons(car(tree)
+							, car(lread(code.slice(idx + 1)))));
+			}
+		}
+		else
+		{
+			buff[0] += c
+		}
+	}
+	tree = growth(tree, buff);
+	return nreverse(tree);
+}
+
+function lreadtop (code)
+{
+	return cons(new Symb("do"), lread(code));
+}
+
+function leval (expr, env)
+{
+	while (true)
+	{
+		if (expr instanceof Cons)
+		{
+			let args = cdr(expr);
+			let proc = leval(car(expr), env);
+			if (proc instanceof Func)
+			{
+				let expr = proc.body;
+				let env = cons(bind_tree(proc.args, mapeval(args, env)), proc.env);
+			}
+			else if (proc instanceof Spfm)
+			{
+				if ("if" == proc.name)
+				{
+					expr = (isnil(leval(car(args), env)))
+						? car(cdr(cdr(args))) : car(cdr(args));
+				}
+				else if ("do" == proc.name)
+				{
+					let rest = args;
+					for (; cdr(rest) instanceof Cons; rest = cdr(rest))
+					{
+						leval(car(rest), env);
+					}
+					expr = car(rest);
+				}
+				else if ("!" == proc.name)
+				{
+					expr = lapply(leval(car(args), env), cdr(args));
+				}
+				else
+				{
+					return proc.proc(env, args);
+				}
+			}
+			else if (proc instanceof Function || (typeof proc) == "function")
+			{
+				return lapply(proc, mapeval(args, env));
+			}
+			else
+			{
+				throw new Erro(ErroId.UnCallable, `${lprint(proc)} is not callable.`);
+			}
+		}
+		else if (expr instanceof Symb)
+		{
+			return seekenv(env, expr);
+		}
+		else
+		{
+			return expr;
+		}
+	}
+}
+
+function lapply (proc, args)
+{
+	if (proc instanceof Func)
+	{
+		return leval(proc.body, cons(bind_tree(proc.args, args), proc.env));
+	}
+	if (proc instanceof Function || (typeof proc) == "function")
+	{
+		return proc.apply(null, cons2array(args));
+	}
+	throw new Erro(ErroId.UnCallable, `${lprint(proc)} is not callable.`);
+}
+
+//function lprint (expr)
+//{
+//	let dup = seek_dup(expr, nil, nil);
+//	let s = "";
+//	for (let idx = 0, rest = dup; ! isnil(rest); ++idx, rest = cdr(rest))
+//	{
+//		s += `\$${idx} = ${lprint_rec(car(rest), dup, false)}\n`;
+//	}
+//	s += lprint_rec(expr, dup, true);
+//	return s;
+//}
+
+//function seek_dup (expr, printed,  dup)
+//{
+//	if (find(expr, printed)) { return cons(expr, dup); }
+//	if (atom(expr)) { return dup; }
+//	let pd = cons(expr, printed);
+//	return append1(seek_dup(car(expr), pd, dup), seek_dup(cdr(expr), pd, dup));
+//}
+
+//function lprint_rec (expr, dup, rec)
+//{
+//	let idx = findidx_eq(expr, dup);
+//	if (rec && ! isnil(idx)) { return `\$${idx}`; }
+//	if (isnil(expr)) { return "NIL"; }
+//	if (atom(expr))
+//	{
+//		if (expr instanceof Symb)
+//		{
+//			return expr.name;
+//		}
+//		if (expr instanceof String || (typeof expr) == "string")
+//		{
+//			return `\"${expr}\"`;
+//		}
+//		if (Array.isArray(expr))
+//		{
+//			return `[${expr.map(lprint).join(" ")}]`;
+//		}
+//		if (expr instanceof Queu)
+//		{
+//			return `/${lprint(expr.exit)}/`;
+//		}
+//		if (expr instanceof Func)
+//		{
+//			return `<Func ${lprint(expr.args)} ${lprint(expr.body)}>`;
+//		}
+//		if (expr instanceof Spfm)
+//		{
+//			return `<Spfm ${expr.name}>`;
+//		}
+//		if (expr instanceof Function || (typeof expr) == "function")
+//		{
+//			return `<Subr ${expr.name}>`;
+//		}
+//		return expr.toString();
+//	}
+//	else
+//	{
+//		return printcons_rec(expr, dup, true);
+//	}
+//
+//}
+//
+//function printcons_rec (coll, dup, rec)
+//{
+//	let a = car(coll);
+//	let d = cdr(coll);
+//	if (isnil(d)) { return `(${lprint_rec(a, dup, rec)})`; }
+//	if (atom(d))
+//	{
+//		return `(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})`;
+//	}
+//	if (isnil(findidx_eq(d, dup)))
+//	{
+//		return `(${lprint_rec(a, dup, rec)} ${lprint_rec(d, dup, rec).slice(1)}`;
+//	}
+//	return `(${lprint_rec(a, dup, rec)} ${lprint_rec(d, dup, rec)})`;
+//}
+
+function lprint (expr)
+{
+	let res = seek_dup(expr, nil, nil);
+	let printed = res.printed;
+	let dup = res.dup;
+	let s = "";
+	let idx = 0;
+	for (let rest = dup; ! atom(rest); rest = cdr(rest))
+	{
+		s += `\$${idx} = ${lprint_rec(car(rest), dup, false)}\n`;
+		++idx;
+	}
+	s += lprint_rec(expr,  dup, true);
+	return s;
+}
+
+function seek_dup (expr, printed, dup)
+{
+	if (find(expr, printed))
+	{
+		if (find(expr, dup)) { dup = cons(expr, dup); }
+		return {printed: printed, dup: dup}
+	}
+	if (expr instanceof Cons)
+	{
+		let res = seek_dup(car(expr), cons(expr, printed), dup);
+		return seek_dup(cdr(expr), res.printed, res.dup);
+	}
+	if (expr instanceof Queu)
+	{
+		return seek_dup(expr.exit, cons(expr, printed), dup);
+	}
+	if (Array.isArray(expr))
+	{
+		let res = {printed: cons(expr, printed), dup: dup};
+		for (let elm in expr)
+		{
+			res = seek_dup(elm, res.printed, res.dup);
+		}
+		return res;
+	}
+	if (expr instanceof Erro)
+	{
+		return seek_dup(expr.estr, cons(expr, printed), dup);
+	}
+	return {printed: printed, dup: dup};
+}
+
+function lprint_rec (expr, dup, rec)
+{
+	let idx = findidx_eq(expr, dup);
+	if (rec && idx) { return `\$${idx}`; }
+	if (! expr) { return "NIL"; }
+	if (expr instanceof Cons) { return printcons_rec(expr, dup, true); }
+	if (expr instanceof Symb) { return expr.name; }
+	if (expr instanceof String
+			|| (typeof expr) == "string") { return `"${expr}"`; }
+	if (Array.isArray(expr))
+	{
+		let s = expr.map(function (e)
+				{ return lprint_rec(e, dup, true); }).join(" ");
+		return `[${s}]`;
+	}
+	if (expr instanceof Queu)
+	{
+		return `/${lprint_rec(expr.exit, dup, true)}/`;
+	}
+	if (expr instanceof Func)
+	{
+		return `<Func ${lprint_rec(expr.args, dup, true)} ${lprint_rec(expr.body, dup, true)}>`;
+	}
+	if (expr instanceof Spfm)
+	{
+		return `<Spfm ${expr.name}>`;
+	}
+	if (expr instanceof Function || (typeof expr) == "function")
+	{
+		return `<Subr ${expr.name}>`;
+	}
+	return "" + expr;
+}
+
+function printcons_rec (coll, dup, rec)
+{
+	let a = car(coll);
+	let d = cdr(coll);
+	if (d === nil) { return `(${lprint_rec(a, dup, rec)})`; }
+	if (atom(d) !== nil)
+	{
+		return `(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})`;
+	}
+	if (find(d, dup) !== nil)
+	{
+		return `(${lprint_rec(a,  dup, rec)} . ${lprint_rec(d, dup, rec)})`;
+	}
+	return `(${lprint_rec(a, dup, rec)} ${lprint_rec(d, dup, rec).slice(1)}`;
+}
+
+
+function regist (name, obj)
+{
+	rplaca(genv, cons(cons(new Symb(name), obj), car(genv)));
+}
+
+regist("nil", nil);
+regist("t", t);
+regist("T", t);
+regist("cons", cons);
+regist("car", car);
+regist("cdr", cdr);
+regist("eq", eq);
+regist("equal", equal);
+regist("atom", atom);
+regist("list", l);
+regist("+", add);
+regist("-", sub);
+regist("*", mul);
+regist("/", div);
+regist("rplaca", rplaca);
+regist("rplacd", rplacd);
+regist("last", last);
+regist("nconc", nconc);
+regist("nreverse", nreverse);
+// TODO
+		
+regist("quote", new Spfm(function (env, args) { return car(args); }, "quote"));
+regist("do", new Spfm(ldo, "do"));
 

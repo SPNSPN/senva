@@ -35,18 +35,18 @@
 
 (define math::permutation
   (! letrec
-	 ((permu
-		(lambda (coll)
-		  (if coll
-			(mapcat (lambda (idx)
-					  (map (lambda (dcoll)
-							 (cons (nth coll idx)
-								   dcoll))
-						   (permu (skip coll idx))))
-					(range 0 (length coll)))
-			(list nil)))))
-	 (lambda (coll n)
-	   (mapcat permu (math::combination coll n)))))
+		  ((permu
+			 (lambda (coll)
+			   (if coll
+				 (mapcat (lambda (idx)
+						(map (lambda (dcoll)
+							   (cons (nth coll idx)
+									 dcoll))
+							 (permu (skip coll idx))))
+					  (range 0 (length coll)))
+				 (list nil)))))
+		  (lambda (coll n)
+			(mapcat permu (math::combination coll n)))))
 
 (define math::floor
   (lambda (n)

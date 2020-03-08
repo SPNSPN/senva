@@ -1291,16 +1291,17 @@ int main (int argc, char **argv)
 	ITP_CHECK("(rplacd (cons 44 55) (cons 3 nil))", "(44 3)");
 	ITP_CHECK("(last (list 3 4 5 6))", "(6)");
 	ITP_CHECK("(nconc (list 1 2 3) (list 4 5))", "(1 2 3 4 5)");
+	ITP_CHECK("(nreverse (list 1 2 3 4))", "(4 3 2 1)");
 	ITP_CHECK("(/ (+ 71 55) (- (* 2 3) 3))", "42");
-	ITP_CHECK("(/ 3 2)", "1");
+	ITP_CHECK("(/ 3 2)", "1.5");
 	ITP_CHECK("(/ 3 2.0)", "1.500000");
 	ITP_CHECK("(% 9 2)", "1");
-	ITP_CHECK("(+ 1 2 (- 10 3 4) 4 (/ 30 2 4) (* 2 2 2))", "21");
+	ITP_CHECK("(+ 1 2 (- 10 3 4) 4 (/ 30 2 5) (* 2 2 2))", "21");
 	ITP_CHECK("(< 1 2 4)", "T");
 	ITP_CHECK("(< 1 2 1)", "NIL");
 	ITP_CHECK("(> 3 2 1)", "T");
 	ITP_CHECK("(> 3 2 3)", "NIL");
-	ITP_CHECK("(int 2.0)", "2");
+	ITP_CHECK("(int 2.3)", "2");
 	ITP_CHECK("(int -555.3)", "-555");
 	ITP_CHECK("(int 123)", "123");
 	ITP_CHECK("(float 4)", "4.000000");
@@ -1452,7 +1453,14 @@ int main (int argc, char **argv)
 	ITP_CHECK("(to-list \"a\\nb\\tc\\0\")", "(97 10 98 9 99 0)");
 	ITP_CHECK("`[1 2 ,3 ,(+ 2 2) @(if (> 3 1) '(5 6) nil) @(cons 7 `(8 ,(* 3 3))) 10]"
 			, "[1 2 3 4 5 6 7 8 9 10]");
+	ITP_CHECK("((lambda (c) (list (list c c) (cons c c))) (list 1 2))"
+			, "$0 = (1 2)\n(($0 $0) ($0 . $0))");
+//	ITP_CHECK("((lambda (c v) [v c [[v c] (list v c)] (list (list c v) [c v])]) (list 1 2) [1 2])"
+//			, "$0 = (1 2)\n$1 = [1 2]\n[$1 $0 [[$1 $0] ($1 $0)] (($0 $1) [$0 $1])]");
+	ITP_CHECK("((lambda (rpc) (rplacd rpc rpc)) (list 1 2))", "$0 = (1 . $0)\n$0");
+//	ITP_CHECK("((lambda (rpv) (setat rpv 1 rpv)) [1 2])", "$0 = [1 $0]\n$0");
 	ITP_CHECK("(processor)", "c++");
+//	ITP_CHECK("(environment)", genv);
 	ITP_CHECK("(load \"senva/test.snv\")", "NIL");
 
 

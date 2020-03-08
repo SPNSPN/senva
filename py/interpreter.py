@@ -30,10 +30,10 @@ class Cons:
 		self.cdr = d
 	
 	def __eq__ (self, a):
-		return isinstance(a, Cons) and self.car == a.car and self.cdr == a.cdr
+		return (self is a) or (isinstance(a, Cons) and self.car == a.car and self.cdr == a.cdr)
 
 	def __str__ (self):
-		return "({0} . {1})".format(lprint(self.car), lprint(self.cdr))
+		return lprint(self)
 
 class Queu:
 	def __init__ (self):
@@ -105,12 +105,12 @@ class Func:
 		return "<Func {0} {1}>".format(lprint(self.args), lprint(self.body))
 
 class Erro (Exception):
-	def __init__ (self, eid, message):
+	def __init__ (self, eid, estr):
 		self.eid = eid
-		self.message = message
+		self.estr = estr
 
 	def __str__ (self):
-		return "<Erro \"{0}\">".format(self.message)
+		return "<Erro \"{0}\">".format(self.estr)
 
 class Void:
 	pass
@@ -150,7 +150,7 @@ def eq (a, b):
 	if a is b:
 		return t
 	else:
-		if isinstance(a, Symb) and a == b:
+		if isinstance(a, Symb) and isinstance(b, Symb) and a.name == b.name:
 			return t
 		return nil
 
@@ -161,7 +161,7 @@ def equal (a, b):
 		return nil
 
 def atom (o):
-	if Symb("<cons>") == ltype(o):
+	if isinstance(o, Cons):
 		return nil
 	return t
 
@@ -196,27 +196,40 @@ def mul (*nums):
 		acc *= n
 	return acc
 
+#def div (head, *nums):
+#	def fdiv ():
+#		acc = head
+#		for n in nums:
+#			if not (isinstance(n, int) or isinstance(n, float)):
+#				raise Erro(ErroId.Type, "cannot div "
+#						+ lprint(cons(head, array2cons(nums))))
+#			acc /= n
+#		return acc
+#
+#	if isinstance(head, float):
+#		return fdiv()
+#	if not isinstance(head, int):
+#		raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, array2cons(nums))))
+#	acc = head
+#	for n in nums:
+#		if not (isinstance(n, int) or isinstance(n, float)):
+#			raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, array2cons(nums))))
+#		if isinstance(n, float):
+#			return fdiv()
+#		acc //= n
+#	return acc
 def div (head, *nums):
-	def fdiv ():
-		acc = head
-		for n in nums:
-			if not (isinstance(n, int) or isinstance(n, float)):
-				raise Erro(ErroId.Type, "cannot div "
-						+ lprint(cons(head, array2cons(nums))))
-			acc /= n
-		return acc
-
-	if isinstance(head, float):
-		return fdiv()
-	if not isinstance(head, int):
+	if not (isinstance(head, int) or isinstance(head, float)):
 		raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, array2cons(nums))))
 	acc = head
+	iacc = int(head)
 	for n in nums:
 		if not (isinstance(n, int) or isinstance(n, float)):
 			raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, array2cons(nums))))
-		if isinstance(n, float):
-			return fdiv()
-		acc //= n
+		acc /= n
+		iacc //= n
+	if acc == iacc:
+		return iacc
 	return acc
 
 def mod (a, b):
@@ -387,8 +400,8 @@ def lread (code):
 	while idx < len(code):
 		c = code[idx]
 		if "(" == c:
-			tree = growth(tree, buff)
 			co = find_co_paren(code[idx + 1:])
+			tree = growth(tree, buff)
 			tree = cons(wrap_readmacros(lread(code[idx + 1: idx + co + 1])
 						, buff[1]), tree)
 			buff = ["", nil]
@@ -398,12 +411,12 @@ def lread (code):
 		elif "[" == c:
 			tree = growth(tree, buff)
 			co = find_co_bracket(code[idx + 1:])
-			buff[0] = lread(code[idx + 1: idx + co + 1])
+			invec = lread(code[idx + 1: idx + co + 1])
 			if buff[1]:
-				tree = cons(l(Symb("to-vect"), wrap_readmacros(buff[0], buff[1]))
+				tree = cons(l(Symb("to-vect"), wrap_readmacros(invec, buff[1]))
 						, tree)
 			else:
-				tree = cons(cons(Symb("vect"), buff[0]), tree)
+				tree = cons(cons(Symb("vect"), invec), tree)
 			buff = ["", nil]
 			idx += co + 1
 		elif "]" == c:
@@ -436,7 +449,7 @@ def lread (code):
 			if buff[0]:
 				buff[0] += "."
 			else:
-				return append(reverse(cdr(tree))
+				return append1(reverse(cdr(tree))
 						, cons(car(tree), car(lread(code[idx + 1:]))))
 		else:
 			buff[0] += c
@@ -456,7 +469,7 @@ def leval (expr, env):
 				proc = leval(car(expr), env)
 				if isinstance(proc, Func):
 					expr = proc.body
-					env = cons(bind_tree(proc.args, mapeval(args, env)),  proc.env)
+					env = cons(bind_tree(proc.args, mapeval(args, env)), proc.env)
 				elif isinstance(proc, Spfm):
 					if "if" == proc.name:
 						if leval(car(args), env) is nil:
@@ -483,7 +496,7 @@ def leval (expr, env):
 				return expr
 	except Exception as err:
 		# for debug
-		print("E: at {0}".format(lprint(expr)))
+		# print("E: at {0}".format(lprint(expr)))
 		raise err
 
 def lapply (proc, args):
@@ -518,7 +531,7 @@ def lcatch (env, args):
 	try:
 		return leval(car(cdr(args)), env)
 	except Erro as erro:
-		return lapply(exce, l(erro.eid, leval(erro.message, env)))
+		return lapply(exce, l(erro.eid, leval(erro.estr, env)))
 
 def llprin (*args):
 	for a in args:
@@ -574,28 +587,36 @@ def processor ():
 	return Symb("python")
 
 def lprint (expr):
-	dup = seek_dup(expr, nil, nil)
+	printed, dup = seek_dup(expr, nil, nil)
 	s = ""
-	try:
-		rest = dup
-		idx = 0
-		while not isnil(rest):
-			s += "$" + str(idx) + " = " + lprint_rec(car(rest), dup, False) + "\n"
-			rest = cdr(rest)
-			idx += 1
-		s += lprint_rec(expr, dup, True)
-	except RecursionError as e:
-		print("RecursionError")
+	rest = dup
+	idx = 0
+	while not isnil(rest):
+		s += "$" + str(idx) + " = " + lprint_rec(car(rest), dup, False) + "\n"
+		rest = cdr(rest)
+		idx += 1
+	s += lprint_rec(expr, dup, True)
 	return s
 
 def seek_dup (expr, printed, dup):
 	if find(expr, printed):
-		return cons(expr, dup)
-	if atom(expr):
-		return dup
-	pd = cons(expr, printed)
-	return append(seek_dup(car(expr), pd, dup)
-			, seek_dup(cdr(expr), pd, dup))
+		if find(expr, dup):
+			return printed, dup
+		else:
+			return printed, cons(expr, dup)
+	if (isinstance(expr, Cons)):
+		printed, dup = seek_dup(car(expr), cons(expr, printed), dup)
+		return seek_dup(cdr(expr), printed, dup)
+	elif (isinstance(expr, Queu)):
+		return seek_dup(expr.exit, cons(expr, printed), dup)
+	elif (isinstance(expr, list)):
+		printed = cons(expr, printed)
+		for elm in expr:
+			printed, dup = seek_dup(elm, printed, dup)
+		return printed, dup
+	elif (isinstance(expr, Erro)):
+		return seek_dup(expr.estr, cons(expr, printed), dup)
+	return printed, dup
 
 def lprint_rec (expr, dup, rec):
 	idx = findidx_eq(expr, dup)
@@ -603,37 +624,36 @@ def lprint_rec (expr, dup, rec):
 		return "$" + str(idx)
 	if expr is nil:
 		return "NIL"
-	elif atom(expr):
-		if isinstance(expr, Symb):
-			return expr.name
-		elif isinstance(expr, str):
-			return "\"" + expr + "\""
-		elif isinstance(expr, list):
-			return "[{0}]".format(" ".join([lprint(e) for e in expr]))
-		elif isinstance(expr, Queu):
-			return "/{0}/".format(lprint(expr.exit))
-		elif isinstance(expr, Func):
-			return "<Func {0} {1}>".format(lprint(expr.args), lprint(expr.body))
-		elif isinstance(expr, Spfm):
-			return "<Spfm {0}>".format(expr.name)
-		elif callable(expr):
-			return "<Subr {0}>".format(expr.__name__)
-		else:
-			return str(expr)
-	else:
+	if isinstance(expr, Cons):
 		return printcons_rec(expr, dup, True)
+	if isinstance(expr, Symb):
+		return expr.name
+	if isinstance(expr, str):
+		return "\"" + expr + "\""
+	if isinstance(expr, list):
+		return "[{0}]".format(" ".join([lprint_rec(e, dup, True) for e in expr]))
+	if isinstance(expr, Queu):
+		return "/{0}/".format(lprint_rec(expr.exit, dup, True))
+	if isinstance(expr, Func):
+		return "<Func {0} {1}>".format(
+				lprint_rec(expr.args, dup, True)
+				, lprint_rec(expr.body, dup, True))
+	if isinstance(expr, Spfm):
+		return "<Spfm {0}>".format(expr.name)
+	if callable(expr):
+		return "<Subr {0}>".format(expr.__name__)
+	return str(expr)
 	
 def printcons_rec (coll, dup, rec):
 	a = car(coll)
 	d = cdr(coll)
 	if d is nil:
 		return "(" + lprint_rec(a, dup, rec) + ")"
-	elif atom(d):
+	if atom(d):
 		return "(" + lprint_rec(a, dup, rec) + " . " + lprint_rec(d, dup, rec) + ")"
-	elif findidx_eq(d, dup) is nil:
-	 	return "(" + lprint_rec(a, dup, rec) + " " + lprint_rec(d, dup, rec)[1:]
-	else:
-		return "(" + lprint_rec(a, dup, rec) + " " + lprint_rec(d, dup, rec) + ")"
+	if find(d, dup):
+		return "(" + lprint_rec(a, dup, rec) + " . " + lprint_rec(d, dup, rec) + ")"
+	return "(" + lprint_rec(a, dup, rec) + " " + lprint_rec(d, dup, rec)[1:]
 
 def lprint_raw (expr):
 	if expr is nil:
@@ -689,8 +709,8 @@ def growth (tree, buff):
 		return cons(wrap_readmacros(Symb(buf), rmacs), tree)
 	return tree
 
-def wrap_readmacros (tree, rmacs):
-	wraped = tree
+def wrap_readmacros (o, rmacs):
+	wraped = o
 	rest = rmacs
 	while not isnil(rest):
 		wraped = l(car(rest), wraped)
@@ -789,7 +809,7 @@ def bind_tree (treea, treeb):
 			raise Erro(ErroId.Syntax, "cannot bind: {0} and {1}".format(
 						lprint(treea), lprint(treeb)))
 		try:
-			return append(bind_tree(car(treea), car(treeb))
+			return append1(bind_tree(car(treea), car(treeb))
 					, bind_tree(cdr(treea), cdr(treeb)))
 		except Erro as erro:
 			raise Erro(ErroId.Syntax, "cannot bind: {0} and {1}".format(
@@ -817,7 +837,7 @@ def mapeval (args, env):
 		rest = cdr(rest)
 	return reverse(eargs)
 
-def append (colla, collb):
+def append1 (colla, collb):
 	app = collb
 	rest = reverse(colla)
 	while not isnil(rest):
@@ -838,7 +858,7 @@ def find (val, coll):
 	rest = coll
 	while not isnil(rest):
 		if val == car(rest):
-			return val
+			return t
 		rest = cdr(rest)
 	return nil
 
@@ -876,17 +896,32 @@ def last (o):
 		return o[-1]
 	if isinstance(o, list):
 		return o[-1]
-	raise Erro(ErroId.Type, "cannot apply last to {0}".format(path))
+	raise Erro(ErroId.Type, "cannot apply last to {0}".format(lprint(o)))
 	
 
-def nconc (*args):
-	if not args:
-		return nil
-	arr = args[0]
-	for a in args[1:]:
-		if not a is nil:
-			rplacd(last(arr), a)
-	return arr
+def nconc (colla, collb):
+	if isnil(colla):
+		return collb
+	las = last(colla)
+	rplacd(las, collb)
+	return colla
+#def nconc (*args):
+#	if not args:
+#		return nil
+#	arr = args[0]
+#	for a in args[1:]:
+#		if not a is nil:
+#			rplacd(last(arr), a)
+#	return arr
+
+def nreverse (coll):
+	rev = nil
+	while (not atom(coll)):
+		tmp = cdr(coll)
+		rplacd(coll, rev)
+		rev = coll
+		coll = tmp
+	return rev
 
 def lload (path):
 	if not isinstance(path, str):
@@ -1073,14 +1108,15 @@ def initenv ():
 	ienv = cons(cons(Symb("<="), le), ienv)
 	ienv = cons(cons(Symb("int"), lint), ienv)
 	ienv = cons(cons(Symb("float"), lfloat), ienv)
-	ienv = cons(cons(Symb("reverse"), reverse), ienv)
-	ienv = cons(cons(Symb("append"), append), ienv)
-	ienv = cons(cons(Symb("take"), take), ienv)
-	ienv = cons(cons(Symb("drop"), drop), ienv)
+#	ienv = cons(cons(Symb("reverse"), reverse), ienv)
+#	ienv = cons(cons(Symb("append1"), append1), ienv)
+#	ienv = cons(cons(Symb("take"), take), ienv)
+#	ienv = cons(cons(Symb("drop"), drop), ienv)
 	ienv = cons(cons(Symb("rplaca"), rplaca), ienv)
 	ienv = cons(cons(Symb("rplacd"), rplacd), ienv)
 	ienv = cons(cons(Symb("last"), last), ienv)
 	ienv = cons(cons(Symb("nconc"), nconc), ienv)
+	ienv = cons(cons(Symb("nreverse"), nreverse), ienv)
 	ienv = cons(cons(Symb("load"), lload), ienv)
 	ienv = cons(cons(Symb("vect"), vect), ienv)
 	ienv = cons(cons(Symb("queu"), queu), ienv)

@@ -1,5 +1,6 @@
 GCC := g++ -std=c++14 -Wall -O2
 CFLAGS := -Iinclude -DINITIAL_POOL_SIZE=128 -DRECURSIVE_PRINT=true -DTYPECHECK=true -DAREACHECK=true -DARGSCHECK=true -DGC_INTERVAL=100
+DBG := -g3 -O0
 
 SRC := src
 INC := include
@@ -38,10 +39,14 @@ $(REPL): $(OBJS) $(SRC)/repl.cpp
 $(BLD)/%.o: $(SRC)/%.cpp
 	$(GCC) $(CFLAGS) -c -o $@ $<
 
-.PHONY: test
+.PHONY: test testdbg
 test: $(OBJS)
 	$(GCC) $(CFLAGS) -o $(BLD)/test test/* $(OBJS)
 	$(BLD)/test
+
+testdbg: $(OBJS)
+	$(GCC) $(CFLAGS) $(DBG) -o $(BLD)/test test/* $(OBJS)
+	gdb $(BLD)/test
 
 .PHONY: clean
 clean:

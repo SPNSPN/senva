@@ -55,6 +55,7 @@ class Interpreter
 		Addr subr_rplacd (Addr);
 		Addr subr_last (Addr);
 		Addr subr_nconc (Addr);
+		Addr subr_nreverse (Addr);
 		Addr subr_add (Addr);
 		Addr subr_sub (Addr);
 		Addr subr_mul (Addr);

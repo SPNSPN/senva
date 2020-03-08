@@ -17,13 +17,13 @@ def ECHECK (code, ceid, succ):
 		s = lprint(leval(cons(Symb("do"), lread(code)), genv))
 		print(s)
 	except Erro as erro:
-		print("<Erro \"{0}\">".format(erro.message))
+		print("<Erro \"{0}\">".format(erro.estr))
 		if ceid != erro.eid:
 			raise Erro(444, "expect code: {0}, but got code: {1}".format(
 						ceid, erro.eid))
-		if succ != erro.message:
+		if succ != erro.estr:
 			raise Erro(444, "expect mess: {0}, but got mess: {1}".format(
-						succ, erro.message))
+						succ, erro.estr))
 		return nil
 	raise Erro(4444, "not got erro!")
 			
@@ -54,16 +54,17 @@ CHECK("(rplaca (cons nil 44) 34)", "(34 . 44)")
 CHECK("(rplacd (cons 44 55) (cons 3 nil))", "(44 3)")
 CHECK("(last (list 1 2 3 4))", "(4)")
 CHECK("(nconc (list 1 2 3) (list 4 5))", "(1 2 3 4 5)")
+CHECK("(nreverse (list 1 2 3 4))", "(4 3 2 1)")
 CHECK("(/ (+ 71 55) (- (* 2 3) 3))", "42")
-CHECK("(/ 3 2)", "1")
+CHECK("(/ 3 2)", "1.5")
 CHECK("(/ 3 2.0)", "1.5")
 CHECK("(% 9 2)", "1")
-CHECK("(+ 1 2 (- 10 3 4) 4 (/ 30 2 4) (* 2 2 2))", "21")
+CHECK("(+ 1 2 (- 10 3 4) 4 (/ 30 2 5) (* 2 2 2))", "21")
 CHECK("(< 1 2 4)", "T")
 CHECK("(< 1 2 1)", "NIL")
 CHECK("(> 3 2 1)", "T")
 CHECK("(> 3 2 3)", "NIL")
-CHECK("(int 2.0)", "2")
+CHECK("(int 2.3)", "2")
 CHECK("(int -555.3)", "-555")
 CHECK("(int 123)", "123")
 CHECK("(float 4)", "4.0")
@@ -202,14 +203,20 @@ ECHECK("(setat \"ABC\" 1 '(1 . 2))", ErroId.Type, "cannot setat (1 . 2) to \"ABC
 CHECK("(to-list \"a\\nb\\tc\\0\")", "(97 10 98 9 99 0)")
 CHECK("`[1 2 ,3 ,(+ 2 2) @(if (> 3 1) '(5 6) nil) @(cons 7 `(8 ,(* 3 3))) 10]"
 		, "[1 2 3 4 5 6 7 8 9 10]")
+CHECK("((lambda (c) (list (list c c) (cons c c))) (list 1 2))"\
+		, "$0 = (1 2)\n(($0 $0) ($0 . $0))")
+CHECK("((lambda (c v) [v c [[v c] (list v c)] (list (list c v) [c v])]) (list 1 2) [1 2])"\
+		, "$0 = (1 2)\n$1 = [1 2]\n[$1 $0 [[$1 $0] ($1 $0)] (($0 $1) [$0 $1])]")
+CHECK("((lambda (rpc) (rplacd rpc rpc)) (list 1 2))", "$0 = (1 . $0)\n$0")
+CHECK("((lambda (rpv) (setat rpv 1 rpv)) [1 2])", "$0 = [1 $0]\n$0")
 CHECK("(processor)", "python")
 CHECK("(load \"senva/test.snv\")", "NIL")
 
-CHECK("(reverse (list 1 2 3 4))", "(4 3 2 1)")
-CHECK("(append (list 1 2 3 4) (list 5 6 7 8))", "(1 2 3 4 5 6 7 8)")
-CHECK("(take (list 1 2 3 4) 2)", "(1 2)")
-CHECK("(drop (list 1 2 3 4) 2)", "(3 4)")
+#CHECK("(reverse (list 1 2 3 4))", "(4 3 2 1)")
+#CHECK("(append1 (list 1 2 3 4) (list 5 6 7 8))", "(1 2 3 4 5 6 7 8)")
+#CHECK("(take (list 1 2 3 4) 2)", "(1 2)")
+#CHECK("(drop (list 1 2 3 4) 2)", "(3 4)")
+CHECK("(environment)", lprint(genv))
 CHECK("((py len) (vect 1 2 3 4 5))", "5")
-CHECK("(environment)", None)
 CHECK("(define m (import \"math\")) ((-> m ceil) 2.3)", "3")
 

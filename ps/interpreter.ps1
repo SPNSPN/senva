@@ -1114,6 +1114,33 @@ regist_subr $genv { param($args_);`
 	}
 	return $acc;
 } "*";
+#regist_subr $genv { param($args_);`
+#	if (isnil $args_) { return 0; }
+#	if (-not (isnum (car $args_)))
+#	{
+#		lthrow $erroid["Type"] ("cannot div " + (lprint $args_));
+#	}
+#	$acc = car $args_;
+#	$fflg = $nil;
+#	for ($rest = cdr $args_; -not (atom $rest); $rest = cdr $rest)
+#	{
+#		$n = car $rest;
+#		if (-not (isnum $n))
+#		{
+#			lthrow $erroid["Type"] ("cannot div " + (lprint $args_));
+#		}
+#		if ($n -is [double]) { $fflg = $t; }
+#		if (isnil $fflg)
+#		{
+#			$acc = [math]::truncate($acc / $n);
+#		}
+#		else
+#		{
+#			$acc /= $n;
+#		}
+#	}
+#	return $acc;
+#} "/";
 regist_subr $genv { param($args_);`
 	if (isnil $args_) { return 0; }
 	if (-not (isnum (car $args_)))
@@ -1121,7 +1148,6 @@ regist_subr $genv { param($args_);`
 		lthrow $erroid["Type"] ("cannot div " + (lprint $args_));
 	}
 	$acc = car $args_;
-	$fflg = $nil;
 	for ($rest = cdr $args_; -not (atom $rest); $rest = cdr $rest)
 	{
 		$n = car $rest;
@@ -1129,15 +1155,7 @@ regist_subr $genv { param($args_);`
 		{
 			lthrow $erroid["Type"] ("cannot div " + (lprint $args_));
 		}
-		if ($n -is [double]) { $fflg = $t; }
-		if (isnil $fflg)
-		{
-			$acc = [math]::truncate($acc / $n);
-		}
-		else
-		{
-			$acc /= $n;
-		}
+		$acc /= $n;
 	}
 	return $acc;
 } "/";

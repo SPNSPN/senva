@@ -33,6 +33,7 @@ Interpreter::Interpreter ()
 	subr.push_back(&Interpreter::subr_rplacd);
 	subr.push_back(&Interpreter::subr_last);
 	subr.push_back(&Interpreter::subr_nconc);
+	subr.push_back(&Interpreter::subr_nreverse);
 	subr.push_back(&Interpreter::subr_add);
 	subr.push_back(&Interpreter::subr_sub);
 	subr.push_back(&Interpreter::subr_mul);
@@ -141,6 +142,11 @@ Interpreter::Interpreter ()
 				pool.make_cons(pool.make_symb("nconc")
 					, pool.make_subr("nconc"
 						, findidx<Subr>(subr, &Interpreter::subr_nconc)))
+				, pool.getcar(genv)));
+	pool.setcar(genv, pool.make_cons(
+				pool.make_cons(pool.make_symb("nreverse")
+					, pool.make_subr("nreverse"
+						, findidx<Subr>(subr, &Interpreter::subr_nreverse)))
 				, pool.getcar(genv)));
 	pool.setcar(genv, pool.make_cons(
 				pool.make_cons(pool.make_symb("+")
@@ -485,6 +491,20 @@ Addr Interpreter::subr_nconc (Addr args)
 	return pool.nconccons(a, subr_nconc(d));
 }
 
+Addr Interpreter::subr_nreverse (Addr args)
+{
+	Addr coll = pool.getcar(args);
+	Addr rev = Pool::nil;
+	while (pool.consp(coll))
+	{
+		Addr tmp = pool.getcdr(coll);
+		pool.setcdr(coll, rev);
+		rev = coll;
+		coll = tmp;
+	}
+	return rev;
+}
+
 Addr Interpreter::subr_add (Addr args)
 {
 	Addr acci = 0;
@@ -621,25 +641,28 @@ Addr Interpreter::subr_div (Addr args)
 
 	if (Pool::InumT == typ and Pool::InumT == typa)
 	{
-		return pool.make_inum(pool.getnum(n) / pool.getnum(na));
+		Fixnum in = pool.getnum(n);
+		Fixnum ina = pool.getnum(na);
+		if (in % ina == 0)
+		{
+			return pool.make_inum(in / ina);
+		}
+		return pool.make_fnum((double)(in) / (double)(ina));
 	}
-	else if (Pool::FnumT == typ and Pool::InumT == typa)
+	if (Pool::FnumT == typ and Pool::InumT == typa)
 	{
 		return pool.make_fnum(pool.getfnum(n) / pool.getnum(na));
 	}
-	else if (Pool::InumT == typ and Pool::FnumT == typa)
+	if (Pool::InumT == typ and Pool::FnumT == typa)
 	{
 		return pool.make_fnum(pool.getnum(n) / pool.getfnum(na));
 	}
-	else if (Pool::FnumT == typ and Pool::FnumT == typa)
+	if (Pool::FnumT == typ and Pool::FnumT == typa)
 	{
 		return pool.make_fnum(pool.getfnum(n) / pool.getfnum(na));
 	}
-	else
-	{
-		return pool.make_erro(Type
-				, pool.make_strn(std::string("cannot div ") + print(args)));
-	}
+	return pool.make_erro(Type
+			, pool.make_strn(std::string("cannot div ") + print(args)));
 }
 
 Addr Interpreter::subr_mod (Addr args)
@@ -1212,6 +1235,7 @@ Addr Interpreter::subr_getc (Addr args)
 {
 	return pool.make_inum(getchar());
 }
+
 
 Addr Interpreter::spfm_if (Addr args, Addr env)
 {
