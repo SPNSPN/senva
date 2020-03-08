@@ -519,6 +519,19 @@ function nconc ($a, $b)
 	return $a;
 }
 
+function nreverse ($coll)
+{
+	$rev = $nil;
+	while (-not (atom $coll))
+	{
+		$tmp = cdr $coll;
+		[void](rplacd $coll $rev);
+		$rev = $coll;
+		$coll = $tmp;
+	}
+	return $rev;
+}
+
 function append1 ($a, $b)
 {
 	$ret = $b;
@@ -1040,6 +1053,8 @@ regist_subr $genv { param($args_); return (length (car $args_)); } "length";
 regist_subr $genv { param($args_); return (reverse (car $args_)); } "reverse";
 regist_subr $genv { param($args_);`
 	return (nconc (car $args_) (car (cdr $args_))); } "nconc";
+regist_subr $genv { param($args_);`
+	return (nreverse (car $args_)); } "nreverse";
 regist_subr $genv { param($args_);`
 	$ret = $nil;
 	for ($rest = reverse (car $args_); -not (atom $rest); $rest = cdr $rest)
