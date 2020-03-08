@@ -1,14 +1,82 @@
 using System;
-using System.ComponentModel;
-using System.Drawing;
-using System.Windows.Forms;
 
 namespace Senva
 {
-class Interpreter : Form
+public interface ICons
 {
+	object car ();
+	object cdr ();
+}
+
+class Nil : ICons
+{
+	public Nil ()
+	{
+	}
+
+	public object car ()
+	{
+		return this;
+	}
+
+	public object cdr ()
+	{
+		return this;
+	}
+}
+
+class Symb
+{
+	public string name;
+	public Symb (string name_)
+	{
+		this.name = name_;
+	}
+}
+
+class Cons : ICons
+{
+	private object a;
+	private object d;
+
+	public Cons (object a_, object d_)
+	{
+		this.a = a_;
+		this.d = d_;
+	}
+
+	public object car ()
+	{
+		return this.a;
+	}
+
+	public object cdr ()
+	{
+		return this.d;
+	}
+}
+
+class Interpreter
+{
+	public Nil nil;
 	public Interpreter ()
 	{
+		this.nil = new Nil();
+	}
+
+	public ICons read (string code)
+	{
+		return nil; // TODO
+	}
+
+	public ICons eval (ICons expr)
+	{
+		return expr; // TODO
+	}
+
+	public string print (ICons expr)
+	{
+		return "nil"; // TODO
 	}
 }
 }
