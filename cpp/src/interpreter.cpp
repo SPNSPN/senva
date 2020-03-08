@@ -641,25 +641,28 @@ Addr Interpreter::subr_div (Addr args)
 
 	if (Pool::InumT == typ and Pool::InumT == typa)
 	{
-		return pool.make_inum(pool.getnum(n) / pool.getnum(na));
+		Fixnum in = pool.getnum(n);
+		Fixnum ina = pool.getnum(na);
+		if (in % ina == 0)
+		{
+			return pool.make_inum(in / ina);
+		}
+		return pool.make_fnum((double)(in) / (double)(ina));
 	}
-	else if (Pool::FnumT == typ and Pool::InumT == typa)
+	if (Pool::FnumT == typ and Pool::InumT == typa)
 	{
 		return pool.make_fnum(pool.getfnum(n) / pool.getnum(na));
 	}
-	else if (Pool::InumT == typ and Pool::FnumT == typa)
+	if (Pool::InumT == typ and Pool::FnumT == typa)
 	{
 		return pool.make_fnum(pool.getnum(n) / pool.getfnum(na));
 	}
-	else if (Pool::FnumT == typ and Pool::FnumT == typa)
+	if (Pool::FnumT == typ and Pool::FnumT == typa)
 	{
 		return pool.make_fnum(pool.getfnum(n) / pool.getfnum(na));
 	}
-	else
-	{
-		return pool.make_erro(Type
-				, pool.make_strn(std::string("cannot div ") + print(args)));
-	}
+	return pool.make_erro(Type
+			, pool.make_strn(std::string("cannot div ") + print(args)));
 }
 
 Addr Interpreter::subr_mod (Addr args)

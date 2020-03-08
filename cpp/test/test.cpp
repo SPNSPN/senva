@@ -1293,15 +1293,15 @@ int main (int argc, char **argv)
 	ITP_CHECK("(nconc (list 1 2 3) (list 4 5))", "(1 2 3 4 5)");
 	ITP_CHECK("(nreverse (list 1 2 3 4))", "(4 3 2 1)");
 	ITP_CHECK("(/ (+ 71 55) (- (* 2 3) 3))", "42");
-	ITP_CHECK("(/ 3 2)", "1");
+	ITP_CHECK("(/ 3 2)", "1.5");
 	ITP_CHECK("(/ 3 2.0)", "1.500000");
 	ITP_CHECK("(% 9 2)", "1");
-	ITP_CHECK("(+ 1 2 (- 10 3 4) 4 (/ 30 2 4) (* 2 2 2))", "21");
+	ITP_CHECK("(+ 1 2 (- 10 3 4) 4 (/ 30 2 5) (* 2 2 2))", "21");
 	ITP_CHECK("(< 1 2 4)", "T");
 	ITP_CHECK("(< 1 2 1)", "NIL");
 	ITP_CHECK("(> 3 2 1)", "T");
 	ITP_CHECK("(> 3 2 3)", "NIL");
-	ITP_CHECK("(int 2.0)", "2");
+	ITP_CHECK("(int 2.3)", "2");
 	ITP_CHECK("(int -555.3)", "-555");
 	ITP_CHECK("(int 123)", "123");
 	ITP_CHECK("(float 4)", "4.000000");

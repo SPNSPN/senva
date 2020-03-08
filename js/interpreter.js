@@ -127,6 +127,7 @@ function cdr (o)
 function eq (a, b)
 {
 	if (a === b) { return t; }
+	if ((a instanceof Symb) && (b instanceof Symb) && (a.name == b.name)) { return t; }
 	return nil;
 }
 
@@ -186,6 +187,54 @@ function atom (o)
 	return t;
 }
 
+function rplaca (c, v)
+{
+	c.car = v;
+}
+
+function rplacd (c, v)
+{
+	c.cdr = v;
+}
+
+function last (o)
+{
+	if (o instanceof Cons)
+	{
+		let rest = o;
+		for (; ! atom(cdr(rest)); rest = cdr(rest)) { ; }
+		return rest;
+	}
+	if (o === nil) { return nil; }
+	if (o instanceof Queu) { return o.entr; }
+	if (o instanceof Symb) { return o.name.slice(-1); }
+	if (o instanceof String
+			|| (typeof o) == "string") { return o.slice(-1); }
+	if (Array.isArray(o)) { return o[o.length - 1]; }
+	throw new Erro(ErroId.Type, `cannot apply last to ${lprint(o)}`);
+}
+
+function nconc (colla, collb)
+{
+	if (atom(colla)) { return  collb; }
+	let las = last(colla);
+	rplacd(las, collb);
+	return colla;
+}
+
+function nreverse (coll)
+{
+	let rev = nil;
+	while (! atom(coll))
+	{
+		let tmp = cdr(coll);
+		rplacd(coll, rev);
+		rev = coll;
+		coll = tmp;
+	}
+	return rev;
+}
+
 function isnil (o)
 {
 	if (o === nil) { return t; }
@@ -200,27 +249,18 @@ function l ()
 function mapeval (args, env)
 {
 	let eargs = nil;
-	for (let rest = args; ! isnil(rest); rest = cdr(rest))
+	for (let rest = args; ! atom(rest); rest = cdr(rest))
 	{
 		eargs = cons(leval(car(rest), env), eargs);
 	}
-	return reverse(eargs);
+	return nreverse(eargs);
 }
 
-function append1 (colla, collb)
-{
-	let app = collb;
-	for (let rest = reverse(colla); ! isnil(rest); rest = cdr(rest))
-	{
-		app = cons(car(rest), app);
-	}
-	return app;
-}
 
 function reverse (coll)
 {
 	let rev = nil;
-	for (let rest = coll; ! isnil(rest); rest = cdr(rest))
+	for (let rest = coll; ! atom(rest); rest = cdr(rest))
 	{
 		rev = cons(car(rest), rev);
 	}
@@ -229,7 +269,7 @@ function reverse (coll)
 
 function find (val, coll)
 {
-	for (let rest = coll; ! isnil(rest); rest = cdr(rest))
+	for (let rest = coll; ! atom(rest); rest = cdr(rest))
 	{
 		if (equal(val, car(rest))) { return t; }
 	}
@@ -238,7 +278,7 @@ function find (val, coll)
 
 function findidx_eq (val, coll)
 {
-	for (let idx = 0, rest = coll; ! isnil(rest); ++idx, rest = cdr(rest))
+	for (let idx = 0, rest = coll; ! atom(rest); ++idx, rest = cdr(rest))
 	{
 		if (val === car(rest)) { return idx; }
 	}
@@ -272,9 +312,58 @@ function add ()
 			, 0);
 }
 
+function sub (head)
+{
+	let nums = Array.from(arguments).slice(1);
+	if (! Number.isFinite(head)) { throw new Erro(ErroId.Type
+			, `cannot sub ${lprint(array2cons(nums))}`); }
+	return nums.reduce(function (acc, n)
+			{
+				if (! Number.isFinite(n))
+				{
+					throw new Erro(ErroId.Type
+							, `cannot sub ${lprint(array2cons(nums))}`);
+				}
+				return acc - n;
+			}
+			, head);
+}
+
+function mul ()
+{
+	let nums = Array.from(arguments);
+	return nums.reduce(function (acc, n)
+			{
+				if (! Number.isFinite(n))
+				{
+					throw new Erro(ErroId.Type
+							, `cannot mul ${lprint(array2cons(nums))}`);
+				}
+				return acc * n;
+			}
+			, 1);
+}
+
+function div (head)
+{
+	let nums = Array.from(arguments).slice(1);
+	if (! Number.isFinite(head)) { throw new Erro(ErroId.Type
+			, `cannot div ${lprint(array2cons(nums))}`); }
+	return nums.reduce(function (acc, n)
+			{
+				if (! Number.isFinite(n))
+				{
+					throw new Erro(ErroId.Type
+							, `cannot div ${lprint(array2cons(nums))}`);
+				}
+				return acc / n;
+			}
+			, head);
+}
+
 function ldo (env, args)
 {
-	for (let rest = args; ! isnil(rest) && ! isnil(cdr(rest)); rest = cdr(rest))
+	for (let rest = args; ! atom(rest) && ! atom(cdr(rest)); rest = cdr(rest))
 	{
 		leval(car(rest), env);
 	}
@@ -379,7 +468,7 @@ function find_co_bracket (code)
 function cons2array (c)
 {
 	arr = [];
-	for (let rest = c; ! isnil(rest); rest = cdr(rest))
+	for (let rest = c; ! atom(rest); rest = cdr(rest))
 	{
 		arr.push(car(rest));
 	}
@@ -388,7 +477,7 @@ function cons2array (c)
 
 function array2cons (l)
 {
-	return reverse(l.reduce((acc, e) => cons(e, acc), nil));
+	return nreverse(l.reduce((acc, e) => cons(e, acc), nil));
 }
 
 function bind_tree (treea, treeb)
@@ -403,7 +492,7 @@ function bind_tree (treea, treeb)
 		}
 		try
 		{
-			return append1(bind_tree(car(treea), car(treeb))
+			return nconc(bind_tree(car(treea), car(treeb))
 					, bind_tree(cdr(treea), cdr(treeb)));
 		}
 		catch (erro)
@@ -421,7 +510,7 @@ function bind_tree (treea, treeb)
 
 function assoc (alist, key)
 {
-	for (let rest = alist; ! isnil(rest); rest = cdr(rest))
+	for (let rest = alist; ! atom(rest); rest = cdr(rest))
 	{
 		let e = car(rest);
 		if (equal(car(e), key)) { return e; }
@@ -438,7 +527,7 @@ function assocdr (alist, key)
 
 function seekenv (env, sym)
 {
-	for (let rest = env; ! isnil(rest); rest = cdr(rest))
+	for (let rest = env; ! atom(rest); rest = cdr(rest))
 	{
 		let val = assocdr(car(rest), sym);
 		if (val != null)
@@ -452,7 +541,7 @@ function seekenv (env, sym)
 function wrap_readmacros (o, rmacs)
 {
 	let wraped = o;
-	for (let rest = rmacs; ! isnil(rest); rest = cdr(rest))
+	for (let rest = rmacs; ! atom(rest); rest = cdr(rest))
 	{
 		wraped = l(car(rest), wraped);
 	}
@@ -468,9 +557,9 @@ function lread (code)
 		let c = code.charAt(idx);
 		if ("(" == c)
 		{
-			let co = find_co_paren(code.substring(idx + 1));
+			let co = find_co_paren(code.slice(idx + 1));
 			tree = growth(tree, buff)
-			tree = cons(wrap_readmacros(lread(code.substring(idx + 1, idx + co + 1))
+			tree = cons(wrap_readmacros(lread(code.slice(idx + 1, idx + co + 1))
 						, buff[1]), tree);
 			buff = ["", nil];
 			idx += co + 1
@@ -481,9 +570,9 @@ function lread (code)
 		}
 		else if ("[" == c)
 		{
-			let co = find_co_bracket(code.substring(idx + 1));
+			let co = find_co_bracket(code.slice(idx + 1));
 			tree = growth(tree, buff);
-			invec = lread(code.substring(idx + 1, idx + co + 1));
+			invec = lread(code.slice(idx + 1, idx + co + 1));
 			if (buff[1])
 			{
 				tree = cons(l(new Symb("to-vect")
@@ -537,8 +626,8 @@ function lread (code)
 			}
 			else
 			{
-				return append1(reverse(cdr(tree)), cons(car(tree)
-							, car(lread(code.substring(idx + 1)))));
+				return nconc(reverse(cdr(tree)), cons(car(tree)
+							, car(lread(code.slice(idx + 1)))));
 			}
 		}
 		else
@@ -547,7 +636,7 @@ function lread (code)
 		}
 	}
 	tree = growth(tree, buff);
-	return reverse(tree);
+	return nreverse(tree);
 }
 
 function lreadtop (code)
@@ -590,7 +679,7 @@ function leval (expr, env)
 				}
 				else
 				{
-					return proc(args, env);
+					return proc.proc(env, args);
 				}
 			}
 			else if (proc instanceof Function || (typeof proc) == "function")
@@ -626,85 +715,184 @@ function lapply (proc, args)
 	throw new Erro(ErroId.UnCallable, `${lprint(proc)} is not callable.`);
 }
 
+//function lprint (expr)
+//{
+//	let dup = seek_dup(expr, nil, nil);
+//	let s = "";
+//	for (let idx = 0, rest = dup; ! isnil(rest); ++idx, rest = cdr(rest))
+//	{
+//		s += `\$${idx} = ${lprint_rec(car(rest), dup, false)}\n`;
+//	}
+//	s += lprint_rec(expr, dup, true);
+//	return s;
+//}
+
+//function seek_dup (expr, printed,  dup)
+//{
+//	if (find(expr, printed)) { return cons(expr, dup); }
+//	if (atom(expr)) { return dup; }
+//	let pd = cons(expr, printed);
+//	return append1(seek_dup(car(expr), pd, dup), seek_dup(cdr(expr), pd, dup));
+//}
+
+//function lprint_rec (expr, dup, rec)
+//{
+//	let idx = findidx_eq(expr, dup);
+//	if (rec && ! isnil(idx)) { return `\$${idx}`; }
+//	if (isnil(expr)) { return "NIL"; }
+//	if (atom(expr))
+//	{
+//		if (expr instanceof Symb)
+//		{
+//			return expr.name;
+//		}
+//		if (expr instanceof String || (typeof expr) == "string")
+//		{
+//			return `\"${expr}\"`;
+//		}
+//		if (Array.isArray(expr))
+//		{
+//			return `[${expr.map(lprint).join(" ")}]`;
+//		}
+//		if (expr instanceof Queu)
+//		{
+//			return `/${lprint(expr.exit)}/`;
+//		}
+//		if (expr instanceof Func)
+//		{
+//			return `<Func ${lprint(expr.args)} ${lprint(expr.body)}>`;
+//		}
+//		if (expr instanceof Spfm)
+//		{
+//			return `<Spfm ${expr.name}>`;
+//		}
+//		if (expr instanceof Function || (typeof expr) == "function")
+//		{
+//			return `<Subr ${expr.name}>`;
+//		}
+//		return expr.toString();
+//	}
+//	else
+//	{
+//		return printcons_rec(expr, dup, true);
+//	}
+//
+//}
+//
+//function printcons_rec (coll, dup, rec)
+//{
+//	let a = car(coll);
+//	let d = cdr(coll);
+//	if (isnil(d)) { return `(${lprint_rec(a, dup, rec)})`; }
+//	if (atom(d))
+//	{
+//		return `(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})`;
+//	}
+//	if (isnil(findidx_eq(d, dup)))
+//	{
+//		return `(${lprint_rec(a, dup, rec)} ${lprint_rec(d, dup, rec).slice(1)}`;
+//	}
+//	return `(${lprint_rec(a, dup, rec)} ${lprint_rec(d, dup, rec)})`;
+//}
+
 function lprint (expr)
 {
-	let dup = seek_dup(expr, nil, nil);
+	let res = seek_dup(expr, nil, nil);
+	let printed = res.printed;
+	let dup = res.dup;
 	let s = "";
-	for (let idx = 0, rest = dup; ! isnil(rest); ++idx, rest = cdr(rest))
+	let idx = 0;
+	for (let rest = dup; ! atom(rest); rest = cdr(rest))
 	{
 		s += `\$${idx} = ${lprint_rec(car(rest), dup, false)}\n`;
+		++idx;
 	}
-	s += lprint_rec(expr, dup, true);
+	s += lprint_rec(expr,  dup, true);
 	return s;
 }
 
-function seek_dup (expr, printed,  dup)
+function seek_dup (expr, printed, dup)
 {
-	if (find(expr, printed)) { return cons(expr, dup); }
-	if (atom(expr)) { return dup; }
-	let pd = cons(expr, printed);
-	return append1(seek_dup(car(expr), pd, dup), seek_dup(cdr(expr), pd, dup));
+	if (find(expr, printed))
+	{
+		if (find(expr, dup)) { dup = cons(expr, dup); }
+		return {printed: printed, dup: dup}
+	}
+	if (expr instanceof Cons)
+	{
+		let res = seek_dup(car(expr), cons(expr, printed), dup);
+		return seek_dup(cdr(expr), res.printed, res.dup);
+	}
+	if (expr instanceof Queu)
+	{
+		return seek_dup(expr.exit, cons(expr, printed), dup);
+	}
+	if (Array.isArray(expr))
+	{
+		let res = {printed: cons(expr, printed), dup: dup};
+		for (let elm in expr)
+		{
+			res = seek_dup(elm, res.printed, res.dup);
+		}
+		return res;
+	}
+	if (expr instanceof Erro)
+	{
+		return seek_dup(expr.estr, cons(expr, printed), dup);
+	}
+	return {printed: printed, dup: dup};
 }
 
 function lprint_rec (expr, dup, rec)
 {
 	let idx = findidx_eq(expr, dup);
-	if (rec && ! isnil(idx)) { return `\$${idx}`; }
-	if (isnil(expr)) { return "NIL"; }
-	if (atom(expr))
+	if (rec && idx) { return `\$${idx}`; }
+	if (! expr) { return "NIL"; }
+	if (expr instanceof Cons) { return printcons_rec(expr, dup, true); }
+	if (expr instanceof Symb) { return expr.name; }
+	if (expr instanceof String
+			|| (typeof expr) == "string") { return `"${expr}"`; }
+	if (Array.isArray(expr))
 	{
-		if (expr instanceof Symb)
-		{
-			return expr.name;
-		}
-		if (expr instanceof String || (typeof expr) == "string")
-		{
-			return `\"${expr}\"`;
-		}
-		if (Array.isArray(expr))
-		{
-			return `[${expr.map(lprint).join(" ")}]`;
-		}
-		if (expr instanceof Queu)
-		{
-			return `/${lprint(expr.exit)}/`;
-		}
-		if (expr instanceof Func)
-		{
-			return `<Func ${lprint(expr.args)} ${lprint(expr.body)}>`;
-		}
-		if (expr instanceof Spfm)
-		{
-			return `<Spfm ${expr.name}>`;
-		}
-		if (expr instanceof Function || (typeof expr) == "function")
-		{
-			return `<Subr ${expr.name}>`;
-		}
-		return expr.toString();
+		let s = expr.map(function (e)
+				{ return lprint_rec(e, dup, true); }).join(" ");
+		return `[${s}]`;
 	}
-	else
+	if (expr instanceof Queu)
 	{
-		return printcons_rec(expr, dup, true);
+		return `/${lprint_rec(expr.exit, dup, true)}/`;
 	}
-
+	if (expr instanceof Func)
+	{
+		return `<Func ${lprint_rec(expr.args, dup, true)} ${lprint_rec(expr.body, dup, true)}>`;
+	}
+	if (expr instanceof Spfm)
+	{
+		return `<Spfm ${expr.name}>`;
+	}
+	if (expr instanceof Function || (typeof expr) == "function")
+	{
+		return `<Subr ${expr.name}>`;
+	}
+	return "" + expr;
 }
 
 function printcons_rec (coll, dup, rec)
 {
 	let a = car(coll);
 	let d = cdr(coll);
-	if (isnil(d)) { return `(${lprint_rec(a, dup, rec)})`; }
-	if (atom(d))
+	if (d === nil) { return `(${lprint_rec(a, dup, rec)})`; }
+	if (atom(d) !== nil)
 	{
 		return `(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})`;
 	}
-	if (isnil(findidx_eq(d, dup)))
+	if (find(d, dup) !== nil)
 	{
-		return `(${lprint_rec(a, dup, rec)} ${lprint_rec(d, dup, rec).slice(1)}`;
+		return `(${lprint_rec(a,  dup, rec)} . ${lprint_rec(d, dup, rec)})`;
 	}
-	return `(${lprint_rec(a, dup, rec)} ${lprint_rec(d, dup, rec)})`;
+	return `(${lprint_rec(a, dup, rec)} ${lprint_rec(d, dup, rec).slice(1)}`;
 }
+
 
 function regist (name, obj)
 {
@@ -722,6 +910,16 @@ regist("equal", equal);
 regist("atom", atom);
 regist("list", l);
 regist("+", add);
+regist("-", sub);
+regist("*", mul);
+regist("/", div);
+regist("rplaca", rplaca);
+regist("rplacd", rplacd);
+regist("last", last);
+regist("nconc", nconc);
+regist("nreverse", nreverse);
 // TODO
 		
+regist("quote", new Spfm(function (env, args) { return car(args); }, "quote"));
 regist("do", new Spfm(ldo, "do"));
+

@@ -150,7 +150,7 @@ def eq (a, b):
 	if a is b:
 		return t
 	else:
-		if isinstance(a, Symb) and a == b:
+		if isinstance(a, Symb) and isinstance(b, Symb) and a.name == b.name:
 			return t
 		return nil
 
@@ -161,7 +161,7 @@ def equal (a, b):
 		return nil
 
 def atom (o):
-	if Symb("<cons>") == ltype(o):
+	if isinstance(o, Cons):
 		return nil
 	return t
 
@@ -196,27 +196,40 @@ def mul (*nums):
 		acc *= n
 	return acc
 
+#def div (head, *nums):
+#	def fdiv ():
+#		acc = head
+#		for n in nums:
+#			if not (isinstance(n, int) or isinstance(n, float)):
+#				raise Erro(ErroId.Type, "cannot div "
+#						+ lprint(cons(head, array2cons(nums))))
+#			acc /= n
+#		return acc
+#
+#	if isinstance(head, float):
+#		return fdiv()
+#	if not isinstance(head, int):
+#		raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, array2cons(nums))))
+#	acc = head
+#	for n in nums:
+#		if not (isinstance(n, int) or isinstance(n, float)):
+#			raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, array2cons(nums))))
+#		if isinstance(n, float):
+#			return fdiv()
+#		acc //= n
+#	return acc
 def div (head, *nums):
-	def fdiv ():
-		acc = head
-		for n in nums:
-			if not (isinstance(n, int) or isinstance(n, float)):
-				raise Erro(ErroId.Type, "cannot div "
-						+ lprint(cons(head, array2cons(nums))))
-			acc /= n
-		return acc
-
-	if isinstance(head, float):
-		return fdiv()
-	if not isinstance(head, int):
+	if not (isinstance(head, int) or isinstance(head, float)):
 		raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, array2cons(nums))))
 	acc = head
+	iacc = int(head)
 	for n in nums:
 		if not (isinstance(n, int) or isinstance(n, float)):
 			raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, array2cons(nums))))
-		if isinstance(n, float):
-			return fdiv()
-		acc //= n
+		acc /= n
+		iacc //= n
+	if acc == iacc:
+		return iacc
 	return acc
 
 def mod (a, b):
@@ -611,39 +624,36 @@ def lprint_rec (expr, dup, rec):
 		return "$" + str(idx)
 	if expr is nil:
 		return "NIL"
-	if atom(expr):
-		if isinstance(expr, Symb):
-			return expr.name
-		elif isinstance(expr, str):
-			return "\"" + expr + "\""
-		elif isinstance(expr, list):
-			return "[{0}]".format(" ".join([lprint_rec(e, dup, True) for e in expr]))
-		elif isinstance(expr, Queu):
-			return "/{0}/".format(lprint_rec(expr.exit, dup, True))
-		elif isinstance(expr, Func):
-			return "<Func {0} {1}>".format(
-					lprint_rec(expr.args, dup, True)
-					, lprint_rec(expr.body, dup, True))
-		elif isinstance(expr, Spfm):
-			return "<Spfm {0}>".format(expr.name)
-		elif callable(expr):
-			return "<Subr {0}>".format(expr.__name__)
-		else:
-			return str(expr)
-	else:
+	if isinstance(expr, Cons):
 		return printcons_rec(expr, dup, True)
+	if isinstance(expr, Symb):
+		return expr.name
+	if isinstance(expr, str):
+		return "\"" + expr + "\""
+	if isinstance(expr, list):
+		return "[{0}]".format(" ".join([lprint_rec(e, dup, True) for e in expr]))
+	if isinstance(expr, Queu):
+		return "/{0}/".format(lprint_rec(expr.exit, dup, True))
+	if isinstance(expr, Func):
+		return "<Func {0} {1}>".format(
+				lprint_rec(expr.args, dup, True)
+				, lprint_rec(expr.body, dup, True))
+	if isinstance(expr, Spfm):
+		return "<Spfm {0}>".format(expr.name)
+	if callable(expr):
+		return "<Subr {0}>".format(expr.__name__)
+	return str(expr)
 	
 def printcons_rec (coll, dup, rec):
 	a = car(coll)
 	d = cdr(coll)
 	if d is nil:
 		return "(" + lprint_rec(a, dup, rec) + ")"
-	elif atom(d):
+	if atom(d):
 		return "(" + lprint_rec(a, dup, rec) + " . " + lprint_rec(d, dup, rec) + ")"
-	elif find(d, dup):
+	if find(d, dup):
 		return "(" + lprint_rec(a, dup, rec) + " . " + lprint_rec(d, dup, rec) + ")"
-	else:
-	 	return "(" + lprint_rec(a, dup, rec) + " " + lprint_rec(d, dup, rec)[1:]
+	return "(" + lprint_rec(a, dup, rec) + " " + lprint_rec(d, dup, rec)[1:]
 
 def lprint_raw (expr):
 	if expr is nil:
@@ -886,7 +896,7 @@ def last (o):
 		return o[-1]
 	if isinstance(o, list):
 		return o[-1]
-	raise Erro(ErroId.Type, "cannot apply last to {0}".format(path))
+	raise Erro(ErroId.Type, "cannot apply last to {0}".format(lprint(o)))
 	
 
 def nconc (colla, collb):
