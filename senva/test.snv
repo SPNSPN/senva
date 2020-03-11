@@ -236,9 +236,11 @@
 (check "(take (list 1 2 3 4) 2)" '(1 2))
 (check "(drop (list 1 2 3 4) 2)" '(3 4))
 ;(check "(environment)" (environment))
-;(if (eq 'python (processor)) (check "((py len) (vect 1 2 3 4 5))" 5))
-;(if (eq 'python (processor))
-;  (check "(define m (import \"math\")) ((-> m ceil) 2.3)" 3))
+(if (eq 'python (processor)) (check "((py \"len\") (vect 1 2 3 4 5))" 5))
+(if (eq 'python (processor))
+  (check "(define m (import \"math\")) ((-> m \"ceil\") 2.3)" 3))
+(if (eq 'python (processor))
+  (check "((-> \"-\" \"join\") [\"a\" \"b\" \"c\"])" "a-b-c"))
 
 (! ns derxi
    (do

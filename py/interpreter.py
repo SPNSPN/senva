@@ -377,12 +377,10 @@ def expand_quasiquote (expr, env):
 		rest = cdr(rest)
 	return to_list(eexpr)
 
-def attr (env, args):
-	ret = leval(car(args), env)
-	rest = cdr(args)
-	while not isnil(rest):
-		ret = getattr(ret, car(rest).name)
-		rest = cdr(rest)
+def attr (obj, *anames):
+	ret = obj
+	for aname in anames:
+		ret = getattr(ret, aname)
 	return ret
 
 
@@ -928,7 +926,7 @@ def lload (path):
 		raise Erro(ErroId.Type, "cannot apply load to {0}".format(lprint(path)))
 	try:
 		with open(path, "r") as fin:
-			expr = leval(cons(Symb("do"), lread(fin.read())), genv)
+			expr = leval(lreadtop(fin.read()), genv)
 		return expr
 	except FileNotFoundError:
 		raise Erro(ErroId.FileNotFound, "not found file: {0}".format(lprint(path)))
@@ -941,61 +939,55 @@ def vect (*args):
 
 def queu (*args):
 	q = Queu()
-	q.exit = l(*args)
+	q.exit = array2cons(args)
 	q.entr = last(q.exit)
 	return q
 
 def to_list (obj):
 	if isinstance(obj, list):
-		return l(*obj)
-	elif isinstance(obj, Symb):
-		return l(*[ord(c) for c in obj.name])
-	elif isinstance(obj, str):
-		return l(*[ord(c) for c in obj])
-	elif isinstance(obj, Queu):
+		return array2cons(obj)
+	if isinstance(obj, Symb):
+		return array2cons([ord(c) for c in obj.name])
+	if isinstance(obj, str):
+		return array2cons([ord(c) for c in obj])
+	if isinstance(obj, Queu):
 		return obj.exit
-	elif isinstance(obj, Cons):
+	if isinstance(obj, Cons):
 		return obj
-	elif obj is nil:
+	if obj is nil:
 		return obj
 	raise Erro(ErroId.Type, "cannot cast {0} to ConsT.".format(lprint(obj)))
 
 def to_vect (obj):
 	if isinstance(obj, Cons):
-		rest = obj
-		vect = []
-		while not isnil(rest):
-			vect.append(car(rest))
-			rest = cdr(rest)
-		return vect
-	elif isinstance(obj, Symb):
+		return cons2array(obj)
+	if isinstance(obj, Symb):
 		return [ord(c) for c in obj.name]
-	elif isinstance(obj, str):
+	if isinstance(obj, str):
 		return [ord(c) for c in obj]
-	elif isinstance(obj, Queu):
+	if isinstance(obj, Queu):
 		return cons2array(obj.exit)
-	elif isinstance(obj, list):
+	if isinstance(obj, list):
 		return obj
-	elif obj is nil:
+	if obj is nil:
 		return []
 	raise Erro(ErroId.Type, "cannot cast {0} to VectT.".format(lprint(obj)))
 
 def to_queu (obj):
 	if isinstance(obj, Cons):
-		rest = obj
 		q = Queu()
 		q.exit = obj
 		q.entr = last(obj)
 		return q
-	elif isinstance(obj, Symb):
+	if isinstance(obj, Symb):
 		return queu(*[ord(c) for c in obj.name])
-	elif isinstance(obj, str):
+	if isinstance(obj, str):
 		return queu(*[ord(c) for c in obj])
-	elif isinstance(obj, list):
+	if isinstance(obj, list):
 		return queu(*obj)
-	elif isinstance(obj, Queu):
+	if isinstance(obj, Queu):
 		return obj
-	elif obj is nil:
+	if obj is nil:
 		return Queu()
 	raise Erro(ErroId.Type, "cannot cast {0} to QueuT.".format(lprint(obj)))
 
@@ -1007,15 +999,15 @@ def symbol (obj):
 			strn += chr(car(rest))
 			rest = cdr(rest)
 		return Symb(strn)
-	elif isinstance(obj, Queu):
+	if isinstance(obj, Queu):
 		return symbol(to_vect(obj))
-	elif isinstance(obj, list):
+	if isinstance(obj, list):
 		return Symb("".join([chr(e) for e in obj]))
-	elif isinstance(obj, str):
+	if isinstance(obj, str):
 		return Symb(obj)
-	elif isinstance(obj, Symb):
+	if isinstance(obj, Symb):
 		return obj
-	elif obj is nil:
+	if obj is nil:
 		return Symb("")
 	raise Erro(ErroId.Type, "cannot cast {0} to SymbT.".format(lprint(obj)))
 
@@ -1139,6 +1131,10 @@ def initenv ():
 	ienv = cons(cons(Symb("setat"), lsetat), ienv)
 	ienv = cons(cons(Symb("processor"), processor), ienv)
 	ienv = cons(cons(Symb("exit"), (lambda: exit())), ienv)
+	ienv = cons(cons(Symb("py"), (lambda expr: eval(expr))), ienv)
+	ienv = cons(cons(Symb("import"), (lambda mname:
+						importlib.import_module(mname))), ienv)
+	ienv = cons(cons(Symb("->"), attr), ienv)
 	ienv = cons(cons(Symb("if"), Spfm(lif, "if")), ienv)
 	ienv = cons(cons(Symb("lambda")
 				, Spfm((lambda env, args: Func(car(args), car(cdr(args)), env))
@@ -1158,10 +1154,6 @@ def initenv ():
 				, Spfm((lambda env, args:
 						leval(lapply(leval(car(args), env), cdr(args)), env))
 					, "!")), ienv)
-	ienv = cons(cons(Symb("py"), Spfm((lambda env, args: eval(car(args).name)), "py")), ienv)
-	ienv = cons(cons(Symb("import"), Spfm((lambda env, args:
-						importlib.import_module(car(args))), "import")), ienv)
-	ienv = cons(cons(Symb("->"), Spfm(attr, "->")), ienv)
 	ienv = cons(cons(Symb("do"), Spfm(ldo, "do")), ienv)
 	ienv = cons(cons(Symb("catch"), Spfm(lcatch, "catch")), ienv)
 	return ienv

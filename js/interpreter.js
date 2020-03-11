@@ -235,6 +235,103 @@ function nreverse (coll)
 	return rev;
 }
 
+function vect ()
+{
+	return Array.from(arguments);
+}
+
+function queu ()
+{
+	let q = new Queu();
+	q.exit = array2cons(Array.from(arguments));
+	q.entr = last(q.exit);
+	return q;
+}
+
+function pushqueu (q, o)
+{
+	return q.push(o);
+}
+
+function popqueu (q)
+{
+	return q.pop();
+}
+
+function concqueu (qa, qb)
+{
+	return qa.concat(qb);
+}
+
+function to_list (obj)
+{
+	if (Array.isArray(obj)) { return array2cons(obj); }
+	if (obj instanceof Symb) { return array2cons(to_vect(obj.name)); } 
+	if (obj instanceof String || (typeof obj) == "string") {
+		return array2cons(to_vect(obj)); }
+	if (obj instanceof Queu) { return obj.exit; }
+	if (obj instanceof Cons) { return obj; }
+	if (obj === nil) { return obj; }
+	throw new Erro(ErroId.Type, `cannot cast ${lprint(obj)} to ConsT.`);
+}
+
+function to_vect (obj)
+{
+	if (obj instanceof Cons) { return cons2array(obj); }
+	if (obj instanceof Symb) {
+		return obj.name.split("").map(function (c) { return c.charCodeAt(0); }); }
+	if (obj instanceof String || (typeof obj) == "string") {
+		return obj.split("").map(function (c) { return c.charCodeAt(0); }); }
+	if (obj instanceof Queu) { return cons2array(obj.exit); }
+	if (Array.isArray(obj)) { return obj; }
+	if (obj === nil) { return []; }
+	throw new Erro(ErroId.Type, `cannot cast ${lprint(obj)} to VectT.`);
+}
+
+function to_queu (obj)
+{
+	if (obj instanceof Cons)
+	{
+		let q = new Queu();
+		q.exit = obj;
+		q.entr = last(obj);
+		return q;
+	}
+	if (obj instanceof Symb) { return queu.apply(null, to_vect(obj.name)); }
+	if (obj instanceof String || (typeof obj) == "string") {
+		return queu.apply(null, to_vect(obj)); }
+	if (Array.isArray(obj)) { return queu.apply(null, obj); }
+	if (obj instanceof Queu) { return obj; }
+	if (obj === nil) { return new Queu(); }
+	throw new Erro(ErroId.Type, `cannot cast ${lprint(obj)} to QueuT.`);
+}
+
+function symbol (obj)
+{
+	if (obj instanceof Cons) {
+		return new Symb(String.fromCharCode.apply(null, cons2array(obj))); }
+	if (obj instanceof Queu) {
+		return new Symb(String.fromCharCode.apply(null, cons2array(obj.exit))); }
+	if (Array.isArray(obj)) {
+		return new Symb(String.fromCharCode.apply(null, obj)); }
+	if (obj instanceof String || (typeof obj) == "string") { return new Symb(obj); }
+	if (obj instanceof Symb) { return obj; }
+	if (obj === nil) { return new Symb(""); }
+	throw new Erro(ErroId.Type, `cannot cast ${lprint(obj)} to SymbT.`);
+}
+
+function sprint ()
+{
+	return Array.from(arguments).reduce(function (strn, e)
+			{
+				if (e instanceof String || (typeof e) == "string")
+				{
+					return strn + e;
+				}
+				return strn + lprint(e);
+			}, "");
+}
+
 function isnil (o)
 {
 	if (o === nil) { return t; }
@@ -361,6 +458,144 @@ function div (head)
 			, head);
 }
 
+function mod (a, b)
+{
+	if (! Number.isFinite(a) || ! Number.isFinite(b))
+	{
+		throw new Erro(ErroId.Type, `cannot mod ${lprint(l(a, b))}`);
+	}
+	return a % b;
+}
+
+function gt (head)
+{
+	let nums = Array.from(arguments).slice(1);
+	let a = head;
+	for (let idx = 0; idx < nums.length; ++idx)
+	{
+		if (a > nums[idx])
+		{
+			a = nums[idx];
+		}
+		else
+		{
+			return nil;
+		}
+	}
+	return t;
+}
+
+function ge (head)
+{
+	let nums = Array.from(arguments).slice(1);
+	let a = head;
+	for (let idx = 0; idx < nums.length; ++idx)
+	{
+		if (a >= nums[idx])
+		{
+			a = nums[idx];
+		}
+		else
+		{
+			return nil;
+		}
+	}
+	return t;
+}
+
+function lt (head)
+{
+	let nums = Array.from(arguments).slice(1);
+	let a = head;
+	for (let idx = 0; idx < nums.length; ++idx)
+	{
+		if (a < nums[idx])
+		{
+			a = nums[idx];
+		}
+		else
+		{
+			return nil;
+		}
+	}
+	return t;
+}
+
+function le (head)
+{
+	let nums = Array.from(arguments).slice(1);
+	let a = head;
+	for (let idx = 0; idx < nums.length; ++idx)
+	{
+		if (a <= nums[idx])
+		{
+			a = nums[idx];
+		}
+		else
+		{
+			return nil;
+		}
+	}
+	return t;
+}
+
+function lint (n)
+{
+	if (Number.isFinite(n)) { return Math.trunc(n); }
+	throw new Erro(ErroId.Type, `cannot cast ${lprint(n)} to InumT.`);
+}
+
+function lfloat (n)
+{
+	if (Number.isFinite(n)) { return n; }
+	throw new Erro(ErroId.Type, `cannot cast ${lprint(n)} to FnumT.`);
+}
+
+
+function lif (env, args)
+{
+	if (leval(car(args), env) === nil)
+	{
+		return leval(car(cdr(cdr(args))), env);
+	}
+	return leval(car(cdr(args)), env);
+}
+
+function llambda (env, args)
+{
+	return new Func(car(args), car(cdr(args)), env);
+}
+
+function ldefine (env, args)
+{
+	let sym = car(args);
+	let asc = assoc(car(genv), sym);
+	if (asc === null)
+	{
+		rplaca(genv, cons(cons(sym, leval(car(cdr(args)), env)), car(genv)));
+	}
+	else
+	{
+		rplacd(asc, leval(car(cdr(args)), env));
+	}
+	return sym;
+}
+
+function lsetq (env, args)
+{
+	let sym = car(args);
+	for (let rest = env; ! atom(rest); rest = cdr(rest))
+	{
+		let asc = assoc(car(rest), sym);
+		if (asc !== null)
+		{
+			rplacd(asc, leval(car(cdr(args)), env));
+			return cdr(asc);
+		}
+	}
+	throw new Erro(ErroId.Symbol, `${lprint(sym)} is not defined.`);
+}
+
 function ldo (env, args)
 {
 	for (let rest = args; ! atom(rest) && ! atom(cdr(rest)); rest = cdr(rest))
@@ -370,7 +605,54 @@ function ldo (env, args)
 	return leval(car(rest), env);
 }
 
+function lsyntax (env, args)
+{
+	return leval(lapply(leval(car(args), env), cdr(args)), env);
+}
 
+function lload (path)
+{
+	if (! (path instanceof String) && (typeof path) != "string")
+	{
+		throw new Erro(ErroId.Type, `cannot apply load to ${lprint(path)}`);
+	}
+	let req = new XMLHttpRequest();	
+	req.open("GET", `${location.origin}/${path}`, false);
+	req.send(null);
+	if (req.status == 200)
+	{
+		dbg = lreadtop(req.responseText);
+		console.log(`debug: ${lreadtop(req.responseText)}`);
+		return leval(lreadtop(req.responseText), genv);
+	}
+	throw new Erro(ErrId.FileNotFound, `not found file: ${lprint(path)}`);
+}
+
+
+function expand_quasiquote (expr, env)
+{
+	if (atom(expr)) { return expr; }
+	if (car(expr) instanceof Symb && car(expr).name == "unquote") {
+		return leval(car(cdr(expr)), env); }
+	let eexpr = new Queu();
+	for (let rest = expr; ! atom(rest); rest = cdr(rest))
+	{
+		if (! atom(car(rest)) && car(car(rest)) instanceof Symb
+				&& car(car(rest)).name == "splicing")
+		{
+			for (let sexpr = leval(car(cdr(car(rest))), env)
+					; ! atom(sexpr); sexpr = cdr(sexpr))
+			{
+				eexpr.push(car(sexpr));
+			}
+		}
+		else
+		{
+			eexpr.push(expand_quasiquote(car(rest), env));
+		}
+	}
+	return to_list(eexpr);
+}
 
 function inumable (str)
 {
@@ -463,6 +745,35 @@ function find_co_bracket (code)
 		if (layer < 1) { return idx; }
 	}
 	throw new Erro(ErroId.Syntax, "not found close brackets.");
+}
+
+const escape_char_table = {
+	"a": "\a"
+	, "b": "\b"
+	, "f": "\f"
+	, "n": "\n"
+	, "r": "\r"
+	, "t": "\t"
+	, "v": "\v"
+	, "0": "\0"
+};
+
+function take_string (code)
+{
+	let strn = "";
+	for (let idx = 0; idx < code.length; ++idx)
+	{
+		let c = code.charAt(idx);
+		if ("\"" == c) { return {strn: strn, inc: idx + 1}; }
+		if ("\\" == c)
+		{
+			++idx;
+			c = code.charAt(idx);
+			if (c in escape_char_table) { c = escape_char_table[c]; }
+		}
+		strn += c;
+	}
+	throw new Erro(ErroId.Syntax, "not found close double quote.");
 }
 
 function cons2array (c)
@@ -598,6 +909,14 @@ function lread (code)
 			tree = growth(tree, buff);
 			for (; idx < code.length && "\n" != code.charAt(idx); ++idx) { ; }
 		}
+		else if ("\"" == c)
+		{
+			tree = growth(tree, buff);
+			let res = take_string(code.slice(idx + 1));
+			idx += res.inc;
+			tree = cons(res.strn, tree);
+			buff = ["", nil];
+		}
 		else if ("'" == c)
 		{
 			tree = growth(tree, buff);
@@ -654,8 +973,8 @@ function leval (expr, env)
 			let proc = leval(car(expr), env);
 			if (proc instanceof Func)
 			{
-				let expr = proc.body;
-				let env = cons(bind_tree(proc.args, mapeval(args, env)), proc.env);
+				expr = proc.body;
+				env = cons(bind_tree(proc.args, mapeval(args, env)), proc.env);
 			}
 			else if (proc instanceof Spfm)
 			{
@@ -829,12 +1148,10 @@ function seek_dup (expr, printed, dup)
 	}
 	if (Array.isArray(expr))
 	{
-		let res = {printed: cons(expr, printed), dup: dup};
-		for (let elm in expr)
-		{
-			res = seek_dup(elm, res.printed, res.dup);
-		}
-		return res;
+		return expr.reduce(function (res, elm)
+				{
+					return seek_dup(elm, res.printed, res.dup);
+				}, {printed: cons(expr, printed), dup: dup});
 	}
 	if (expr instanceof Erro)
 	{
@@ -847,7 +1164,7 @@ function lprint_rec (expr, dup, rec)
 {
 	let idx = findidx_eq(expr, dup);
 	if (rec && idx) { return `\$${idx}`; }
-	if (! expr) { return "NIL"; }
+	if (expr === nil) { return "NIL"; }
 	if (expr instanceof Cons) { return printcons_rec(expr, dup, true); }
 	if (expr instanceof Symb) { return expr.name; }
 	if (expr instanceof String
@@ -913,13 +1230,39 @@ regist("+", add);
 regist("-", sub);
 regist("*", mul);
 regist("/", div);
+regist("%", mod);
+regist(">", gt);
+regist(">=", ge);
+regist("<", lt);
+regist("<=", le);
+regist("int", lint);
+regist("float", lfloat);
 regist("rplaca", rplaca);
 regist("rplacd", rplacd);
 regist("last", last);
 regist("nconc", nconc);
 regist("nreverse", nreverse);
+regist("vect", vect);
+regist("queu", queu);
+regist("pushqueu", pushqueu);
+regist("popqueu", popqueu);
+regist("concqueu", concqueu);
+regist("to-list", to_list);
+regist("to-vect", to_vect);
+regist("to-queu", to_queu);
+regist("symbol", symbol);
+regist("sprint", sprint);
+regist("apply", lapply);
+regist("load", lload);
 // TODO
 		
 regist("quote", new Spfm(function (env, args) { return car(args); }, "quote"));
+regist("quasiquote", new Spfm(function (env, args)
+			{ return expand_quasiquote(car(args), env); }, "quasiquote"));
+regist("if", new Spfm(lif, "if"));
+regist("lambda", new Spfm(llambda, "lambda"));
+regist("define", new Spfm(ldefine, "define"));
+regist("setq", new Spfm(lsetq, "setq"));
+regist("!", new Spfm(lsyntax, "!"));
 regist("do", new Spfm(ldo, "do"));
 
