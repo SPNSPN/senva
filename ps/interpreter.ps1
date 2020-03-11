@@ -324,6 +324,10 @@ function last ($c)
 	{
 		return $c.entr;
 	}
+	if (isnil $c)
+	{
+		return $nil;
+	}
 	lthrow $erroid["Type"] ("cannot apply last to " + (lprint $c));
 }
 
