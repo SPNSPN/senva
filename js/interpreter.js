@@ -124,6 +124,12 @@ function cdr (o)
 	return o.cdr;
 }
 
+function atom (o)
+{
+	if (o instanceof Cons) { return nil; }
+	return t;
+}
+
 function eq (a, b)
 {
 	if (a === b) { return t; }
@@ -179,12 +185,6 @@ function equal (a, b)
 
 	if (cond) { return t; }
 	return nil;
-}
-
-function atom (o)
-{
-	if (o instanceof Cons) { return nil; }
-	return t;
 }
 
 function rplaca (c, v)

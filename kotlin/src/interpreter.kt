@@ -218,8 +218,7 @@ fun find_co_paren (code: String): Int
 {
 	var sflg = false
 	var layer = 1
-	var idx = 0
-	while (idx < code.length)
+	for (idx in 0..code.length)
 	{
 		val c = code[idx]
 		if (! sflg && '(' == c)
@@ -232,7 +231,7 @@ fun find_co_paren (code: String): Int
 		}
 		else if ('\\' == c)
 		{
-			++idx
+			continue
 		}
 		else if ('"' == c)
 		{
@@ -240,19 +239,71 @@ fun find_co_paren (code: String): Int
 		}
 
 		if (layer < 1) { return idx }
-		++idx
 	}
 	throw Erro(ErroId.Syntax, "not found close parenthesis.")
 }
 
 fun find_co_bracket (code: String): Int
 {
-	return 0 // TODO
+	var sflg = false
+	var layer = 1
+	for (idx in 0..code.length)
+	{
+		val c = code[idx]
+		if (! sflg && '[' == c)
+		{
+			++layer
+		}
+		else if (! sflg && ']' == c)
+		{
+			--layer
+		}
+		else if ('\\' == c)
+		{
+			continue
+		}
+		else if ('"' == c)
+		{
+			sflg = ! sflg
+		}
+
+		if (layer < 1) { return idx }
+	}
+	throw Erro(ErroId.Syntax, "not found close brackets.")
 }
+
+val escape_char_table = mapOf(
+		'a' to '\a'
+		, 'b' to '\b'
+		, 'f' to '\f'
+		, 'n' to '\n'
+		, 'r' to '\r'
+		, 't' to '\t'
+		, 'v' to '\v'
+		, '0' to '\0'
+		)
 
 fun take_string (code: String): Pair<String, Int>
 {
-	return Pair("", 1) // TODO
+	var eflg = false
+	var strn = ""
+	for (idx in 0..(code.length))
+	{
+		var c = code[idx]
+		if (eflg)
+		{
+			if (escape_char_table.containsKey(c)) { c = escape_char_table[c] }
+			eflg = false
+		}
+		if ('"' == c) { return Pair(strn, idx + 1) }
+		if ('\\' == c)
+		{
+			eflg = true
+			continue
+		}
+		strn += c
+	}
+	throw Erro(ErroId.Syntax, "not found close double quote.")
 }
 
 fun cons2array (c: ICons): MutableList<Any>
@@ -292,6 +343,28 @@ fun bind_tree (treea: Any, treeb: Any): ICons
 				, "cannot bind: ${lprint(treea)} and ${lprint(treeb)}")
 	}
 	return nil
+}
+
+fun assoc (alist: ICons, key: Any): Any?
+{
+	var rest = alist
+	while (rest is Cons)
+	{
+		val e = car(rest)
+		if (equal(car(e), key)) { return e }
+		rest = cdr(rest)
+	}
+	return null
+}
+
+fun assocdr ()
+{
+	// TODO
+}
+
+fun seekenv ()
+{
+	// TODO
 }
 
 fun wrap_readmacros (o: Any, rmacs: ICons): Any
@@ -439,10 +512,45 @@ fun leval (expr_: ICons, env_: ICons): Any
 				else if ("do" == proc.name)
 				{
 					var rest = args
+					while (cdr(rest) is Cons)
+					{
+						leval(car(rest), env)
+						rest = cdr(rest)
+					}
+					expr = car(rest)
+				}
+				else if ("!" == proc.name)
+				{
+					expr = lapply(leval(car(args), env), cdr(args))
+				}
+				else
+				{
+					return proc.proc.call(env, args)
 				}
 			}
+			else if (proc is Function<*>)
+			{
+				return lapply(proc, mapeval(args, env))
+			}
+			else
+			{
+				throw Erro(ErroId.UnCallable, "${lprint(proc)} is not callable.")
+			}
+		}
+		else if (expr is Symb)
+		{
+			return seekenv(env, expr)
+		}
+		else
+		{
+			return expr
 		}
 	}
+}
+
+fun lapply ()
+{
+	// TODO
 }
 
 fun lprint (expr: Any): String
