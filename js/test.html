@@ -71,7 +71,7 @@ const do_check = function ()
 					throw new Erro(444
 							, `expect mess: ${succ}, but got mess: ${erro.estr}`);
 				}
-				return nil;
+				continue;
 			}
 			throw new Erro(4444, "not got erro!");
 		}

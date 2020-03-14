@@ -65,7 +65,7 @@ class Queu:
 	def concat (self, queu):
 		if isnil(self.entr):
 			self = queu
-		elif not isnil(queu):
+		elif isinstance(queu, Queu):
 			rplacd(self.entr, queu.exit)
 		return self
 	
@@ -311,7 +311,7 @@ def ltype (o):
 		return Symb("<vect>")
 	if isinstance(o, Queu):
 		return Symb("<queu>")
-	return nil
+	return Symb("<py {0}>".format(type(o)))
 
 
 genv = cons(nil, nil)
@@ -504,8 +504,8 @@ def lapply (proc, args):
 		return proc(*cons2array(args))
 	raise Erro(ErroId.UnCallable, lprint(proc) + " is not callable.")
 
-def lthrow (eid, mess):
-	raise Erro(eid, mess)
+def lthrow (eid, estr):
+	raise Erro(eid, estr)
 
 def lempty (coll):
 	if isinstance(coll, Nil):
@@ -525,11 +525,11 @@ def lempty (coll):
 	return nil
 
 def lcatch (env, args):
-	exce = leval(car(args), env)
+	excep = leval(car(args), env)
 	try:
 		return leval(car(cdr(args)), env)
 	except Erro as erro:
-		return lapply(exce, l(erro.eid, leval(erro.estr, env)))
+		return lapply(excep, l(erro.eid, leval(erro.estr, env)))
 
 def llprin (*args):
 	for a in args:

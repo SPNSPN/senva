@@ -59,7 +59,7 @@ function Queu ()
 			this.entr = queu.entr;
 			this.exit = queu.exit;
 		}
-		else if (! isnil(queu))
+		else if (queu instanceof Queu)
 		{
 			rplacd(this.entr, queu.exit);
 		}
@@ -216,7 +216,7 @@ function last (o)
 
 function nconc (colla, collb)
 {
-	if (atom(colla)) { return  collb; }
+	if (atom(colla)) { return collb; }
 	let las = last(colla);
 	rplacd(las, collb);
 	return colla;
@@ -413,13 +413,13 @@ function sub (head)
 {
 	let nums = Array.from(arguments).slice(1);
 	if (! Number.isFinite(head)) { throw new Erro(ErroId.Type
-			, `cannot sub ${lprint(array2cons(nums))}`); }
+			, `cannot sub ${lprint(cons(head, array2cons(nums)))}`); }
 	return nums.reduce(function (acc, n)
 			{
 				if (! Number.isFinite(n))
 				{
 					throw new Erro(ErroId.Type
-							, `cannot sub ${lprint(array2cons(nums))}`);
+							, `cannot sub ${lprint(cons(head, array2cons(nums)))}`);
 				}
 				return acc - n;
 			}
@@ -445,13 +445,13 @@ function div (head)
 {
 	let nums = Array.from(arguments).slice(1);
 	if (! Number.isFinite(head)) { throw new Erro(ErroId.Type
-			, `cannot div ${lprint(array2cons(nums))}`); }
+			, `cannot div ${lprint(cons(head, array2cons(nums)))}`); }
 	return nums.reduce(function (acc, n)
 			{
 				if (! Number.isFinite(n))
 				{
 					throw new Erro(ErroId.Type
-							, `cannot div ${lprint(array2cons(nums))}`);
+							, `cannot div ${lprint(cons(head, array2cons(nums)))}`);
 				}
 				return acc / n;
 			}
@@ -551,6 +551,26 @@ function lfloat (n)
 	throw new Erro(ErroId.Type, `cannot cast ${lprint(n)} to FnumT.`);
 }
 
+function ltype (o)
+{
+	if (o instanceof Cons) { return new Symb("<cons>"); }
+	if (o instanceof Func) { return new Symb("<func>"); }
+	if (o instanceof Spfm) { return new Symb("<spfm>"); }
+	if (o instanceof Function || (typeof o) == "function") {
+		return new Symb("<subr>"); }
+	if (o instanceof Symb) { return new Symb("<symb>"); }
+	if (o instanceof String || (typeof o) == "string") { return new Symb("<strn>"); }
+	if (Number.isFinite(o))
+	{
+		if (Number.isInteger(o)) { return new Symb("<inum>"); }
+		return new Symb("<fnum>");
+	}
+	if (o === nil) { return new Symb("<nil>"); }
+	if (Array.isArray(o)) { return new Symb("<vect>"); }
+	if (o instanceof Queu) { return new Symb("<queu>"); }
+	return new Symb(`<js ${typeof o}>`);
+}
+
 
 function lif (env, args)
 {
@@ -596,6 +616,28 @@ function lsetq (env, args)
 	throw new Erro(ErroId.Symbol, `${lprint(sym)} is not defined.`);
 }
 
+function land (env, args)
+{
+	let ret = t;
+	for (let rest = args; ! atom(rest); rest = cdr(rest))
+	{
+		ret = leval(car(rest), env);
+		if (ret === nil) { return nil; }
+	}
+	return ret;
+}
+
+function lor (env, args)
+{
+	let ret = nil;
+	for (let rest = args; ! atom(rest); rest = cdr(rest))
+	{
+		ret = leval(car(rest), env);
+		if (! ret === nil) { return ret; }
+	}
+	return nil;
+}
+
 function ldo (env, args)
 {
 	for (let rest = args; ! atom(rest) && ! atom(cdr(rest)); rest = cdr(rest))
@@ -621,11 +663,9 @@ function lload (path)
 	req.send(null);
 	if (req.status == 200)
 	{
-		dbg = lreadtop(req.responseText);
-		console.log(`debug: ${lreadtop(req.responseText)}`);
 		return leval(lreadtop(req.responseText), genv);
 	}
-	throw new Erro(ErrId.FileNotFound, `not found file: ${lprint(path)}`);
+	throw new Erro(ErroId.FileNotFound, `not found file: ${lprint(path)}`);
 }
 
 
@@ -877,7 +917,7 @@ function lread (code)
 		}
 		else if (")" == c)
 		{
-			throw new Erro(ErrorId.Syntax, "found excess close parenthesis.");
+			throw new Erro(ErroId.Syntax, "found excess close parenthesis.");
 		}
 		else if ("[" == c)
 		{
@@ -900,7 +940,7 @@ function lread (code)
 		{
 			throw new Erro(ErroId.Syntax, "found excess close brackets.");
 		}
-		else if (" " == c)
+		else if (" " == c || "\t" == c || "\n" == c)
 		{
 			tree = growth(tree, buff);
 		}
@@ -1034,6 +1074,135 @@ function lapply (proc, args)
 	throw new Erro(ErroId.UnCallable, `${lprint(proc)} is not callable.`);
 }
 
+function lthrow (eid, estr)
+{
+	throw new Erro(eid, estr)
+}
+
+function lcatch (env, args)
+{
+	let excep = leval(car(args), env);
+	try
+	{
+		return leval(car(cdr(args)), env);
+	}
+	catch (erro)
+	{
+		if (erro instanceof Erro)
+		{
+			return lapply(excep, l(erro.eid, leval(erro.estr, env)));
+		}
+		throw erro;
+	}
+}
+
+function lempty (coll)
+{
+	if (coll === nil) { return t; }
+	if (Array.isArray(coll) || coll instanceof String || (typeof coll) == "string")
+	{
+		if (coll.length < 1) { return t; }
+		return nil;
+	}
+	if (coll instanceof Queu)
+	{
+		if (coll.exit === nil) { return t; }
+		return nil;
+	}
+	if (coll instanceof Symb)
+	{
+		if (coll.name.length < 1) { return t; }
+		return nil;
+	}
+	return nil;
+}
+
+function llprin ()
+{
+	Array.from(arguments).map(function (a)
+			{
+				if (a instanceof String || (typeof a) == "string")
+				{
+					console.log(a);
+				}
+				else
+				{
+					console.log(lprint(a));
+				}
+			});
+	return nil;
+}
+
+function llprint ()
+{
+	Array.from(arguments).map(function (e) { llprin(e); });
+	console.log(" ");
+	return nil;
+}
+
+function lgetat (vect, idx)
+{
+	if (Array.isArray(vect) || vect instanceof String || (typeof vect) == "string")
+	{
+		return vect[idx];
+	}
+	if (vect instanceof Symb)
+	{
+		return new Symb(vect.name[idx]);
+	}
+	throw new Erro(ErroId.Type, `cannot apply getat to ${lprint(vect)}`);
+}
+
+function lsetat (vect, idx, val)
+{
+	if (Array.isArray(vect))
+	{
+		vect[idx] = val;
+		return vect;
+	}
+	if (vect instanceof String || (typeof vect) == "string")
+	{
+		if (Number.isInteger(val))
+		{
+			return vect.slice(0, idx) + String.fromCharCode(val)
+				+ vect.slice(idx + 1);
+		}
+		if (val instanceof String || (typeof val) == "string")
+		{
+			return vect.slice(0, idx) + val[0] + vect.slice(idx + 1);
+		}
+		if (val instanceof Symb)
+		{
+			return vect.slice(0, idx) + val.name[0] + vect.slice(idx + 1);
+		}
+		throw new Erro(ErroId.Type, `cannot setat ${lprint(val)} to ${lprint(vect)}`);
+	}
+	if (vect instanceof Symb)
+	{
+		if (Number.isInteger(val))
+		{
+			vect.name = vect.name.slice(0, idx) + String.fromCharCode(val)
+				+ vect.name.slice(idx + 1);
+		}
+		else if (val instanceof String || (typeof val) == "string")
+		{
+			vect.name = vect.name.slice(0, idx) + val[0] + vect.name.slice(idx + 1);
+		}
+		else if (val instanceof Symb)
+		{
+			vect.name = vect.name.slice(0, idx) + val.name[0]
+				+ vect.name.slice(idx + 1);
+		}
+		else
+		{
+			throw new Erro(ErroId.Type
+					, `cannot setat ${lprint(val)} to ${lprint(vect)}`);
+		}
+		return vect;
+	}
+	throw new Erro(ErroId.Type, `cannot apply setat to ${lprint(vect)}`);
+}
+
 //function lprint (expr)
 //{
 //	let dup = seek_dup(expr, nil, nil);
@@ -1117,8 +1286,8 @@ function lapply (proc, args)
 function lprint (expr)
 {
 	let res = seek_dup(expr, nil, nil);
-	let printed = res.printed;
 	let dup = res.dup;
+
 	let s = "";
 	let idx = 0;
 	for (let rest = dup; ! atom(rest); rest = cdr(rest))
@@ -1134,8 +1303,8 @@ function seek_dup (expr, printed, dup)
 {
 	if (find(expr, printed))
 	{
-		if (find(expr, dup)) { dup = cons(expr, dup); }
-		return {printed: printed, dup: dup}
+		if (find(expr, dup)) { return {printed: printed, dup: dup}; }
+		return {printed: printed, dup: cons(expr, dup)}
 	}
 	if (expr instanceof Cons)
 	{
@@ -1175,18 +1344,12 @@ function lprint_rec (expr, dup, rec)
 				{ return lprint_rec(e, dup, true); }).join(" ");
 		return `[${s}]`;
 	}
-	if (expr instanceof Queu)
-	{
-		return `/${lprint_rec(expr.exit, dup, true)}/`;
-	}
+	if (expr instanceof Queu) { return `/${lprint_rec(expr.exit, dup, true)}/`; }
 	if (expr instanceof Func)
 	{
 		return `<Func ${lprint_rec(expr.args, dup, true)} ${lprint_rec(expr.body, dup, true)}>`;
 	}
-	if (expr instanceof Spfm)
-	{
-		return `<Spfm ${expr.name}>`;
-	}
+	if (expr instanceof Spfm) { return `<Spfm ${expr.name}>`; }
 	if (expr instanceof Function || (typeof expr) == "function")
 	{
 		return `<Subr ${expr.name}>`;
@@ -1253,7 +1416,14 @@ regist("to-queu", to_queu);
 regist("symbol", symbol);
 regist("sprint", sprint);
 regist("apply", lapply);
+regist("throw", lthrow);
+regist("empty", lempty);
+regist("print", llprint);
+regist("prin", llprin);
+regist("type", ltype);
 regist("load", lload);
+regist("getat", lgetat);
+regist("setat", lsetat);
 // TODO
 		
 regist("quote", new Spfm(function (env, args) { return car(args); }, "quote"));
@@ -1263,6 +1433,9 @@ regist("if", new Spfm(lif, "if"));
 regist("lambda", new Spfm(llambda, "lambda"));
 regist("define", new Spfm(ldefine, "define"));
 regist("setq", new Spfm(lsetq, "setq"));
+regist("and", new Spfm(land, "and"));
+regist("or", new Spfm(lor, "or"));
 regist("!", new Spfm(lsyntax, "!"));
 regist("do", new Spfm(ldo, "do"));
+regist("catch", new Spfm(lcatch, "catch"));
 

@@ -56,7 +56,7 @@ class Queu ()
 	fun push (v: Any): Queu
 	{
 		val c = Cons(v, nil)
-		if (isnil(entr))
+		if (entr is Nil)
 		{
 			entr = c
 			exit = c
@@ -71,7 +71,7 @@ class Queu ()
 
 	fun pop (): Any
 	{
-		if (isnil(exit)) { return nil }
+		if (exit is Nil) { return nil }
 
 		val e = car(exit)
 		if (exit === entr)
@@ -88,48 +88,25 @@ class Queu ()
 
 	fun concat (queu: Queu): Queu
 	{
-		if (isnil(entr))
+		if (entr is Nil)
 		{
 			entr = queu.entr
 			exit = queu.exit
 		}
-		else if (! isnil(queu))
-		{
-			rplacd(entr as Cons, queu.exit)
-		}
+		rplacd(entr as Cons, queu.exit)
 		return this
 	}
 }
+
+class Spfm (val proc: Function<*>, val name: String)
+
+class Func (val args: ICons, val body: ICons, val env: ICons)
 
 fun cons (a: Any, d: Any): Cons = Cons(a, d)
 fun car (o: ICons): Any = o.car()
 fun cdr (o: ICons): Any = o.cdr()
 fun eq (a: Any, b: Any): Any = if (a === b) t else nil
 fun atom (o: Any): Any = if (o is Cons) nil else t
-
-fun append1 (colla: ICons, collb: ICons): ICons
-{
-	var app = collb
-	var rest = reverse(colla)
-	while (! isnil(rest))
-	{
-		app = cons(car(rest), app)
-		rest = cdr(rest)
-	}
-	return app
-}
-
-fun reverse (coll: ICons): ICons
-{
-	var rev: ICons = nil
-	var rest = coll
-	while (! isnil(rest))
-	{
-		rev = cons(car(rest), rev)
-		rest = cdr(rest)
-	}
-	return rev
-}
 
 fun rplaca (c: Cons, o: Any): Cons
 {
@@ -143,20 +120,55 @@ fun rplacd (c: Cons, o: Any): Cons
 	return c
 }
 
+fun last (o: ICons): ICons
+{
+	if (o is Cons)
+	{
+		var rest: ICons = o
+		while (cdr(rest) is Cons)
+		{
+			rest = cdr(rest) as Cons
+		}
+		return rest
+	}
+	return nil	
+}
+
+fun nconc (colla: ICons, collb: ICons): ICons
+{
+	if (colla is Nil) { return collb; }
+	val las = last(colla)
+	rplacd(las as Cons, collb)
+	return colla
+}
+
+fun nreverse (coll: ICons): ICons
+{
+	var ccoll: Any = coll
+	var rev: ICons = nil
+	while (ccoll is Cons)
+	{
+		val tmp = cdr(ccoll)
+		rplacd(ccoll, rev)
+		rev = ccoll
+		ccoll = tmp
+	}
+	return rev
+}
+
 fun lif () {}// TODO
 fun ldefine () {}
 fun lsetq () {}
 fun llambda () {}
 fun lquote () {}
 
-fun isnil (o: Any): Boolean = o === nil
 fun l (vararg args: Any): ICons = args.foldRight(nil
 		, fun (e: Any, acc: ICons): ICons = cons(e, acc) )
 
 fun find (v: Any, coll: ICons): Any
 {
 	var rest = coll
-	while (! isnil(rest))
+	while (rest is Cons)
 	{
 		if (v == car(rest)) { return t }
 		rest = cdr(rest) as ICons
@@ -168,7 +180,7 @@ fun findidx_eq (v: Any, coll: ICons): Any
 {
 	var idx = 0
 	var rest = coll
-	while (! isnil(rest))
+	while (rest is Cons)
 	{
 		if (v === car(rest)) { return idx }
 		++idx
@@ -184,7 +196,7 @@ data class ReadBuf (var tok: String, var rmacs: ICons)
 
 fun growth (tree: ICons, buff: ReadBuf): ICons
 {
-	if (! isnil(buff.tok))
+	if (! buff.tok.isEmpty())
 	{
 		buff.tok = ""
 		buff.rmacs = nil
@@ -247,7 +259,7 @@ fun wrap_readmacros (o: Any, rmacs: ICons): Any
 {
 	var wraped = o
 	var rest = rmacs
-	while (! isnil(rest))
+	while (rest is Cons)
 	{
 		wraped = l(car(rest), wraped)
 		rest = cdr(rest) as ICons
@@ -282,7 +294,7 @@ fun lread (code: String): ICons
 			val co = find_co_bracket(code.substring((idx + 1)..(code.length)))
 			tree = growth(tree, buff)
 			val invec = lread(code.substring((idx + 1)..(idx + co + 1)))
-			tree = if (isnil(buff.rmacs))
+			tree = if (buff.rmacs is Nil)
 			{
 				cons(cons(Symb("vect"), invec), tree)
 			}
@@ -297,7 +309,7 @@ fun lread (code: String): ICons
 		{
 			throw Erro(ErroId.Syntax, "found excess close brackets.")
 		}
-		else if (' ' == c)
+		else if (' ' == c || '\t' == c || '\n' == c)
 		{
 			tree = growth(tree, buff)
 		}
@@ -338,7 +350,8 @@ fun lread (code: String): ICons
 		{
 			if (buff.tok.isEmpty())
 			{
-				return append1(reverse(cdr(tree) as ICons), cons(car(tree)
+				return nconc(nreverse(cdr(tree) as ICons)
+						, cons(car(tree)
 							, car(lread(code.substring((idx + 1)..(code.length))))))
 			}
 			else
@@ -354,7 +367,7 @@ fun lread (code: String): ICons
 		++idx
 	}
 	tree = growth(tree, buff)
-	return reverse(tree)
+	return nreverse(tree)
 }
 
 fun lreadtop (code: String): ICons
@@ -369,11 +382,11 @@ fun leval (expr: ICons, env: ICons): Any
 
 fun lprint (expr: Any): String
 {
-	val dup = seek_dup(expr, nil, nil)
+	val dup = seek_dup(expr, nil, nil).second
 	var s = ""
 	var idx = 0
 	var rest = dup
-	while (! isnil(rest))
+	while (rest is Cons)
 	{
 		s += "\$${idx} = ${lprint_rec(car(rest), dup, false)}\n"
 		++idx
@@ -383,17 +396,70 @@ fun lprint (expr: Any): String
 	return s
 }
 
-fun seek_dup (expr: Any, printed: ICons, dup: ICons): ICons
+fun seek_dup (expr: Any, printed: ICons, dup: ICons): Pair<ICons, ICons>
 {
-	if (! isnil(find(expr, printed))) { return cons(expr, dup) }
-	if (! isnil(atom(expr))) { return dup }
-	val pd = cons(expr,  printed)
-	return append1(seek_dup(car(expr as Cons), pd, dup)
-			, seek_dup(cdr(expr as Cons), pd, dup))
+	if (! (find(expr, printed) is Nil))
+	{
+		if (! (find(expr, dup) is Nil)) { return Pair(printed, cons(expr, dup)) }
+		return Pair(printed, dup)
+	}
+	if (expr is Cons)
+	{
+		val (eprinted, edup) = seek_dup(car(expr), cons(expr, printed), dup)
+		return seek_dup(cdr(expr), eprinted, edup)
+	}
+	if (expr is Queu)
+	{
+		return seek_dup(expr.exit, cons(expr, printed), dup)
+	}
+	if (expr is Array<*>)
+	{
+		return expr.fold(Pair<ICons, ICons>(cons(expr, printed), dup)
+				, fun (res: Pair<ICons, ICons>, elm: Any?): Pair<ICons, ICons>
+					= seek_dup(elm ?: "null", res.first, res.second))
+	}
+	if (expr is Erro)
+	{
+		return seek_dup(expr.estr, cons(expr, printed), dup)
+	}
+	return Pair(printed, dup)
 }
 
-fun lprint_rec (expr: Any, dup: ICons, rec: Boolean): String // TODO
+fun lprint_rec (expr: Any, dup: ICons, rec: Boolean): String
 {
-	return ""
+	val idx = findidx_eq(expr, dup)
+	if (rec && ! (idx is Nil)) { return "\$${idx}" }
+	if (expr is Nil) { return "NIL" }
+	if (expr is Cons) { return printcons_rec(expr, dup, true) }
+	if (expr is Symb) { return expr.name }
+	if (expr is String) { return "\"${expr}\"" }
+	if (expr is Array<*>)
+	{
+		val s = expr.map { e -> lprint_rec(e ?: "null", dup, true) }
+		return "[${s.joinToString(" ")}]"
+	}
+	if (expr is Queu) { return "/${lprint_rec(expr.exit, dup, true)}/" }
+	if (expr is Func) { return "<Func ${lprint_rec(expr.args, dup,  true)} ${lprint_rec(expr.body, dup, true)}>" }
+	if (expr is Spfm) { return "<Spfm ${expr.name}>" }
+//	if (expr is Function<*>) { return "<Subr ${expr.name} >" } TODO
+	return expr.toString()
+}
+
+fun printcons_rec (coll: Cons, dup: ICons, rec: Boolean): String
+{
+	val a = car(coll)
+	val d = cdr(coll)
+	if (d is Nil) { return "(${lprint_rec(a,  dup, rec)})" }
+	if (! (d is Cons))
+	{
+		return "(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})"
+	}
+	if (! (find(d, dup) is Nil))
+	{
+		"(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})"
+	}
+	val dstr = lprint_rec(d, dup, rec)
+	return "(${lprint_rec(a, dup, rec)} ${dstr.substring(1..(dstr.length))}"
+
 }
 

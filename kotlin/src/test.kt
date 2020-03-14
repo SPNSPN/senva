@@ -16,6 +16,25 @@ fun CHECK (code: String, succ: Any?)
 
 fun ECHECK (code: String, ceid: Int, succ: Any?)
 {
+	print("ECHECK: \"${code}\" -> ")
+	try
+	{
+		println(lprint(leval(lreadtop(code), genv)))
+	}
+	catch (e: Erro)
+	{
+		println("<Erro \"${erro.estr}\">")
+		if (ceid != erro.eid)
+		{
+			throw Erro(444, "expect code: ${ceid}, but got code: ${erro.eid}")
+		}
+		if (succ != erro.estr)
+		{
+			throw Erro(444, "expect mess: ${succ}, but got mess: ${erro.estr}")
+		}
+		return nil
+	}
+	throw Erro(4444, "not got erro!")
 }
 
 

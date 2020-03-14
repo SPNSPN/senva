@@ -14,8 +14,7 @@ def ECHECK (code, ceid, succ):
 	sys.stdout.write("ECHECK: \"{0}\" -> ".format(code))
 	sys.stdout.flush()
 	try:
-		s = lprint(leval(cons(Symb("do"), lread(code)), genv))
-		print(s)
+		print(lprint(leval(lreadtop(code), genv)))
 	except Erro as erro:
 		print("<Erro \"{0}\">".format(erro.estr))
 		if ceid != erro.eid:
