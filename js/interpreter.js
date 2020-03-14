@@ -1026,7 +1026,7 @@ function leval (expr, env)
 				else if ("do" == proc.name)
 				{
 					let rest = args;
-					for (; cdr(rest) instanceof Cons; rest = cdr(rest))
+					for (; ! atom(cdr(rest)); rest = cdr(rest))
 					{
 						leval(car(rest), env);
 					}

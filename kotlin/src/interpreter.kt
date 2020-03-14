@@ -255,6 +255,45 @@ fun take_string (code: String): Pair<String, Int>
 	return Pair("", 1) // TODO
 }
 
+fun cons2array (c: ICons): MutableList<Any>
+{
+	var arr = mutableListOf<Any>()
+	var rest = c
+	while (rest is Cons)
+	{
+		arr.add(car(rest))
+		rest = cdr(rest)
+	}
+	return arr
+}
+
+fun array2cons (l: MutableList<Any>): ICons
+{
+	return nreverse(l.fold(nil, fun (acc, e): ICons = cons(e, acc)))
+}
+
+fun bind_tree (treea: Any, treeb: Any): ICons
+{
+	if (treea is Nil) { return nil }
+	if (! (treea is Cons)) { return l(cons(treea, treeb)) }
+	if (! (treeb is ICons))
+	{
+		throw Erro(ErroId.Syntax
+				, "cannot bind: ${lprint(treea)} and ${lprint(treeb)}")
+	}
+	try
+	{
+		return nconc(bind_tree(car(treea), car(treeb))
+				, bind_tree(cdr(treea), cdr(treeb)))
+	}
+	catch (erro: Erro)
+	{
+		throw Erro(ErroId.Syntax
+				, "cannot bind: ${lprint(treea)} and ${lprint(treeb)}")
+	}
+	return nil
+}
+
 fun wrap_readmacros (o: Any, rmacs: ICons): Any
 {
 	var wraped = o
@@ -375,9 +414,35 @@ fun lreadtop (code: String): ICons
 	return cons(Symb("do"), lread(code))
 }
 
-fun leval (expr: ICons, env: ICons): Any
+fun leval (expr_: ICons, env_: ICons): Any
 {
-	return expr // TODO
+	var expr = expr_
+	var env = env_
+	while (true)
+	{
+		if (expr is Cons)
+		{
+			val args = cdr(expr)
+			val proc = leval(car(expr), env)
+			if (proc is Func)
+			{
+				expr = proc.body
+				env = cons(bind_tree(proc.args, mapeval(args, env)), proc.env)
+			}
+			else if (proc is Spfm)
+			{
+				if ("if" == proc.name)
+				{
+					expr = if (leval(car(args), env) is Nil)
+						car(cdr(cdr(args))) else car(cdr(args))
+				}
+				else if ("do" == proc.name)
+				{
+					var rest = args
+				}
+			}
+		}
+	}
 }
 
 fun lprint (expr: Any): String
@@ -412,7 +477,7 @@ fun seek_dup (expr: Any, printed: ICons, dup: ICons): Pair<ICons, ICons>
 	{
 		return seek_dup(expr.exit, cons(expr, printed), dup)
 	}
-	if (expr is Array<*>)
+	if (expr is MutableList<*>)
 	{
 		return expr.fold(Pair<ICons, ICons>(cons(expr, printed), dup)
 				, fun (res: Pair<ICons, ICons>, elm: Any?): Pair<ICons, ICons>
@@ -433,7 +498,7 @@ fun lprint_rec (expr: Any, dup: ICons, rec: Boolean): String
 	if (expr is Cons) { return printcons_rec(expr, dup, true) }
 	if (expr is Symb) { return expr.name }
 	if (expr is String) { return "\"${expr}\"" }
-	if (expr is Array<*>)
+	if (expr is MutableList<*>)
 	{
 		val s = expr.map { e -> lprint_rec(e ?: "null", dup, true) }
 		return "[${s.joinToString(" ")}]"
