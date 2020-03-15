@@ -12,7 +12,7 @@ $(BLD)/test.jar: $(SRC)/test.kt $(SRC)/interpreter.kt
 
 .PHONY: repl test clean
 repl: $(BLD)/repl.jar
-	java -jar $^ $(ARGS)
+	rlwrap java -jar $^ $(ARGS)
 
 test: $(BLD)/test.jar
 	java -jar $^

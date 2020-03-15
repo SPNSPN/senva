@@ -169,6 +169,411 @@ fun rplacd (c: Cons, o: Any): Cons
 	return c
 }
 
+fun ladd (nums: ICons): Number
+{
+	var iacc: Long = 0
+	var facc: Double = 0.0
+	var isint = true
+	var rest: Any = nums
+	while (rest is Cons)
+	{
+		val n = car(rest)
+		if (n is Int)
+		{
+			iacc += n
+		}
+		else if (n is Long)
+		{
+			iacc += n
+		}
+		else if (n is Byte)
+		{
+			iacc += n
+		}
+		else if (n is Short)
+		{
+			iacc += n
+		}
+		else if (n is Double)
+		{
+			facc += n
+			isint = false
+		}
+		else if (n is Float)
+		{
+			facc += n
+			isint = false
+		}
+		else
+		{
+			throw Erro(ErroId.Type, "cannot add ${lprint(nums)}")
+		}
+		rest = cdr(rest)
+	}
+	if (isint) { return iacc }
+	return iacc + facc
+}
+
+fun lsub (head: Any, nums: ICons): Number
+{
+	if (head is Number)
+	{
+		var isint = true
+		var iacc: Long = 0
+		var facc: Double = 0.0
+		if (head is Int)
+		{
+			iacc = head.toLong()
+		}
+		else if (head is Long)
+		{
+			iacc = head
+		}
+		else if (head is Byte)
+		{
+			iacc = head.toLong()
+		}
+		else if (head is Short)
+		{
+			iacc = head.toLong()
+		}
+		else if (head is Double)
+		{
+			facc = head
+			isint = false
+		}
+		else if (head is Float)
+		{
+			facc = head.toDouble()
+			isint = false
+		}
+		var rest: Any = nums
+		while (rest is Cons)
+		{
+			val n = car(rest)
+			if (n is Int)
+			{
+				iacc -= n
+			}
+			else if (n is Long)
+			{
+				iacc -= n
+			}
+			else if (n is Byte)
+			{
+				iacc -= n
+			}
+			else if (n is Short)
+			{
+				iacc -= n
+			}
+			else if (n is Double)
+			{
+				facc -= n
+				isint = false
+			}
+			else if (n is Float)
+			{
+				facc -= n
+				isint = false
+			}
+			else
+			{
+				throw Erro(ErroId.Type, "cannot sub ${lprint(cons(head, nums))}")
+			}
+			rest = cdr(rest)
+		}
+		if (isint) { return iacc }
+		return iacc + facc
+	}
+	else
+	{
+		throw Erro(ErroId.Type, "cannot sub ${lprint(cons(head, nums))}")
+	}
+}
+
+fun lmul (nums: ICons): Number
+{
+	var isint = true
+	var iacc: Long = 1
+	var facc: Double = 1.0
+	var rest: Any = nums
+	while (rest is Cons)
+	{
+		val n = car(rest)
+		if (n is Int)
+		{
+			iacc *= n
+		}
+		else if (n is Long)
+		{
+			iacc *= n
+		}
+		else if (n is Byte)
+		{
+			iacc *= n
+		}
+		else if (n is Short)
+		{
+			iacc *= n
+		}
+		else if (n is Double)
+		{
+			facc *= n
+			isint = false
+		}
+		else if (n is Float)
+		{
+			facc *= n
+			isint = false
+		}
+		else
+		{
+			throw Erro(ErroId.Type, "cannot mul ${lprint(nums)}")
+		}
+		rest = cdr(rest)
+	}
+	if (isint) { return iacc }
+	return iacc * facc
+}
+
+fun ldiv (head: Any, nums: ICons): Number
+{
+	if (head is Number)
+	{
+		var isint = true
+		var iacc: Long = 1
+		var facc: Double = 1.0
+		if (head is Int)
+		{
+			iacc = head.toLong()
+		}
+		else if (head is Long)
+		{
+			iacc = head
+		}
+		else if (head is Byte)
+		{
+			iacc = head.toLong()
+		}
+		else if (head is Short)
+		{
+			iacc = head.toLong()
+		}
+		else if (head is Double)
+		{
+			facc = head
+		}
+		else if (head is Float)
+		{
+			facc = head.toDouble()
+		}
+		var rest: Any = nums
+		while (rest is Cons)
+		{
+			val n = car(rest)
+			if (n is Int)
+			{
+				if (iacc % n == 0L)
+				{
+					iacc /= n
+				}
+				else
+				{
+					facc /= n
+					isint = false
+				}
+			}
+			else if (n is Long)
+			{
+				if (iacc % n == 0L)
+				{
+					iacc /= n
+				}
+				else
+				{
+					facc /= n
+					isint = false
+				}
+			}
+			else if (n is Byte)
+			{
+				if (iacc % n == 0L)
+				{
+					iacc /= n
+				}
+				else
+				{
+					facc /= n
+					isint = false
+				}
+			}
+			else if (n is Short)
+			{
+				if (iacc % n == 0L)
+				{
+					iacc /= n
+				}
+				else
+				{
+					facc /= n
+					isint = false
+				}
+			}
+			else if (n is Double)
+			{
+				facc /= n
+				isint = false
+			}
+			else if (n is Float)
+			{
+				facc /= n
+				isint = false
+			}
+			else
+			{
+				throw Erro(ErroId.Type, "cannot div ${lprint(cons(head, nums))}")
+			}
+			rest = cdr(rest)
+		}
+		if (isint) { return iacc }
+		return iacc * facc
+	}
+	else
+	{
+		throw Erro(ErroId.Type, "cannot div ${lprint(cons(head, nums))}")
+	}
+}
+
+fun lmod (a: Long, b: Long): Long
+{
+	return a % b
+}
+
+fun lgt (head: Any, nums: ICons): Any
+{
+	if (head is Number)
+	{
+		var a = head.toDouble()
+		var rest: Any = nums
+		while (rest is Cons)
+		{
+			if (car(rest) is Number)
+			{
+				val n = (car(rest) as Number).toDouble()
+				if (a > n)
+				{
+					a = n
+				}
+				else
+				{
+					return nil
+				}
+			}
+			else
+			{
+				throw Erro(ErroId.Type, "cannot gt ${lprint(cons(head, nums))}")
+			}
+			rest = cdr(rest)
+		}
+		return t
+	}
+	throw Erro(ErroId.Type, "cannot gt ${lprint(cons(head, nums))}")
+}
+
+fun llt (head: Any, nums: ICons): Any
+{
+	if (head is Number)
+	{
+		var a = head.toDouble()
+		var rest: Any = nums
+		while (rest is Cons)
+		{
+			if (car(rest) is Number)
+			{
+				val n = (car(rest) as Number).toDouble()
+				if (a < n)
+				{
+					a = n
+				}
+				else
+				{
+					return nil
+				}
+			}
+			else
+			{
+				throw Erro(ErroId.Type, "cannot lt ${lprint(cons(head, nums))}")
+			}
+			rest = cdr(rest)
+		}
+		return t
+	}
+	throw Erro(ErroId.Type, "cannot lt ${lprint(cons(head, nums))}")
+}
+
+fun lge (head: Any, nums: ICons): Any
+{
+	if (head is Number)
+	{
+		var a = head.toDouble()
+		var rest: Any = nums
+		while (rest is Cons)
+		{
+			if (car(rest) is Number)
+			{
+				val n = (car(rest) as Number).toDouble()
+				if (a >= n)
+				{
+					a = n
+				}
+				else
+				{
+					return nil
+				}
+			}
+			else
+			{
+				throw Erro(ErroId.Type, "cannot ge ${lprint(cons(head, nums))}")
+			}
+			rest = cdr(rest)
+		}
+		return t
+	}
+	throw Erro(ErroId.Type, "cannot ge ${lprint(cons(head, nums))}")
+}
+
+fun lle (head: Any, nums: ICons): Any
+{
+	if (head is Number)
+	{
+		var a = head.toDouble()
+		var rest: Any = nums
+		while (rest is Cons)
+		{
+			if (car(rest) is Number)
+			{
+				val n = (car(rest) as Number).toDouble()
+				if (a <= n)
+				{
+					a = n
+				}
+				else
+				{
+					return nil
+				}
+			}
+			else
+			{
+				throw Erro(ErroId.Type, "cannot le ${lprint(cons(head, nums))}")
+			}
+			rest = cdr(rest)
+		}
+		return t
+	}
+	throw Erro(ErroId.Type, "cannot le ${lprint(cons(head, nums))}")
+}
+
 fun last (o: ICons): ICons
 {
 	if (o is Cons)
@@ -754,6 +1159,15 @@ fun make_genv (): Cons
 	regist_subr2(genv, "equal", ::equal)
 	regist_subr1(genv, "atom", ::atom)
 	regist(genv, "list", Subr({args: ICons -> args}, "list"))
+	regist(genv, "+", Subr({args: ICons -> ladd(args)}, "+"))
+	regist(genv, "-", Subr({args: ICons -> lsub(car(args), cdr(args) as ICons)}, "-"))
+	regist(genv, "*", Subr({args: ICons -> lmul(args)}, "*"))
+	regist(genv, "/", Subr({args: ICons -> ldiv(car(args), cdr(args) as ICons)}, "/"))
+	regist_subr2(genv, "%", ::lmod)
+	regist(genv, ">", Subr({args: ICons -> lgt(car(args), cdr(args) as ICons)}, ">"))
+	regist(genv, "<", Subr({args: ICons -> llt(car(args), cdr(args) as ICons)}, "<"))
+	regist(genv, ">=", Subr({args: ICons -> lge(car(args), cdr(args) as ICons)}, ">="))
+	regist(genv, "<=", Subr({args: ICons -> lle(car(args), cdr(args) as ICons)}, "<="))
 
 	regist(genv, "do", Spfm(::ldo, "do"))
 	return genv
