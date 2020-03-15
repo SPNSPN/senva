@@ -211,6 +211,17 @@ fun lsetq () {}
 fun llambda () {}
 fun lquote () {}
 
+fun ldo (env: ICons, args: ICons): Any
+{
+	var rest: Any = args
+	while (rest is Cons && cdr(rest) is Cons)
+	{
+		leval(car(rest), env)
+		rest = cdr(rest)
+	}
+	return leval(car(rest as ICons), env)
+}
+
 fun l (vararg args: Any): ICons = args.foldRight(nil
 		, fun (e: Any, acc: ICons): ICons = cons(e, acc) )
 
@@ -251,26 +262,27 @@ fun findidx_eq (v: Any, coll: ICons): Any
 }
 
 
-var genv = Cons(nil, nil)
 
 data class ReadBuf (var tok: String, var rmacs: ICons)
 
 fun growth (tree: ICons, buff: ReadBuf): ICons
 {
-	if (! buff.tok.isEmpty())
+	val buf: String = buff.tok
+	val rmacs = buff.rmacs
+	if (! buf.isEmpty())
 	{
 		buff.tok = ""
 		buff.rmacs = nil
-		if ("nil" == buff.tok || "NIL" == buff.tok)
+		if ("nil" == buf || "NIL" == buf)
 		{
-			return cons(wrap_readmacros(nil, buff.rmacs), tree)
+			return cons(wrap_readmacros(nil, rmacs), tree)
 		}
-		val inum = buff.tok.toIntOrNull(10) 
-		if (inum != null) { return cons(wrap_readmacros(inum, buff.rmacs), tree) }
-		val fnum = buff.tok.toDoubleOrNull() 
-		if (fnum != null) { return cons(wrap_readmacros(fnum, buff.rmacs), tree) }
+		val inum = buf.toIntOrNull(10) 
+		if (inum != null) { return cons(wrap_readmacros(inum, rmacs), tree) }
+		val fnum = buf.toDoubleOrNull() 
+		if (fnum != null) { return cons(wrap_readmacros(fnum, rmacs), tree) }
 
-		return cons(wrap_readmacros(Symb(buff.tok), buff.rmacs), tree)
+		return cons(wrap_readmacros(Symb(buf), rmacs), tree)
 	}
 	return tree
 }
@@ -279,7 +291,7 @@ fun find_co_paren (code: String): Int
 {
 	var sflg = false
 	var layer = 1
-	for (idx in 0..(code.length))
+	for (idx in 0..(code.length - 1))
 	{
 		val c = code[idx]
 		if (! sflg && '(' == c)
@@ -308,7 +320,7 @@ fun find_co_bracket (code: String): Int
 {
 	var sflg = false
 	var layer = 1
-	for (idx in 0..(code.length))
+	for (idx in 0..(code.length - 1))
 	{
 		val c = code[idx]
 		if (! sflg && '[' == c)
@@ -348,7 +360,7 @@ fun take_string (code: String): Pair<String, Int>
 {
 	var eflg = false
 	var strn = ""
-	for (idx in 0..(code.length))
+	for (idx in 0..(code.length - 1))
 	{
 		var c: Char = code[idx]
 		if (eflg)
@@ -455,10 +467,10 @@ fun lread (code: String): ICons
 		val c = code[idx]
 		if ('(' == c)
 		{
-			val co = find_co_paren(code.substring((idx + 1)..(code.length)))
+			val co = find_co_paren(code.substring((idx + 1)..(code.length - 1)))
 			tree = growth(tree, buff)
 			tree = cons(wrap_readmacros(
-						lread(code.substring((idx + 1)..(idx + co + 1)))
+						lread(code.substring((idx + 1)..(idx + co)))
 						, buff.rmacs), tree)
 			buff = ReadBuf("", nil)
 			idx += co + 1
@@ -469,9 +481,9 @@ fun lread (code: String): ICons
 		}
 		else if ('[' == c)
 		{
-			val co = find_co_bracket(code.substring((idx + 1)..(code.length)))
+			val co = find_co_bracket(code.substring((idx + 1)..(code.length - 1)))
 			tree = growth(tree, buff)
-			val invec = lread(code.substring((idx + 1)..(idx + co + 1)))
+			val invec = lread(code.substring((idx + 1)..(idx + co)))
 			tree = if (buff.rmacs is Nil)
 			{
 				cons(cons(Symb("vect"), invec), tree)
@@ -499,7 +511,7 @@ fun lread (code: String): ICons
 		else if ('"' == c)
 		{
 			tree = growth(tree, buff)
-			val (strn, inc) = take_string(code.substring((idx + 1)..(code.length)))
+			val (strn, inc) = take_string(code.substring((idx + 1)..(code.length - 1)))
 			idx += inc
 			tree = cons(strn, tree)
 			buff = ReadBuf("", nil)
@@ -530,7 +542,7 @@ fun lread (code: String): ICons
 			{
 				return nconc(nreverse(cdr(tree) as ICons)
 						, cons(car(tree)
-							, car(lread(code.substring((idx + 1)..(code.length))))))
+							, car(lread(code.substring((idx + 1)..(code.length - 1))))))
 			}
 			else
 			{
@@ -708,7 +720,44 @@ fun printcons_rec (coll: Cons, dup: ICons, rec: Boolean): String
 		"(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})"
 	}
 	val dstr = lprint_rec(d, dup, rec)
-	return "(${lprint_rec(a, dup, rec)} ${dstr.substring(1..(dstr.length))}"
+	return "(${lprint_rec(a, dup, rec)} ${dstr.substring(1..(dstr.length - 1))}"
 
 }
+
+fun regist (env: Cons, name: String, obj: Any)
+{
+	rplaca(env, cons(cons(Symb(name), obj), car(env)))
+}
+
+fun<T, R> regist_subr1 (env: Cons, name: String, proc: (T) -> R)
+{
+	regist(env, name, Subr({args: ICons -> proc(car(args) as T) as Any}, name))
+}
+
+fun<T1, T2, R> regist_subr2 (env: Cons, name: String, proc: (T1, T2) -> R)
+{
+	regist(env, name
+			, Subr({args: ICons -> proc(car(args) as T1
+					, car(cdr(args) as ICons) as T2) as Any}, name))
+}
+
+fun make_genv (): Cons
+{
+	var genv = Cons(nil, nil)
+	regist(genv, "nil", nil)
+	regist(genv, "t", t)
+	regist(genv, "T", t)
+	regist_subr2(genv, "cons", ::cons)
+	regist_subr1(genv, "car", ::car)
+	regist_subr1(genv, "cdr", ::cdr)
+	regist_subr2(genv, "eq", ::eq)
+	regist_subr2(genv, "equal", ::equal)
+	regist_subr1(genv, "atom", ::atom)
+	regist(genv, "list", Subr({args: ICons -> args}, "list"))
+
+	regist(genv, "do", Spfm(::ldo, "do"))
+	return genv
+}
+
+var genv = make_genv()
 

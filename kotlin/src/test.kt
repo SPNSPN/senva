@@ -42,5 +42,8 @@ fun main (args: Array<String>)
 {
 	CHECK("", "NIL")
 	CHECK("nil", "NIL")
+	CHECK("()", "NIL")
+	CHECK("(cons 1 2)", "(1 . 2)")
+	CHECK("(car (cdr (cons 1 (cons 2 3))))", "2")
 }
 
