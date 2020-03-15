@@ -21,7 +21,7 @@ fun ECHECK (code: String, ceid: Int, succ: Any?)
 	{
 		println(lprint(leval(lreadtop(code), genv)))
 	}
-	catch (e: Erro)
+	catch (erro: Erro)
 	{
 		println("<Erro \"${erro.estr}\">")
 		if (ceid != erro.eid)
@@ -32,7 +32,7 @@ fun ECHECK (code: String, ceid: Int, succ: Any?)
 		{
 			throw Erro(444, "expect mess: ${succ}, but got mess: ${erro.estr}")
 		}
-		return nil
+		return
 	}
 	throw Erro(4444, "not got erro!")
 }

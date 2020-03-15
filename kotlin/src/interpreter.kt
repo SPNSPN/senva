@@ -98,15 +98,64 @@ class Queu ()
 	}
 }
 
-class Spfm (val proc: Function<*>, val name: String)
+class Subr (val proc: (ICons) -> Any, val name: String)
+
+class Spfm (val proc: (ICons, ICons) -> Any, val name: String)
 
 class Func (val args: ICons, val body: ICons, val env: ICons)
 
 fun cons (a: Any, d: Any): Cons = Cons(a, d)
 fun car (o: ICons): Any = o.car()
 fun cdr (o: ICons): Any = o.cdr()
-fun eq (a: Any, b: Any): Any = if (a === b) t else nil
 fun atom (o: Any): Any = if (o is Cons) nil else t
+fun eq (a: Any, b: Any): Any = if (a === b) t else nil
+
+fun equal (a: Any, b: Any): Any
+{
+	var cond: Any = nil
+	if (a is Symb && b is Symb)
+	{
+		cond = if (a.name == b.name) t else nil
+	}
+	else if (a is Cons && b is Cons)
+	{
+		cond = if (! (equal(a.a, b.a) is Nil || equal(a.d, b.d) is Nil)) t else nil
+	}
+	else if (a is Queu && b is Queu)
+	{
+		cond = equal(a.exit, b.exit)
+	}
+	else if (a is Func && b is Func)
+	{
+		cond = if (! (equal(a.args, b.args) is Nil
+					|| equal(a.body, b.body) is Nil
+					|| equal(a.env, b.env) is Nil)) t else nil
+	}
+	else if (a is Spfm && b is Spfm)
+	{
+		cond = if (! (equal(a.proc, b.proc) is Nil || equal(a.name, b.name) is Nil)) t else nil
+	}
+	else if (a is MutableList<*> && b is MutableList<*>)
+	{
+		if (a.size == b.size)
+		{
+			cond = t
+			for (idx in 0..(a.size))
+			{
+				if (equal(a[idx]!!, b[idx]!!) is Nil)
+				{
+					cond = nil
+					break
+				}
+			}
+		}
+	}
+	else
+	{
+		cond = if (a == b) t else nil
+	}
+	return cond
+}
 
 fun rplaca (c: Cons, o: Any): Cons
 {
@@ -165,6 +214,18 @@ fun lquote () {}
 fun l (vararg args: Any): ICons = args.foldRight(nil
 		, fun (e: Any, acc: ICons): ICons = cons(e, acc) )
 
+fun mapeval (args: ICons, env: ICons): ICons
+{
+	var eargs: ICons = nil
+	var rest: Any = args
+	while (rest is Cons)
+	{
+		eargs = cons(leval(car(rest), env), eargs)
+		rest = cdr(rest)
+	}
+	return nreverse(eargs)
+}
+
 fun find (v: Any, coll: ICons): Any
 {
 	var rest = coll
@@ -218,7 +279,7 @@ fun find_co_paren (code: String): Int
 {
 	var sflg = false
 	var layer = 1
-	for (idx in 0..code.length)
+	for (idx in 0..(code.length))
 	{
 		val c = code[idx]
 		if (! sflg && '(' == c)
@@ -247,7 +308,7 @@ fun find_co_bracket (code: String): Int
 {
 	var sflg = false
 	var layer = 1
-	for (idx in 0..code.length)
+	for (idx in 0..(code.length))
 	{
 		val c = code[idx]
 		if (! sflg && '[' == c)
@@ -273,14 +334,14 @@ fun find_co_bracket (code: String): Int
 }
 
 val escape_char_table = mapOf(
-		'a' to '\a'
+		'a' to '\u0007'
 		, 'b' to '\b'
-		, 'f' to '\f'
+		, 'f' to '\u000C'
 		, 'n' to '\n'
 		, 'r' to '\r'
 		, 't' to '\t'
-		, 'v' to '\v'
-		, '0' to '\0'
+		, 'v' to '\u000B'
+		, '0' to '\u0000'
 		)
 
 fun take_string (code: String): Pair<String, Int>
@@ -289,10 +350,10 @@ fun take_string (code: String): Pair<String, Int>
 	var strn = ""
 	for (idx in 0..(code.length))
 	{
-		var c = code[idx]
+		var c: Char = code[idx]
 		if (eflg)
 		{
-			if (escape_char_table.containsKey(c)) { c = escape_char_table[c] }
+			if (escape_char_table.containsKey(c)) { c = escape_char_table[c]!! }
 			eflg = false
 		}
 		if ('"' == c) { return Pair(strn, idx + 1) }
@@ -309,7 +370,7 @@ fun take_string (code: String): Pair<String, Int>
 fun cons2array (c: ICons): MutableList<Any>
 {
 	var arr = mutableListOf<Any>()
-	var rest = c
+	var rest: Any = c
 	while (rest is Cons)
 	{
 		arr.add(car(rest))
@@ -342,29 +403,34 @@ fun bind_tree (treea: Any, treeb: Any): ICons
 		throw Erro(ErroId.Syntax
 				, "cannot bind: ${lprint(treea)} and ${lprint(treeb)}")
 	}
-	return nil
 }
 
 fun assoc (alist: ICons, key: Any): Any?
 {
-	var rest = alist
+	var rest: Any = alist
 	while (rest is Cons)
 	{
 		val e = car(rest)
-		if (equal(car(e), key)) { return e }
+		if (! (equal(car(e as ICons), key) is Nil)) { return e }
 		rest = cdr(rest)
 	}
 	return null
 }
 
-fun assocdr ()
+fun assocdr (alist: ICons, key: Any): Any?
 {
-	// TODO
+	return assoc(alist, key)?.let { cdr(it as Cons) }
 }
 
-fun seekenv ()
+fun seekenv (env: ICons, sym: Symb): Any
 {
-	// TODO
+	var rest: Any = env
+	while (rest is Cons)
+	{
+		assocdr(car(rest) as ICons, sym)?.let { return it }
+		rest = cdr(rest)
+	}
+	throw Erro(ErroId.Symbol, "${lprint(sym)} is not defined.")
 }
 
 fun wrap_readmacros (o: Any, rmacs: ICons): Any
@@ -487,7 +553,7 @@ fun lreadtop (code: String): ICons
 	return cons(Symb("do"), lread(code))
 }
 
-fun leval (expr_: ICons, env_: ICons): Any
+fun leval (expr_: Any, env_: ICons): Any
 {
 	var expr = expr_
 	var env = env_
@@ -495,7 +561,7 @@ fun leval (expr_: ICons, env_: ICons): Any
 	{
 		if (expr is Cons)
 		{
-			val args = cdr(expr)
+			val args = cdr(expr) as ICons
 			val proc = leval(car(expr), env)
 			if (proc is Func)
 			{
@@ -507,7 +573,8 @@ fun leval (expr_: ICons, env_: ICons): Any
 				if ("if" == proc.name)
 				{
 					expr = if (leval(car(args), env) is Nil)
-						car(cdr(cdr(args))) else car(cdr(args))
+						car(cdr(cdr(args) as ICons) as ICons)
+						else car(cdr(args) as ICons)
 				}
 				else if ("do" == proc.name)
 				{
@@ -515,20 +582,20 @@ fun leval (expr_: ICons, env_: ICons): Any
 					while (cdr(rest) is Cons)
 					{
 						leval(car(rest), env)
-						rest = cdr(rest)
+						rest = cdr(rest) as ICons
 					}
 					expr = car(rest)
 				}
 				else if ("!" == proc.name)
 				{
-					expr = lapply(leval(car(args), env), cdr(args))
+					expr = lapply(leval(car(args), env), cdr(args) as ICons)
 				}
 				else
 				{
-					return proc.proc.call(env, args)
+					return proc.proc(env, args)
 				}
 			}
-			else if (proc is Function<*>)
+			else if (proc is Subr)
 			{
 				return lapply(proc, mapeval(args, env))
 			}
@@ -548,9 +615,17 @@ fun leval (expr_: ICons, env_: ICons): Any
 	}
 }
 
-fun lapply ()
+fun lapply (proc: Any, args: ICons): Any
 {
-	// TODO
+	if (proc is Func)
+	{
+		return leval(proc.body, cons(bind_tree(proc.args, args), proc.env))
+	}
+	if (proc is Subr)
+	{
+		return proc.proc(args)
+	}
+	throw Erro(ErroId.UnCallable, "${lprint(proc)} is not callable.")
 }
 
 fun lprint (expr: Any): String
@@ -614,6 +689,7 @@ fun lprint_rec (expr: Any, dup: ICons, rec: Boolean): String
 	if (expr is Queu) { return "/${lprint_rec(expr.exit, dup, true)}/" }
 	if (expr is Func) { return "<Func ${lprint_rec(expr.args, dup,  true)} ${lprint_rec(expr.body, dup, true)}>" }
 	if (expr is Spfm) { return "<Spfm ${expr.name}>" }
+	if (expr is Subr) { return "<Subr ${expr.name}>" }
 //	if (expr is Function<*>) { return "<Subr ${expr.name} >" } TODO
 	return expr.toString()
 }

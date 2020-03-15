@@ -4,8 +4,15 @@ fun main (args: Array<String>)
 {
 	while (true)
 	{
-		print("senva> ")
-		val code = readLine() ?: return
-		println(lprint(leval(lreadtop(code), genv)))
+		try
+		{
+			print("senva> ")
+			val code = readLine() ?: return
+			println(lprint(leval(lreadtop(code), genv)))
+		}
+		catch (erro: Erro)
+		{
+			println(lprint(erro))
+		}
 	}
 }
