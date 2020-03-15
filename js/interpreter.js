@@ -140,7 +140,11 @@ function eq (a, b)
 function equal (a, b)
 {
 	let cond = false;
-	if (a instanceof Symb && b instanceof Symb)
+	if (a === b)
+	{
+		cond = true
+	}
+	else if (a instanceof Symb && b instanceof Symb)
 	{
 		cond = (a.name == b.name);
 	}
@@ -180,7 +184,7 @@ function equal (a, b)
 	}
 	else
 	{
-		cond = (a == b);
+		cond = ((typeof a == typeof b) && (a == b));
 	}
 
 	if (cond) { return t; }
@@ -1285,14 +1289,13 @@ function lsetat (vect, idx, val)
 
 function lprint (expr)
 {
-	let res = seek_dup(expr, nil, nil);
-	let dup = res.dup;
+	let dup = seek_dup(expr, nil, nil).dup;
 
 	let s = "";
 	let idx = 0;
 	for (let rest = dup; ! atom(rest); rest = cdr(rest))
 	{
-		s += `\$${idx} = ${lprint_rec(car(rest), dup, false)}\n`;
+		s += `\$${idx} = ${lprint_rec(car(rest), dup, false)}, `;
 		++idx;
 	}
 	s += lprint_rec(expr,  dup, true);
@@ -1332,7 +1335,7 @@ function seek_dup (expr, printed, dup)
 function lprint_rec (expr, dup, rec)
 {
 	let idx = findidx_eq(expr, dup);
-	if (rec && idx) { return `\$${idx}`; }
+	if (rec && idx !== nil) { return `\$${idx}`; }
 	if (expr === nil) { return "NIL"; }
 	if (expr instanceof Cons) { return printcons_rec(expr, dup, true); }
 	if (expr instanceof Symb) { return expr.name; }
@@ -1424,6 +1427,7 @@ regist("type", ltype);
 regist("load", lload);
 regist("getat", lgetat);
 regist("setat", lsetat);
+regist("processor", function () { return new Symb("javascript"); });
 // TODO
 		
 regist("quote", new Spfm(function (env, args) { return car(args); }, "quote"));
@@ -1435,6 +1439,7 @@ regist("define", new Spfm(ldefine, "define"));
 regist("setq", new Spfm(lsetq, "setq"));
 regist("and", new Spfm(land, "and"));
 regist("or", new Spfm(lor, "or"));
+regist("environment", new Spfm(function (env, args) { return env; }, "environment"));
 regist("!", new Spfm(lsyntax, "!"));
 regist("do", new Spfm(ldo, "do"));
 regist("catch", new Spfm(lcatch, "catch"));
