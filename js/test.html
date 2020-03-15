@@ -264,7 +264,7 @@ CHECK("((lambda (c v) [v c [[v c] (list v c)] (list (list c v) [c v])]) (list 1 
 CHECK("((lambda (rpc) (rplacd rpc rpc)) (list 1 2))", "$0 = (1 . $0), $0");
 CHECK("((lambda (rpv) (setat rpv 1 rpv)) [1 2])", "$0 = [1 $0], $0");
 CHECK("(processor)", "javascript");
-CHECK("(environment)", lprint(genv));
+CHECK("(environment)", false);
 CHECK("(load \"senva/test.snv\")", "NIL");
 
 CHECK("((js typeof) 3)", "\"number\"");
