@@ -47,6 +47,12 @@ class Queu ()
 	var entr: ICons
 	var exit: ICons
 
+	constructor (c: ICons) : this()
+	{
+		this.entr = last(c)
+		this.exit = c
+	}
+
 	init
 	{
 		entr = nil;
@@ -1240,7 +1246,6 @@ fun make_genv (): Cons
 	regist(genv, "<", Subr({args: ICons -> llt(car(args), cdr(args) as ICons)}, "<"))
 	regist(genv, ">=", Subr({args: ICons -> lge(car(args), cdr(args) as ICons)}, ">="))
 	regist(genv, "<=", Subr({args: ICons -> lle(car(args), cdr(args) as ICons)}, "<="))
-
 	regist(genv, "int"
 			, Subr({args: ICons -> (car(args) as Number).toLong() }, "int"))
 	regist(genv, "float"
@@ -1248,7 +1253,12 @@ fun make_genv (): Cons
 
 	regist_subr2(genv, "rplaca", ::rplaca)
 	regist_subr2(genv, "rplacd", ::rplacd)
+	regist_subr1(genv, "last", ::last)
+	regist_subr2(genv, "nconc", ::nconc)
+	regist_subr1(genv, "nreverse", ::nreverse)
+	regist(genv, "vect", Subr({args: ICons -> cons2array(args)}, "vect"))
 
+	regist(genv, "queu", Subr({args: ICons -> Queu(args)}, "queu"))
 	regist(genv, "if", Spfm(::lif, "if"))
 	regist(genv, "lambda"
 			, Spfm({env: ICons, args: ICons -> Func(car(args) as ICons, nth(args, 1) as ICons, env)}
