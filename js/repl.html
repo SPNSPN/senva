@@ -16,6 +16,14 @@ const run = function ()
 		let elem = document.getElementById("senva-input-form");
 		let code = elem.value;
 		elem.value = "";
+
+		let hist = document.getElementById("input-history");
+		hist.insertAdjacentHTML("afterbegin", `<option value='${code}'></option>`);
+		if (hist.childNodes.length > 10)
+		{
+			hist.removeChild(hist.lastChild);
+		}
+
 		let expr = lreadtop(code);
 		let eexpr = leval(expr, genv);
 		let result = lprint(eexpr);
@@ -38,7 +46,9 @@ const run = function ()
 <body>
 <p>REPL</p>
 <div>
-<form onsubmit="run(); return false;">senva&gt; <input id="senva-input-form" type="text"></form>
+<form onsubmit="run(); return false;">senva&gt; <input id="senva-input-form" type="text" autocomplete="on" list="input-history"></form>
+<datalist id="input-history">
+</datalist>
 </div>
 <div id="senva-output-form">
 <ul><li id="input">input : </li><li id="output">output: </li><li id="error">error : </li></ul>

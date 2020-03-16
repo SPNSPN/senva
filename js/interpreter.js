@@ -1428,7 +1428,7 @@ regist("load", lload);
 regist("getat", lgetat);
 regist("setat", lsetat);
 regist("processor", function () { return new Symb("javascript"); });
-// TODO
+regist("js", eval);
 		
 regist("quote", new Spfm(function (env, args) { return car(args); }, "quote"));
 regist("quasiquote", new Spfm(function (env, args)
