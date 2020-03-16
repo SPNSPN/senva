@@ -108,12 +108,16 @@ fun cons (a: Any, d: Any): Cons = Cons(a, d)
 fun car (o: ICons): Any = o.car()
 fun cdr (o: ICons): Any = o.cdr()
 fun atom (o: Any): Any = if (o is Cons) nil else t
-fun eq (a: Any, b: Any): Any = if (a === b) t else nil
+fun eq (a: Any, b: Any): Any = if ((a === b) || (a is Symb && b is Symb && a.name == b.name)) t else nil
 
 fun equal (a: Any, b: Any): Any
 {
 	var cond: Any = nil
-	if (a is Symb && b is Symb)
+	if (a === b)
+	{
+		cond = t
+	}
+	else if (a is Symb && b is Symb)
 	{
 		cond = if (a.name == b.name) t else nil
 	}
@@ -610,11 +614,77 @@ fun nreverse (coll: ICons): ICons
 	return rev
 }
 
-fun lif () {}// TODO
-fun ldefine () {}
-fun lsetq () {}
-fun llambda () {}
-fun lquote () {}
+fun nth (c: ICons, n: Long): Any
+{
+	var rest: Any = c
+	var idx = 0L
+	while (idx < n)
+	{
+		if (rest is ICons)
+		{
+			rest = cdr(rest)
+		}
+		else
+		{
+			throw Erro(ErroId.ArgsUnmatch, "cannot got nth ${n} from ${lprint(c)}")
+		}
+		++idx
+	}
+	if (rest is ICons)
+	{
+		return car(rest)
+	}
+	throw Erro(ErroId.ArgsUnmatch, "cannot got nth ${n} from ${lprint(c)}")
+}
+
+fun lif (env: ICons, args: ICons): Any
+{
+	if (leval(car(args), env) is Nil)
+	{
+		return leval(nth(args, 2), env)
+	}
+	return leval(nth(args, 1), env)
+}
+
+fun ldefine (env: ICons, args: ICons): Symb
+{
+	val sym = car(args)
+	if (sym is Symb)
+	{
+		val asc = assoc(car(genv) as ICons, sym)
+		if (asc === null)
+		{
+			rplaca(genv, cons(cons(sym, leval(nth(args, 1), env)), car(genv)))
+		}
+		else
+		{
+			rplacd(asc, leval(nth(args, 1), env))
+		}
+		return sym
+	}
+	throw Erro(ErroId.Type, "cannot define ${lprint(sym)}, must be SymbT.")
+}
+
+fun lsetq (env: ICons, args: ICons): Any
+{
+	val sym = car(args)
+	if (sym is Symb)
+	{
+		var rest: Any = env
+		while (rest is Cons)
+		{
+			val asc = assoc(car(rest) as ICons, sym)
+			if (asc !== null)
+			{
+				rplacd(asc, leval(nth(args, 1), env))
+				return cdr(asc)
+			}
+			rest = cdr(rest)
+		}
+		throw Erro(ErroId.Symbol, "${lprint(sym)} is not defined.")
+	}
+	throw Erro(ErroId.Type, "cannot setq ${lprint(sym)}, must be SymbT.")
+}
 
 fun ldo (env: ICons, args: ICons): Any
 {
@@ -822,13 +892,16 @@ fun bind_tree (treea: Any, treeb: Any): ICons
 	}
 }
 
-fun assoc (alist: ICons, key: Any): Any?
+fun assoc (alist: ICons, key: Any): Cons?
 {
 	var rest: Any = alist
 	while (rest is Cons)
 	{
 		val e = car(rest)
-		if (! (equal(car(e as ICons), key) is Nil)) { return e }
+		if (e is Cons)
+		{
+			if (! (equal(car(e as ICons), key) is Nil)) { return e }
+		}
 		rest = cdr(rest)
 	}
 	return null
@@ -990,8 +1063,7 @@ fun leval (expr_: Any, env_: ICons): Any
 				if ("if" == proc.name)
 				{
 					expr = if (leval(car(args), env) is Nil)
-						car(cdr(cdr(args) as ICons) as ICons)
-						else car(cdr(args) as ICons)
+						nth(args, 2) else nth(args, 1)
 				}
 				else if ("do" == proc.name)
 				{
@@ -1143,7 +1215,7 @@ fun<T1, T2, R> regist_subr2 (env: Cons, name: String, proc: (T1, T2) -> R)
 {
 	regist(env, name
 			, Subr({args: ICons -> proc(car(args) as T1
-					, car(cdr(args) as ICons) as T2) as Any}, name))
+					, nth(args, 1) as T2) as Any}, name))
 }
 
 fun make_genv (): Cons
@@ -1169,6 +1241,21 @@ fun make_genv (): Cons
 	regist(genv, ">=", Subr({args: ICons -> lge(car(args), cdr(args) as ICons)}, ">="))
 	regist(genv, "<=", Subr({args: ICons -> lle(car(args), cdr(args) as ICons)}, "<="))
 
+	regist(genv, "int"
+			, Subr({args: ICons -> (car(args) as Number).toLong() }, "int"))
+	regist(genv, "float"
+			, Subr({args: ICons -> (car(args) as Number).toDouble() }, "float"))
+
+	regist_subr2(genv, "rplaca", ::rplaca)
+	regist_subr2(genv, "rplacd", ::rplacd)
+
+	regist(genv, "if", Spfm(::lif, "if"))
+	regist(genv, "lambda"
+			, Spfm({env: ICons, args: ICons -> Func(car(args) as ICons, nth(args, 1) as ICons, env)}
+				, "lambda"))
+	regist(genv, "define", Spfm(::ldefine, "define"))
+	regist(genv, "setq", Spfm(::lsetq, "setq"))
+	regist(genv, "quote", Spfm({env: ICons, args: ICons -> car(args)}, "quote"))
 	regist(genv, "do", Spfm(::ldo, "do"))
 	return genv
 }
