@@ -620,6 +620,45 @@ fun nreverse (coll: ICons): ICons
 	return rev
 }
 
+fun to_list (obj: Any): ICons
+{
+	if (obj is MutableList<*>) { return vect2cons(obj) }
+	if (obj is Symb) { return vect2cons(obj.name.toCharArray().map({e -> e.toInt()}).toMutableList()) }
+	if (obj is String) { return vect2cons(obj.toCharArray().map({e -> e.toInt()}).toMutableList()) }
+	if (obj is Queu) { return obj.exit }
+	if (obj is ICons) { return obj }
+	throw Erro(ErroId.Type, "cannot cast ${lprint(obj)} to ConsT.")
+}
+
+fun to_vect (obj: Any): MutableList<Any>
+{
+	if (obj is ICons) { return cons2vect(obj) }
+	if (obj is Symb) { return obj.name.toCharArray().map({e -> e.toInt()}).toMutableList() }
+	if (obj is String) { return obj.toCharArray().map({e -> e.toInt()}).toMutableList() }
+	if (obj is Queu) { return cons2vect(obj.exit) }
+	if (obj is MutableList<*>) { return obj as MutableList<Any> }
+	throw Erro(ErroId.Type, "cannot cast ${lprint(obj)} to VectT.")
+}
+
+fun to_queu (obj: Any): Queu
+{
+	if (obj is Cons) { return Queu(obj) }
+	if (obj is Symb) { return Queu(vect2cons(obj.name.toCharArray().map({e -> e.toInt()}).toMutableList())) }
+	throw Erro(ErroId.Type, "cannot cast ${lprint(obj)} to VectT.")
+}
+
+fun symbol (obj: Any): Symb
+{
+	// TODO
+	return Symb("")
+}
+
+fun sprint (obj: Any): String
+{
+	// TODO
+	return ""
+}
+
 fun nth (c: ICons, n: Long): Any
 {
 	var rest: Any = c
@@ -860,7 +899,7 @@ fun take_string (code: String): Pair<String, Int>
 	throw Erro(ErroId.Syntax, "not found close double quote.")
 }
 
-fun cons2array (c: ICons): MutableList<Any>
+fun cons2vect (c: ICons): MutableList<Any>
 {
 	var arr = mutableListOf<Any>()
 	var rest: Any = c
@@ -872,9 +911,9 @@ fun cons2array (c: ICons): MutableList<Any>
 	return arr
 }
 
-fun array2cons (l: MutableList<Any>): ICons
+fun<T> vect2cons (l: MutableList<T>): ICons
 {
-	return nreverse(l.fold(nil, fun (acc, e): ICons = cons(e, acc)))
+	return nreverse(l.fold(nil, fun (acc, e): ICons = cons(e as Any, acc)))
 }
 
 fun bind_tree (treea: Any, treeb: Any): ICons
@@ -1256,9 +1295,18 @@ fun make_genv (): Cons
 	regist_subr1(genv, "last", ::last)
 	regist_subr2(genv, "nconc", ::nconc)
 	regist_subr1(genv, "nreverse", ::nreverse)
-	regist(genv, "vect", Subr({args: ICons -> cons2array(args)}, "vect"))
+	regist(genv, "vect", Subr({args: ICons -> cons2vect(args)}, "vect"))
 
 	regist(genv, "queu", Subr({args: ICons -> Queu(args)}, "queu"))
+	regist_subr2(genv, "pushqueu", {queu: Queu, v: Any -> queu.push(v)})
+	regist_subr1(genv, "popqueu", {queu: Queu -> queu.pop()})
+	regist_subr2(genv, "concqueu", {qa: Queu, qb: Queu -> qa.concat(qb)})
+	regist_subr1(genv, "to-list", ::to_list)
+	regist_subr1(genv, "to-vect", ::to_vect)
+	regist_subr1(genv, "to-queu", ::to_queu)
+	regist_subr1(genv, "symbol", ::symbol)
+	regist_subr1(genv, "sprint", ::sprint)
+
 	regist(genv, "if", Spfm(::lif, "if"))
 	regist(genv, "lambda"
 			, Spfm({env: ICons, args: ICons -> Func(car(args) as ICons, nth(args, 1) as ICons, env)}

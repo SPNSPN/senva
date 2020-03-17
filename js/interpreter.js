@@ -247,7 +247,7 @@ function vect ()
 function queu ()
 {
 	let q = new Queu();
-	q.exit = array2cons(Array.from(arguments));
+	q.exit = vect2cons(Array.from(arguments));
 	q.entr = last(q.exit);
 	return q;
 }
@@ -269,10 +269,10 @@ function concqueu (qa, qb)
 
 function to_list (obj)
 {
-	if (Array.isArray(obj)) { return array2cons(obj); }
-	if (obj instanceof Symb) { return array2cons(to_vect(obj.name)); } 
+	if (Array.isArray(obj)) { return vect2cons(obj); }
+	if (obj instanceof Symb) { return vect2cons(to_vect(obj.name)); } 
 	if (obj instanceof String || (typeof obj) == "string") {
-		return array2cons(to_vect(obj)); }
+		return vect2cons(to_vect(obj)); }
 	if (obj instanceof Queu) { return obj.exit; }
 	if (obj instanceof Cons) { return obj; }
 	if (obj === nil) { return obj; }
@@ -281,12 +281,12 @@ function to_list (obj)
 
 function to_vect (obj)
 {
-	if (obj instanceof Cons) { return cons2array(obj); }
+	if (obj instanceof Cons) { return cons2vect(obj); }
 	if (obj instanceof Symb) {
 		return obj.name.split("").map(function (c) { return c.charCodeAt(0); }); }
 	if (obj instanceof String || (typeof obj) == "string") {
 		return obj.split("").map(function (c) { return c.charCodeAt(0); }); }
-	if (obj instanceof Queu) { return cons2array(obj.exit); }
+	if (obj instanceof Queu) { return cons2vect(obj.exit); }
 	if (Array.isArray(obj)) { return obj; }
 	if (obj === nil) { return []; }
 	throw new Erro(ErroId.Type, `cannot cast ${lprint(obj)} to VectT.`);
@@ -313,9 +313,9 @@ function to_queu (obj)
 function symbol (obj)
 {
 	if (obj instanceof Cons) {
-		return new Symb(String.fromCharCode.apply(null, cons2array(obj))); }
+		return new Symb(String.fromCharCode.apply(null, cons2vect(obj))); }
 	if (obj instanceof Queu) {
-		return new Symb(String.fromCharCode.apply(null, cons2array(obj.exit))); }
+		return new Symb(String.fromCharCode.apply(null, cons2vect(obj.exit))); }
 	if (Array.isArray(obj)) {
 		return new Symb(String.fromCharCode.apply(null, obj)); }
 	if (obj instanceof String || (typeof obj) == "string") { return new Symb(obj); }
@@ -406,7 +406,7 @@ function add ()
 				if (! Number.isFinite(n))
 				{
 					throw new Erro(ErroId.Type
-							, `cannot add ${lprint(array2cons(nums))}`);
+							, `cannot add ${lprint(vect2cons(nums))}`);
 				}
 				return acc + n;
 			}
@@ -417,13 +417,13 @@ function sub (head)
 {
 	let nums = Array.from(arguments).slice(1);
 	if (! Number.isFinite(head)) { throw new Erro(ErroId.Type
-			, `cannot sub ${lprint(cons(head, array2cons(nums)))}`); }
+			, `cannot sub ${lprint(cons(head, vect2cons(nums)))}`); }
 	return nums.reduce(function (acc, n)
 			{
 				if (! Number.isFinite(n))
 				{
 					throw new Erro(ErroId.Type
-							, `cannot sub ${lprint(cons(head, array2cons(nums)))}`);
+							, `cannot sub ${lprint(cons(head, vect2cons(nums)))}`);
 				}
 				return acc - n;
 			}
@@ -438,7 +438,7 @@ function mul ()
 				if (! Number.isFinite(n))
 				{
 					throw new Erro(ErroId.Type
-							, `cannot mul ${lprint(array2cons(nums))}`);
+							, `cannot mul ${lprint(vect2cons(nums))}`);
 				}
 				return acc * n;
 			}
@@ -449,13 +449,13 @@ function div (head)
 {
 	let nums = Array.from(arguments).slice(1);
 	if (! Number.isFinite(head)) { throw new Erro(ErroId.Type
-			, `cannot div ${lprint(cons(head, array2cons(nums)))}`); }
+			, `cannot div ${lprint(cons(head, vect2cons(nums)))}`); }
 	return nums.reduce(function (acc, n)
 			{
 				if (! Number.isFinite(n))
 				{
 					throw new Erro(ErroId.Type
-							, `cannot div ${lprint(cons(head, array2cons(nums)))}`);
+							, `cannot div ${lprint(cons(head, vect2cons(nums)))}`);
 				}
 				return acc / n;
 			}
@@ -820,7 +820,7 @@ function take_string (code)
 	throw new Erro(ErroId.Syntax, "not found close double quote.");
 }
 
-function cons2array (c)
+function cons2vect (c)
 {
 	arr = [];
 	for (let rest = c; ! atom(rest); rest = cdr(rest))
@@ -830,7 +830,7 @@ function cons2array (c)
 	return arr;
 }
 
-function array2cons (l)
+function vect2cons (l)
 {
 	return nreverse(l.reduce((acc, e) => cons(e, acc), nil));
 }
@@ -1073,7 +1073,7 @@ function lapply (proc, args)
 	}
 	if (proc instanceof Function || (typeof proc) == "function")
 	{
-		return proc.apply(null, cons2array(args));
+		return proc.apply(null, cons2vect(args));
 	}
 	throw new Erro(ErroId.UnCallable, `${lprint(proc)} is not callable.`);
 }

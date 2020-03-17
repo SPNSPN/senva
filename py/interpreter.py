@@ -174,17 +174,17 @@ def add (*nums):
 	acc = 0
 	for n in nums:
 		if not (isinstance(n, int) or isinstance(n, float)):
-			raise Erro(ErroId.Type, "cannot add " + lprint(array2cons(nums)))
+			raise Erro(ErroId.Type, "cannot add " + lprint(vect2cons(nums)))
 		acc += n
 	return acc
 
 def sub (head, *nums):
 	if not (isinstance(head, int) or isinstance(head, float)):
-		raise Erro(ErroId.Type, "cannot sub " + lprint(cons(head, array2cons(nums))))
+		raise Erro(ErroId.Type, "cannot sub " + lprint(cons(head, vect2cons(nums))))
 	acc = head
 	for n in nums:
 		if not (isinstance(n, int) or isinstance(n, float)):
-			raise Erro(ErroId.Type, "cannot sub " + lprint(cons(head, array2cons(nums))))
+			raise Erro(ErroId.Type, "cannot sub " + lprint(cons(head, vect2cons(nums))))
 		acc -= n
 	return acc
 
@@ -192,7 +192,7 @@ def mul (*nums):
 	acc = 1
 	for n in nums:
 		if not (isinstance(n, int) or isinstance(n, float)):
-			raise Erro(ErroId.Type, "cannot mul " + lprint(array2cons(nums)))
+			raise Erro(ErroId.Type, "cannot mul " + lprint(vect2cons(nums)))
 		acc *= n
 	return acc
 
@@ -202,30 +202,30 @@ def mul (*nums):
 #		for n in nums:
 #			if not (isinstance(n, int) or isinstance(n, float)):
 #				raise Erro(ErroId.Type, "cannot div "
-#						+ lprint(cons(head, array2cons(nums))))
+#						+ lprint(cons(head, vect2cons(nums))))
 #			acc /= n
 #		return acc
 #
 #	if isinstance(head, float):
 #		return fdiv()
 #	if not isinstance(head, int):
-#		raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, array2cons(nums))))
+#		raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, vect2cons(nums))))
 #	acc = head
 #	for n in nums:
 #		if not (isinstance(n, int) or isinstance(n, float)):
-#			raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, array2cons(nums))))
+#			raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, vect2cons(nums))))
 #		if isinstance(n, float):
 #			return fdiv()
 #		acc //= n
 #	return acc
 def div (head, *nums):
 	if not (isinstance(head, int) or isinstance(head, float)):
-		raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, array2cons(nums))))
+		raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, vect2cons(nums))))
 	acc = head
 	iacc = int(head)
 	for n in nums:
 		if not (isinstance(n, int) or isinstance(n, float)):
-			raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, array2cons(nums))))
+			raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, vect2cons(nums))))
 		acc /= n
 		iacc //= n
 	if acc == iacc:
@@ -344,7 +344,7 @@ def lsetq (env, args):
 
 def land (env, args):
 	ret = t
-	for a in cons2array(args):
+	for a in cons2vect(args):
 		ret = leval(a, env)
 		if ret is nil:
 			return nil
@@ -352,7 +352,7 @@ def land (env, args):
 
 def lor (env, args):
 	ret = nil
-	for a in cons2array(args):
+	for a in cons2vect(args):
 		ret = leval(a, env)
 		if not ret is nil:
 			return ret
@@ -501,7 +501,7 @@ def lapply (proc, args):
 	if isinstance(proc, Func):
 		return proc(args)
 	if callable(proc):
-		return proc(*cons2array(args))
+		return proc(*cons2vect(args))
 	raise Erro(ErroId.UnCallable, lprint(proc) + " is not callable.")
 
 def lthrow (eid, estr):
@@ -785,7 +785,7 @@ def take_string (code):
 		idx += 1
 	raise Erro(ErroId.Syntax, "not found close double quote.")
 
-def cons2array (c):
+def cons2vect (c):
 	arr = []
 	rest = c
 	while not isnil(rest):
@@ -793,7 +793,7 @@ def cons2array (c):
 		rest = cdr(rest)
 	return arr
 
-def array2cons (l):
+def vect2cons (l):
 	c = nil
 	for e in l:
 		c = cons(e, c)
@@ -939,17 +939,17 @@ def vect (*args):
 
 def queu (*args):
 	q = Queu()
-	q.exit = array2cons(args)
+	q.exit = vect2cons(args)
 	q.entr = last(q.exit)
 	return q
 
 def to_list (obj):
 	if isinstance(obj, list):
-		return array2cons(obj)
+		return vect2cons(obj)
 	if isinstance(obj, Symb):
-		return array2cons([ord(c) for c in obj.name])
+		return vect2cons([ord(c) for c in obj.name])
 	if isinstance(obj, str):
-		return array2cons([ord(c) for c in obj])
+		return vect2cons([ord(c) for c in obj])
 	if isinstance(obj, Queu):
 		return obj.exit
 	if isinstance(obj, Cons):
@@ -960,13 +960,13 @@ def to_list (obj):
 
 def to_vect (obj):
 	if isinstance(obj, Cons):
-		return cons2array(obj)
+		return cons2vect(obj)
 	if isinstance(obj, Symb):
 		return [ord(c) for c in obj.name]
 	if isinstance(obj, str):
 		return [ord(c) for c in obj]
 	if isinstance(obj, Queu):
-		return cons2array(obj.exit)
+		return cons2vect(obj.exit)
 	if isinstance(obj, list):
 		return obj
 	if obj is nil:
@@ -1073,7 +1073,7 @@ def seekenv (env, sym):
 	raise Erro(ErroId.Symbol, lprint(sym) + " is not defined.")
 
 def l (*args):
-	return array2cons(args)
+	return vect2cons(args)
 
 
 
