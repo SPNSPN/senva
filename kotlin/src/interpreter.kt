@@ -99,7 +99,10 @@ class Queu ()
 			entr = queu.entr
 			exit = queu.exit
 		}
-		rplacd(entr as Cons, queu.exit)
+		else
+		{
+			rplacd(entr as Cons, queu.exit)
+		}
 		return this
 	}
 }
@@ -644,19 +647,45 @@ fun to_queu (obj: Any): Queu
 {
 	if (obj is Cons) { return Queu(obj) }
 	if (obj is Symb) { return Queu(vect2cons(obj.name.toCharArray().map({e -> e.toInt()}).toMutableList())) }
-	throw Erro(ErroId.Type, "cannot cast ${lprint(obj)} to VectT.")
+	if (obj is String) { return Queu(vect2cons(obj.toCharArray().map({e -> e.toInt()}).toMutableList())) }
+	if (obj is MutableList<*>) { return Queu(vect2cons(obj as MutableList<Any>)) }
+	if (obj is Queu) { return obj }
+	if (obj is Nil) { return Queu() }
+	throw Erro(ErroId.Type, "cannot cast ${lprint(obj)} to QueuT.")
 }
 
 fun symbol (obj: Any): Symb
 {
-	// TODO
-	return Symb("")
+	if (obj is ICons)
+	{
+		var rest: Any = obj
+		var strn = ""
+		while (rest is Cons)
+		{
+			strn += (car(rest) as Number).toChar()
+			rest = cdr(rest)
+		}
+		return Symb(strn)
+	}
+	if (obj is Queu) { return symbol(to_vect(obj)) }
+//	if (obj is MutableList<*>) { return Symb(obj.map({e: Any -> (e as Number).toChar()}).joinToString()) }
+	if (obj is MutableList<*>) { return Symb(obj.map({e -> (e as Number).toChar()}).joinToString("")) }
+	if (obj is String) { return Symb(obj) }
+	if (obj is Symb) { return obj }
+	throw Erro(ErroId.Type, "cannot cast ${lprint(obj)} to SymbT.")
 }
 
-fun sprint (obj: Any): String
+fun lsprint (args: ICons): String
 {
-	// TODO
-	return ""
+	var strn = ""
+		var rest: Any = args
+		while (rest is Cons)
+		{
+			val e = car(rest)
+				strn += if (e is String) e else lprint(e)
+				rest = cdr(rest)
+		}
+	return strn
 }
 
 fun nth (c: ICons, n: Long): Any
@@ -810,11 +839,16 @@ fun growth (tree: ICons, buff: ReadBuf): ICons
 fun find_co_paren (code: String): Int
 {
 	var sflg = false
+	var eflg = false
 	var layer = 1
 	for (idx in 0..(code.length - 1))
 	{
 		val c = code[idx]
-		if (! sflg && '(' == c)
+		if (eflg)
+		{
+			eflg = false
+		}
+		else if (! sflg && '(' == c)
 		{
 			++layer
 		}
@@ -824,6 +858,7 @@ fun find_co_paren (code: String): Int
 		}
 		else if ('\\' == c)
 		{
+			eflg = true
 			continue
 		}
 		else if ('"' == c)
@@ -839,10 +874,15 @@ fun find_co_paren (code: String): Int
 fun find_co_bracket (code: String): Int
 {
 	var sflg = false
+	var eflg = false
 	var layer = 1
 	for (idx in 0..(code.length - 1))
 	{
 		val c = code[idx]
+		if (eflg)
+		{
+			eflg = false
+		}
 		if (! sflg && '[' == c)
 		{
 			++layer
@@ -853,6 +893,7 @@ fun find_co_bracket (code: String): Int
 		}
 		else if ('\\' == c)
 		{
+			eflg = true
 			continue
 		}
 		else if ('"' == c)
@@ -888,12 +929,12 @@ fun take_string (code: String): Pair<String, Int>
 			if (escape_char_table.containsKey(c)) { c = escape_char_table[c]!! }
 			eflg = false
 		}
-		if ('"' == c) { return Pair(strn, idx + 1) }
-		if ('\\' == c)
+		else if ('\\' == c)
 		{
 			eflg = true
 			continue
 		}
+		else if ('"' == c) { return Pair(strn, idx + 1) }
 		strn += c
 	}
 	throw Erro(ErroId.Syntax, "not found close double quote.")
@@ -1305,7 +1346,7 @@ fun make_genv (): Cons
 	regist_subr1(genv, "to-vect", ::to_vect)
 	regist_subr1(genv, "to-queu", ::to_queu)
 	regist_subr1(genv, "symbol", ::symbol)
-	regist_subr1(genv, "sprint", ::sprint)
+	regist(genv, "sprint", Subr(::lsprint, "sprint"))
 
 	regist(genv, "if", Spfm(::lif, "if"))
 	regist(genv, "lambda"
@@ -1314,6 +1355,8 @@ fun make_genv (): Cons
 	regist(genv, "define", Spfm(::ldefine, "define"))
 	regist(genv, "setq", Spfm(::lsetq, "setq"))
 	regist(genv, "quote", Spfm({env: ICons, args: ICons -> car(args)}, "quote"))
+
+	regist(genv, "!", Spfm({env: ICons, args: ICons -> leval(lapply(leval(car(args), env), cdr(args) as ICons), env)}, "!"))
 	regist(genv, "do", Spfm(::ldo, "do"))
 	return genv
 }
