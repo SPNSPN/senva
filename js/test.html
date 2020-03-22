@@ -269,6 +269,7 @@ CHECK("(load \"senva/test.snv\")", "NIL");
 
 CHECK("((js \"encodeURI\") \"%^<}\")", "\"%25%5E%3C%7D\"");
 CHECK("(-> \"abc\" \"length\")", 3);
+CHECK("(new \"Cons\" 1 2)", "(1 . 2)");
 do_check();
 </script>
 </body>

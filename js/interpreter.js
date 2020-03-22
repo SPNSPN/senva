@@ -1173,6 +1173,12 @@ function attr (obj)
 			}, res);
 }
 
+function lnew (cname)
+{
+	let args = Array.from(arguments);
+	return new (Function.prototype.bind.apply(eval(cname), args));
+}
+
 function lgetat (vect, idx)
 {
 	if (Array.isArray(vect) || vect instanceof String || (typeof vect) == "string")
@@ -1380,6 +1386,7 @@ regist("processor", function () { return new Symb("javascript"); });
 regist("tee", tee);
 regist("js", eval);
 regist("->", attr);
+regist("new", lnew);
 		
 regist("quote", new Spfm(function (env, args) { return car(args); }, "quote"));
 regist("quasiquote", new Spfm(function (env, args)

@@ -1275,7 +1275,6 @@ fun lprint_rec (expr: Any, dup: ICons, rec: Boolean): String
 	if (expr is Func) { return "<Func ${lprint_rec(expr.args, dup,  true)} ${lprint_rec(expr.body, dup, true)}>" }
 	if (expr is Spfm) { return "<Spfm ${expr.name}>" }
 	if (expr is Subr) { return "<Subr ${expr.name}>" }
-//	if (expr is Function<*>) { return "<Subr ${expr.name} >" } TODO
 	return expr.toString()
 }
 
