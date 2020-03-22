@@ -984,7 +984,7 @@ function lread (code)
 		else if ("^" == c)
 		{
 			tree = growth(tree, buff);
-			buff[1] = cons(new Symb("print"), buff[1]);
+			buff[1] = cons(new Symb("tee"), buff[1]);
 		}
 		else if ("." == c)
 		{
@@ -1147,6 +1147,12 @@ function llprint ()
 	Array.from(arguments).map(function (e) { llprin(e); });
 	console.log(" ");
 	return nil;
+}
+
+function tee (obj)
+{
+	console.log(lprint(obj));
+	return obj;
 }
 
 function lgetat (vect, idx)
@@ -1353,6 +1359,7 @@ regist("load", lload);
 regist("getat", lgetat);
 regist("setat", lsetat);
 regist("processor", function () { return new Symb("javascript"); });
+regist("tee", tee);
 regist("js", eval);
 		
 regist("quote", new Spfm(function (env, args) { return car(args); }, "quote"));

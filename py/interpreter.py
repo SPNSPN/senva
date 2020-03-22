@@ -445,7 +445,7 @@ def lread (code):
 			buff[1] = cons(Symb("splicing"), buff[1])
 		elif "^" == c:
 			tree = growth(tree, buff)
-			buff[1] = cons(Symb("print"), buff[1])
+			buff[1] = cons(Symb("tee"), buff[1])
 		elif "." == c:
 			if buff[0]:
 				buff[0] += "."
@@ -547,6 +547,10 @@ def llprint (*args):
 	llprin(*args)
 	print("", flush = True)
 	return nil
+
+def tee (obj):
+	print(lprint(obj))
+	return obj
 
 def lgetc ():
 	return ord(sys.stdin.read(1))
@@ -1133,6 +1137,7 @@ def initenv ():
 	ienv = cons(cons(Symb("getat"), lgetat), ienv)
 	ienv = cons(cons(Symb("setat"), lsetat), ienv)
 	ienv = cons(cons(Symb("processor"), processor), ienv)
+	ienv = cons(cons(Symb("tee"), tee), ienv)
 	ienv = cons(cons(Symb("exit"), (lambda: exit())), ienv)
 	ienv = cons(cons(Symb("py"), (lambda expr: eval(expr))), ienv)
 	ienv = cons(cons(Symb("import"), (lambda mname:
