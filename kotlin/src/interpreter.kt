@@ -687,6 +687,12 @@ fun lsprint (args: ICons): String
 	return strn
 }
 
+fun tee (obj: Any): Any
+{
+	println(lprint(obj))
+	return obj
+}
+
 fun nth (c: ICons, n: Long): Any
 {
 	var rest: Any = c
@@ -1102,7 +1108,7 @@ fun lread (code: String): ICons
 		else if ('^' == c)
 		{
 			tree = growth(tree, buff)
-			buff.rmacs = cons(Symb("print"), buff.rmacs)
+			buff.rmacs = cons(Symb("tee"), buff.rmacs)
 		}
 		else if ('.' == c)
 		{
@@ -1351,6 +1357,8 @@ fun make_genv (): Cons
 	regist_subr1(genv, "to-queu", ::to_queu)
 	regist_subr1(genv, "symbol", ::symbol)
 	regist(genv, "sprint", Subr(::lsprint, "sprint"))
+
+	regist_subr1(genv, "tee", ::tee)
 
 	regist(genv, "if", Spfm(::lif, "if"))
 	regist(genv, "lambda"

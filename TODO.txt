@@ -1,4 +1,4 @@
-simple_ga.snv
+;simple_ga.snv
 js senva canvas game
 ps senvaのrecursive lprint
 switchのプチコン4版senva

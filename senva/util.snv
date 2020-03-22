@@ -494,11 +494,11 @@
 
 (define incf
   (lambda (var)
-	`(do (setq var (+ var 1)) var)))
+	`(do (setq ,var (+ ,var 1)) ,var)))
 
 (define decf
   (lambda (var)
-	`(do (setq var (- var 1)) var)))
+	`(do (setq ,var (- ,var 1)) ,var)))
 
 (define split
   (! letrec ((split-rec

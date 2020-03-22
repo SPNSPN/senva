@@ -12,7 +12,7 @@
 (define senva::error::file-not-found     9)
 
 (! let
-   ((clist (to-list "()'\"`,@.[]; \\\a\b\f\n\r\t\v\0")))
+   ((clist (to-list "()'\"`,@^.[]; \\\a\b\f\n\r\t\v\0")))
    (do
 	 (define senva::o-paren   (nth clist 0))
 	 (define senva::c-paren   (nth clist 1))
@@ -21,20 +21,21 @@
 	 (define senva::b-quote   (nth clist 4))
 	 (define senva::camma     (nth clist 5))
 	 (define senva::atmark    (nth clist 6))
-	 (define senva::period    (nth clist 7))
-	 (define senva::o-bracket (nth clist 8))
-	 (define senva::c-bracket (nth clist 9))
-	 (define senva::semicolon (nth clist 10))
-	 (define senva::space     (nth clist 11))
-	 (define senva::backslash (nth clist 12))
-	 (define senva::alert     (nth clist 13))
-	 (define senva::backspace (nth clist 14))
-	 (define senva::pagefeed  (nth clist 15))
-	 (define senva::newline   (nth clist 16))
-	 (define senva::c-return  (nth clist 17))
-	 (define senva::tab       (nth clist 18))
-	 (define senva::v-tab     (nth clist 19))
-	 (define senva::eol       (nth clist 20))
+	 (define senva::caret     (nth clist 7))
+	 (define senva::period    (nth clist 8))
+	 (define senva::o-bracket (nth clist 9))
+	 (define senva::c-bracket (nth clist 10))
+	 (define senva::semicolon (nth clist 11))
+	 (define senva::space     (nth clist 12))
+	 (define senva::backslash (nth clist 13))
+	 (define senva::alert     (nth clist 14))
+	 (define senva::backspace (nth clist 15))
+	 (define senva::pagefeed  (nth clist 16))
+	 (define senva::newline   (nth clist 17))
+	 (define senva::c-return  (nth clist 18))
+	 (define senva::tab       (nth clist 19))
+	 (define senva::v-tab     (nth clist 20))
+	 (define senva::eol       (nth clist 21))
 	 ))
 
 (define senva::+readmacros+ nil)
@@ -80,6 +81,12 @@
    (cons code
 		 ((lambda ((ntree nwraps nbuf))
 			(list ntree (cons 'splicing nwraps) nbuf))
+		  (senva::growth-from-buf tree wraps buf))))
+
+(! senva::defreadmacro senva::caret
+   (cons code
+		 ((lambda ((ntree nwraps nbuf))
+			(list ntree (cons 'tee nwraps) nbuf))
 		  (senva::growth-from-buf tree wraps buf))))
 
 (! senva::defreadmacro senva::period
