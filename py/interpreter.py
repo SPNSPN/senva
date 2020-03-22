@@ -443,6 +443,9 @@ def lread (code):
 		elif "@" == c:
 			tree = growth(tree, buff)
 			buff[1] = cons(Symb("splicing"), buff[1])
+		elif "^" == c:
+			tree = growth(tree, buff)
+			buff[1] = cons(Symb("print"), buff[1])
 		elif "." == c:
 			if buff[0]:
 				buff[0] += "."
@@ -597,11 +600,11 @@ def lprint (expr):
 	return s
 
 def seek_dup (expr, printed, dup):
-	if find(expr, printed):
-		if find(expr, dup):
-			return printed, dup
-		else:
+	if not findidx_eq(expr, printed) is nil:
+		if findidx_eq(expr, dup) is nil:
 			return printed, cons(expr, dup)
+		else:
+			return printed, dup
 	if (isinstance(expr, Cons)):
 		printed, dup = seek_dup(car(expr), cons(expr, printed), dup)
 		return seek_dup(cdr(expr), printed, dup)
@@ -649,7 +652,7 @@ def printcons_rec (coll, dup, rec):
 		return "(" + lprint_rec(a, dup, rec) + ")"
 	if atom(d):
 		return "(" + lprint_rec(a, dup, rec) + " . " + lprint_rec(d, dup, rec) + ")"
-	if find(d, dup):
+	if not findidx_eq(d, dup) is nil:
 		return "(" + lprint_rec(a, dup, rec) + " . " + lprint_rec(d, dup, rec) + ")"
 	return "(" + lprint_rec(a, dup, rec) + " " + lprint_rec(d, dup, rec)[1:]
 

@@ -1412,6 +1412,11 @@ function lread ($src)
 			[void](growth $tree $buff);
 			$buff[1] = cons (new-object symb "splicing") $buff[1];
 		}
+		elseif ("^" -eq $c)
+		{
+			[void](growth $tree $buff);
+			$buff[1] = cons (new-object symb "print") $buff[1];
+		}
 		else
 		{
 			$buff[0] += $c;

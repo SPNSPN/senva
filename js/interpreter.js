@@ -981,6 +981,11 @@ function lread (code)
 			tree = growth(tree, buff);
 			buff[1] = cons(new Symb("splicing"), buff[1]);
 		}
+		else if ("^" == c)
+		{
+			tree = growth(tree, buff);
+			buff[1] = cons(new Symb("print"), buff[1]);
+		}
 		else if ("." == c)
 		{
 			if (buff[0])
@@ -1207,86 +1212,6 @@ function lsetat (vect, idx, val)
 	throw new Erro(ErroId.Type, `cannot apply setat to ${lprint(vect)}`);
 }
 
-//function lprint (expr)
-//{
-//	let dup = seek_dup(expr, nil, nil);
-//	let s = "";
-//	for (let idx = 0, rest = dup; ! isnil(rest); ++idx, rest = cdr(rest))
-//	{
-//		s += `\$${idx} = ${lprint_rec(car(rest), dup, false)}\n`;
-//	}
-//	s += lprint_rec(expr, dup, true);
-//	return s;
-//}
-
-//function seek_dup (expr, printed,  dup)
-//{
-//	if (find(expr, printed)) { return cons(expr, dup); }
-//	if (atom(expr)) { return dup; }
-//	let pd = cons(expr, printed);
-//	return append1(seek_dup(car(expr), pd, dup), seek_dup(cdr(expr), pd, dup));
-//}
-
-//function lprint_rec (expr, dup, rec)
-//{
-//	let idx = findidx_eq(expr, dup);
-//	if (rec && ! isnil(idx)) { return `\$${idx}`; }
-//	if (isnil(expr)) { return "NIL"; }
-//	if (atom(expr))
-//	{
-//		if (expr instanceof Symb)
-//		{
-//			return expr.name;
-//		}
-//		if (expr instanceof String || (typeof expr) == "string")
-//		{
-//			return `\"${expr}\"`;
-//		}
-//		if (Array.isArray(expr))
-//		{
-//			return `[${expr.map(lprint).join(" ")}]`;
-//		}
-//		if (expr instanceof Queu)
-//		{
-//			return `/${lprint(expr.exit)}/`;
-//		}
-//		if (expr instanceof Func)
-//		{
-//			return `<Func ${lprint(expr.args)} ${lprint(expr.body)}>`;
-//		}
-//		if (expr instanceof Spfm)
-//		{
-//			return `<Spfm ${expr.name}>`;
-//		}
-//		if (expr instanceof Function || (typeof expr) == "function")
-//		{
-//			return `<Subr ${expr.name}>`;
-//		}
-//		return expr.toString();
-//	}
-//	else
-//	{
-//		return printcons_rec(expr, dup, true);
-//	}
-//
-//}
-//
-//function printcons_rec (coll, dup, rec)
-//{
-//	let a = car(coll);
-//	let d = cdr(coll);
-//	if (isnil(d)) { return `(${lprint_rec(a, dup, rec)})`; }
-//	if (atom(d))
-//	{
-//		return `(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})`;
-//	}
-//	if (isnil(findidx_eq(d, dup)))
-//	{
-//		return `(${lprint_rec(a, dup, rec)} ${lprint_rec(d, dup, rec).slice(1)}`;
-//	}
-//	return `(${lprint_rec(a, dup, rec)} ${lprint_rec(d, dup, rec)})`;
-//}
-
 function lprint (expr)
 {
 	let dup = seek_dup(expr, nil, nil).dup;
@@ -1304,9 +1229,9 @@ function lprint (expr)
 
 function seek_dup (expr, printed, dup)
 {
-	if (find(expr, printed))
+	if (findidx_eq(expr, printed) !== nil)
 	{
-		if (find(expr, dup)) { return {printed: printed, dup: dup}; }
+		if (findidx_eq(expr, dup) !== nil) { return {printed: printed, dup: dup}; }
 		return {printed: printed, dup: cons(expr, dup)}
 	}
 	if (expr instanceof Cons)
@@ -1369,7 +1294,7 @@ function printcons_rec (coll, dup, rec)
 	{
 		return `(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})`;
 	}
-	if (find(d, dup) !== nil)
+	if (findidx_eq(d, dup) !== nil)
 	{
 		return `(${lprint_rec(a,  dup, rec)} . ${lprint_rec(d, dup, rec)})`;
 	}

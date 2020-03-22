@@ -668,7 +668,6 @@ fun symbol (obj: Any): Symb
 		return Symb(strn)
 	}
 	if (obj is Queu) { return symbol(to_vect(obj)) }
-//	if (obj is MutableList<*>) { return Symb(obj.map({e: Any -> (e as Number).toChar()}).joinToString()) }
 	if (obj is MutableList<*>) { return Symb(obj.map({e -> (e as Number).toChar()}).joinToString("")) }
 	if (obj is String) { return Symb(obj) }
 	if (obj is Symb) { return obj }
@@ -1100,6 +1099,11 @@ fun lread (code: String): ICons
 			tree = growth(tree, buff)
 			buff.rmacs = cons(Symb("splicing"), buff.rmacs)
 		}
+		else if ('^' == c)
+		{
+			tree = growth(tree, buff)
+			buff.rmacs = cons(Symb("print"), buff.rmacs)
+		}
 		else if ('.' == c)
 		{
 			if (buff.tok.isEmpty())
@@ -1221,9 +1225,9 @@ fun lprint (expr: Any): String
 
 fun seek_dup (expr: Any, printed: ICons, dup: ICons): Pair<ICons, ICons>
 {
-	if (! (find(expr, printed) is Nil))
+	if (! (findidx_eq(expr, printed) is Nil))
 	{
-		if (! (find(expr, dup) is Nil)) { return Pair(printed, cons(expr, dup)) }
+		if (! (findidx_eq(expr, dup) is Nil)) { return Pair(printed, cons(expr, dup)) }
 		return Pair(printed, dup)
 	}
 	if (expr is Cons)
@@ -1278,7 +1282,7 @@ fun printcons_rec (coll: Cons, dup: ICons, rec: Boolean): String
 	{
 		return "(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})"
 	}
-	if (! (find(d, dup) is Nil))
+	if (! (findidx_eq(d, dup) is Nil))
 	{
 		"(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})"
 	}

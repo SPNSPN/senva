@@ -18,7 +18,7 @@ const run = function ()
 		elem.value = "";
 
 		let hist = document.getElementById("input-history");
-		hist.insertAdjacentHTML("afterbegin", `<option value='${code}'></option>`);
+		hist.insertAdjacentHTML("afterbegin", `<option value='${code.replace(/\'/g, "")}'></option>`);
 		if (hist.childNodes.length > 10)
 		{
 			hist.removeChild(hist.lastChild);

@@ -1642,6 +1642,11 @@ Addr Interpreter::read (std::istream &in)
 				pool.pushcons(rmacs
 						, pool.make_symb("splicing"));
 				break;
+			case '^':
+				growth(tree, buf, rmacs);
+				pool.pushcons(rmacs
+						, pool.make_symb("print"));
+				break;
 			default:
 				buf << c;
 				break;

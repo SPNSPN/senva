@@ -18,3 +18,4 @@
 			(high (max begin end)))
 	   (do (random::randomf)
 		   (+ (% random::x (- high low)) low)))))
+
