@@ -1239,7 +1239,15 @@ function lsetat (vect, idx, val)
 		}
 		return vect;
 	}
-	throw new Erro(ErroId.Type, `cannot apply setat to ${lprint(vect)}`);
+	try
+	{
+		vect[idx] = val;
+		return vect;
+	}
+	catch (e)
+	{
+		throw new Erro(ErroId.Type, `cannot apply setat to ${lprint(vect)}`);
+	}
 }
 
 function lprint (expr)
