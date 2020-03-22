@@ -1159,7 +1159,18 @@ function attr (obj)
 {
 	let anames = Array.from(arguments).slice(1);
 	let res = obj;
-	return anames.reduce(function (acc, aname) { return acc[aname]; }, res);
+	return anames.reduce(function (acc, aname)
+			{
+				let at = acc[aname];
+				if (at instanceof Function || (typeof at) == "function")
+				{
+					return function () { return at.apply(acc, arguments); };
+				}
+				else
+				{
+					return at;
+				}
+			}, res);
 }
 
 function lgetat (vect, idx)
