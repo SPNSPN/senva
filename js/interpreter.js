@@ -1155,6 +1155,13 @@ function tee (obj)
 	return obj;
 }
 
+function attr (obj)
+{
+	let anames = Array.from(arguments).slice(1);
+	let res = obj;
+	return anames.reduce(function (acc, aname) { return acc[aname]; }, res);
+}
+
 function lgetat (vect, idx)
 {
 	if (Array.isArray(vect) || vect instanceof String || (typeof vect) == "string")
@@ -1361,6 +1368,7 @@ regist("setat", lsetat);
 regist("processor", function () { return new Symb("javascript"); });
 regist("tee", tee);
 regist("js", eval);
+regist("->", attr);
 		
 regist("quote", new Spfm(function (env, args) { return car(args); }, "quote"));
 regist("quasiquote", new Spfm(function (env, args)
