@@ -196,28 +196,6 @@ def mul (*nums):
 		acc *= n
 	return acc
 
-#def div (head, *nums):
-#	def fdiv ():
-#		acc = head
-#		for n in nums:
-#			if not (isinstance(n, int) or isinstance(n, float)):
-#				raise Erro(ErroId.Type, "cannot div "
-#						+ lprint(cons(head, vect2cons(nums))))
-#			acc /= n
-#		return acc
-#
-#	if isinstance(head, float):
-#		return fdiv()
-#	if not isinstance(head, int):
-#		raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, vect2cons(nums))))
-#	acc = head
-#	for n in nums:
-#		if not (isinstance(n, int) or isinstance(n, float)):
-#			raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, vect2cons(nums))))
-#		if isinstance(n, float):
-#			return fdiv()
-#		acc //= n
-#	return acc
 def div (head, *nums):
 	if not (isinstance(head, int) or isinstance(head, float)):
 		raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, vect2cons(nums))))
@@ -358,24 +336,6 @@ def lor (env, args):
 			return ret
 	return nil
 
-#def expand_quasiquote (expr, env):
-#	if atom(expr):
-#		return expr
-#	if Symb("unquote") == car(expr):
-#		return leval(car(cdr(expr)), env)
-#
-#	eexpr = Queu()
-#	rest = expr
-#	while not isnil(rest):
-#		if not atom(car(rest)) and Symb("splicing") == car(car(rest)):
-#			sexpr = leval(car(cdr(car(rest))), env)
-#			while not isnil(sexpr):
-#				eexpr.push(car(sexpr))
-#				sexpr = cdr(sexpr)
-#		else:
-#			eexpr.push(expand_quasiquote(car(rest), env))
-#		rest = cdr(rest)
-#	return to_list(eexpr)
 def expand_quasiquote (expr, env):
 	if atom(expr):
 		return expr
@@ -928,14 +888,6 @@ def nconc (colla, collb):
 	las = last(colla)
 	rplacd(las, collb)
 	return colla
-#def nconc (*args):
-#	if not args:
-#		return nil
-#	arr = args[0]
-#	for a in args[1:]:
-#		if not a is nil:
-#			rplacd(last(arr), a)
-#	return arr
 
 def nreverse (coll):
 	rev = nil

@@ -623,6 +623,19 @@ fun nreverse (coll: ICons): ICons
 	return rev
 }
 
+fun lload (path: String): Any
+{
+	try
+	{
+		File().readText()
+	}
+	catch (e: Erro)
+	{
+		// TODO
+		throw e
+	}
+}
+
 fun to_list (obj: Any): ICons
 {
 	if (obj is MutableList<*>) { return vect2cons(obj) }
