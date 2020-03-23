@@ -776,6 +776,40 @@ fun ldo (env: ICons, args: ICons): Any
 	return leval(car(rest as ICons), env)
 }
 
+fun expand_quasiquote (expr: Any, env: ICons): Any
+{
+	if (expr is Cons)
+	{
+		val sym = car(expr)
+		if (sym is Symb && sym.name == "unquote")
+		{
+			return leval(car(cdr(expr)), env)
+		}
+		var eexpr: ICons = nil
+		var rest = expr
+		while (rest is Cons)
+		{
+			if (rest.car is Cons && rest.car.car is Symb
+					&& rest.car.car.name == "splicing")
+			{
+				var sexpr = leval(car(cdr(car(rest))), env)
+				while (sexpr is Cons)
+				{
+					eexpr = cons(car(sexpr), eexpr)
+					sexpr = cdr(sexpr)
+				}
+			}
+			else
+			{
+				eexpr = cons(expand_quasiquote(car(rest), env), eexpr)
+			}
+			rest = cdr(rest)
+		}
+		return nreverse(eexpr)
+	}
+	return expr;
+}
+
 fun l (vararg args: Any): ICons = args.foldRight(nil
 		, fun (e: Any, acc: ICons): ICons = cons(e, acc) )
 

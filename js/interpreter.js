@@ -678,7 +678,7 @@ function expand_quasiquote (expr, env)
 	if (atom(expr)) { return expr; }
 	if (car(expr) instanceof Symb && car(expr).name == "unquote") {
 		return leval(car(cdr(expr)), env); }
-	let eexpr = new Queu();
+	let eexpr = nil;
 	for (let rest = expr; ! atom(rest); rest = cdr(rest))
 	{
 		if (! atom(car(rest)) && car(car(rest)) instanceof Symb
@@ -687,15 +687,15 @@ function expand_quasiquote (expr, env)
 			for (let sexpr = leval(car(cdr(car(rest))), env)
 					; ! atom(sexpr); sexpr = cdr(sexpr))
 			{
-				eexpr.push(car(sexpr));
+				eexpr = cons(car(sexpr), eexpr);
 			}
 		}
 		else
 		{
-			eexpr.push(expand_quasiquote(car(rest), env));
+			eexpr = cons(expand_quasiquote(car(rest), env), eexpr);
 		}
 	}
-	return to_list(eexpr);
+	return nreverse(eexpr);
 }
 
 function inumable (str)
