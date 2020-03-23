@@ -111,7 +111,7 @@ class Subr (val proc: (ICons) -> Any, val name: String)
 
 class Spfm (val proc: (ICons, ICons) -> Any, val name: String)
 
-class Func (val args: ICons, val body: ICons, val env: ICons)
+class Func (val args: Any, val body: Any, val env: ICons)
 
 fun cons (a: Any, d: Any): Cons = Cons(a, d)
 fun car (o: ICons): Any = o.car()
@@ -1401,7 +1401,7 @@ fun make_genv (): Cons
 
 	regist(genv, "if", Spfm(::lif, "if"))
 	regist(genv, "lambda"
-			, Spfm({env: ICons, args: ICons -> Func(car(args) as ICons, nth(args, 1) as ICons, env)}
+			, Spfm({env: ICons, args: ICons -> Func(car(args), nth(args, 1), env)}
 				, "lambda"))
 	regist(genv, "define", Spfm(::ldefine, "define"))
 	regist(genv, "setq", Spfm(::lsetq, "setq"))
