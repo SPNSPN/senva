@@ -358,24 +358,42 @@ def lor (env, args):
 			return ret
 	return nil
 
+#def expand_quasiquote (expr, env):
+#	if atom(expr):
+#		return expr
+#	if Symb("unquote") == car(expr):
+#		return leval(car(cdr(expr)), env)
+#
+#	eexpr = Queu()
+#	rest = expr
+#	while not isnil(rest):
+#		if not atom(car(rest)) and Symb("splicing") == car(car(rest)):
+#			sexpr = leval(car(cdr(car(rest))), env)
+#			while not isnil(sexpr):
+#				eexpr.push(car(sexpr))
+#				sexpr = cdr(sexpr)
+#		else:
+#			eexpr.push(expand_quasiquote(car(rest), env))
+#		rest = cdr(rest)
+#	return to_list(eexpr)
 def expand_quasiquote (expr, env):
 	if atom(expr):
 		return expr
 	if Symb("unquote") == car(expr):
 		return leval(car(cdr(expr)), env)
 
-	eexpr = Queu()
+	eexpr = nil
 	rest = expr
 	while not isnil(rest):
 		if not atom(car(rest)) and Symb("splicing") == car(car(rest)):
 			sexpr = leval(car(cdr(car(rest))), env)
 			while not isnil(sexpr):
-				eexpr.push(car(sexpr))
+				eexpr = cons(car(sexpr), eexpr)
 				sexpr = cdr(sexpr)
 		else:
-			eexpr.push(expand_quasiquote(car(rest), env))
+			eexpr = cons(expand_quasiquote(car(rest), env), eexpr)
 		rest = cdr(rest)
-	return to_list(eexpr)
+	return nreverse(eexpr)
 
 def attr (obj, *anames):
 	ret = obj

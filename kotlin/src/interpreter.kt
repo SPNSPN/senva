@@ -783,23 +783,29 @@ fun expand_quasiquote (expr: Any, env: ICons): Any
 		val sym = car(expr)
 		if (sym is Symb && sym.name == "unquote")
 		{
-			return leval(car(cdr(expr)), env)
+			return leval(car(cdr(expr) as ICons), env)
 		}
 		var eexpr: ICons = nil
 		var rest = expr
 		while (rest is Cons)
 		{
-			if (rest.car is Cons && rest.car.car is Symb
-					&& rest.car.car.name == "splicing")
+			var is_splicing = false
+			val e = car(rest)
+			if (e is Cons)
 			{
-				var sexpr = leval(car(cdr(car(rest))), env)
-				while (sexpr is Cons)
+				val sym = car(e)
+				if (sym is Symb && sym.name == "splicing")
 				{
-					eexpr = cons(car(sexpr), eexpr)
-					sexpr = cdr(sexpr)
+					is_splicing = true
+					var sexpr = leval(car(cdr(car(rest) as ICons) as ICons), env)
+					while (sexpr is Cons)
+					{
+						eexpr = cons(car(sexpr), eexpr)
+						sexpr = cdr(sexpr)
+					}
 				}
 			}
-			else
+			if (! is_splicing)
 			{
 				eexpr = cons(expand_quasiquote(car(rest), env), eexpr)
 			}
@@ -1401,7 +1407,13 @@ fun make_genv (): Cons
 	regist(genv, "setq", Spfm(::lsetq, "setq"))
 	regist(genv, "quote", Spfm({env: ICons, args: ICons -> car(args)}, "quote"))
 
-	regist(genv, "!", Spfm({env: ICons, args: ICons -> leval(lapply(leval(car(args), env), cdr(args) as ICons), env)}, "!"))
+	regist(genv, "quasiquote", Spfm(
+				{env: ICons, args: ICons -> expand_quasiquote(car(args), env)}
+				, "quasiquote"))
+
+	regist(genv, "!", Spfm(
+				{env: ICons, args: ICons ->
+				leval(lapply(leval(car(args), env), cdr(args) as ICons), env)}, "!"))
 	regist(genv, "do", Spfm(::ldo, "do"))
 	return genv
 }
