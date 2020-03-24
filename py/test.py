@@ -124,7 +124,6 @@ CHECK("`',(car '(a . d))", "(quote a)")
 CHECK("((lambda (head . rest) rest) 1 2 3 4)", "(2 3 4)")
 CHECK("((lambda all all) 1 2 3 4)", "(1 2 3 4)")
 CHECK("((lambda ((pa (pb pc) pd)) pc) (list 1 (list 2 3) 4))", "3")
-CHECK("(load \"senva/matrix.snv\") (matrix::determinant '((3 1 1 2 1) (5 1 3 4 1) (2 0 1 0 3) (1 3 2 1 1) (2 1 5 10 1)))", "-292")
 ECHECK("(throw 1 \"an error occured!\")", 1, "an error occured!")
 ECHECK("(do 1 (throw 2 \"an error occured!\") 3)", 2, "an error occured!")
 ECHECK("(if (throw 3 \"an error occured!\") 3 4)", 3, "an error occured!")
@@ -142,9 +141,6 @@ ECHECK("ffoo", ErroId.Symbol, "ffoo is not defined.")
 ECHECK("(", ErroId.Syntax, "not found close parenthesis.")
 ECHECK(")", ErroId.Syntax, "found excess close parenthesis.")
 ECHECK("(to-list 3)", ErroId.Type, "cannot cast 3 to ConsT.")
-ECHECK("(load \"not/exist/path.ext\")"
-		, ErroId.FileNotFound, "not found file: \"not/exist/path.ext\"")
-ECHECK("(load 33)", ErroId.Type, "cannot apply load to 33")
 ECHECK("(to-vect 33)", ErroId.Type, "cannot cast 33 to VectT.")
 ECHECK("(symbol 33)", ErroId.Type, "cannot cast 33 to SymbT.")
 ECHECK("(to-queu 33)", ErroId.Type, "cannot cast 33 to QueuT.")
@@ -202,6 +198,10 @@ ECHECK("(setat \"ABC\" 1 '(1 . 2))", ErroId.Type, "cannot setat (1 . 2) to \"ABC
 CHECK("(to-list \"a\\nb\\tc\\0\")", "(97 10 98 9 99 0)")
 CHECK("`[1 2 ,3 ,(+ 2 2) @(if (> 3 1) '(5 6) nil) @(cons 7 `(8 ,(* 3 3))) 10]"
 		, "[1 2 3 4 5 6 7 8 9 10]")
+CHECK("(load \"senva/matrix.snv\") (matrix::determinant '((3 1 1 2 1) (5 1 3 4 1) (2 0 1 0 3) (1 3 2 1 1) (2 1 5 10 1)))", "-292")
+ECHECK("(load \"not/exist/path.ext\")"
+		, ErroId.FileNotFound, "not found file: \"not/exist/path.ext\"")
+ECHECK("(load 33)", ErroId.Type, "cannot apply load to 33")
 CHECK("((lambda (c) (list (list c c) (cons c c))) (list 1 2))"\
 		, "$0 = (1 2)\n(($0 $0) ($0 . $0))")
 CHECK("((lambda (c v) [v c [[v c] (list v c)] (list (list c v) [c v])]) (list 1 2) [1 2])"\

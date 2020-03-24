@@ -228,9 +228,9 @@
 		(drop (cdr coll) (- n 1)))
 	  nil)))
 
-(define tee
-  (lambda (expr)
-	(do (print expr) expr)))
+;(define tee
+;  (lambda (expr)
+;	(do (print expr) expr)))
 
 (define find-if
   (lambda (pred coll)
@@ -326,17 +326,16 @@
 
 (define range
   (! letrec
-		  ((range-rec
-			 (lambda (b e st acc)
-			   (if (equal b e)
-				 (cons b acc)
-				 (range-rec b (+ e st) st
-							(cons e acc))))))
-		  (lambda (begin end)
-			(! cond
-			  ((< begin end) (range-rec begin (- end 1) -1 nil)
-			   (> begin end) (range-rec begin (+ end 1) 1 nil)
-			   t nil)))))
+	 ((range-rec
+		(lambda (b e st acc)
+		  (if (or (and (< b e) (< st 0)) (and (> b e) (< 0 st)))
+			(range-rec b (+ e st) st (cons e acc))
+			(cons b acc)))))
+	 (lambda (begin end)
+	   (! cond
+		  ((< begin end) (range-rec begin (- end 1) -1 nil)
+		   (> begin end) (range-rec begin (+ end 1) 1 nil)
+		   t nil)))))
 
 (define max-in
   (! letrec ((max-in-rec

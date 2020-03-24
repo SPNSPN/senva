@@ -1,4 +1,5 @@
 package senva
+import java.io.File
 
 interface ICons
 {
@@ -162,6 +163,10 @@ fun equal (a: Any, b: Any): Any
 				}
 			}
 		}
+	}
+	else if (a is Number && b is Number)
+	{
+		cond = if (a.toDouble() == b.toDouble()) t else nil
 	}
 	else
 	{
@@ -458,9 +463,14 @@ fun ldiv (head: Any, nums: ICons): Number
 	}
 }
 
-fun lmod (a: Long, b: Long): Long
+fun lmod (a: Any, b: Any): Long
 {
-	return a % b
+	if ((b is Int || b is Long || b is Byte || b is Short)
+			&& (b is Int || b is Long || b is Byte || b is Short))
+	{
+		return a.toLong() % b.toLong()
+	}
+	throw Erro(ErroId.Type, "cannot mod ${lprint(l(a, b))}")
 }
 
 fun lgt (head: Any, nums: ICons): Any
@@ -587,6 +597,22 @@ fun lle (head: Any, nums: ICons): Any
 	throw Erro(ErroId.Type, "cannot le ${lprint(cons(head, nums))}")
 }
 
+fun ltype (o: Any): Symb
+{
+	if (o is Cons) { return Symb("<cons>") }
+	if (o is Func) { return Symb("<func>") }
+	if (o is Spfm) { return Symb("<spfm>") }
+	if (o is Subr) { return Symb("<subr>") }
+	if (o is Symb) { return Symb("<symb>") }
+	if (o is String) { return Symb("<strn>") }
+	if (o is Int || o is Long || o is Byte || o is Short) { return Symb("<inum>") }
+	if (o is Double || o is Float) { return Symb("<fnum>") }
+	if (o is Nil) { return Symb("<nil>") }
+	if (o is MutableList<*>) { return Symb("<vect>") }
+	if (o is Queu) { return Symb("<queu>") }
+	return Symb("<kotlin ${o.javaClass.kotlin.simpleName}>")
+}
+
 fun last (o: ICons): ICons
 {
 	if (o is Cons)
@@ -625,15 +651,12 @@ fun nreverse (coll: ICons): ICons
 
 fun lload (path: String): Any
 {
-	try
+	val fin = File(path)
+	if (! fin.exists())
 	{
-		File().readText()
+		throw Erro(ErroId.FileNotFound, "not found file: ${lprint(path)}")
 	}
-	catch (e: Erro)
-	{
-		// TODO
-		throw e
-	}
+	return leval(lreadtop(fin.readText()), genv)
 }
 
 fun to_list (obj: Any): ICons
@@ -776,6 +799,32 @@ fun lsetq (env: ICons, args: ICons): Any
 		throw Erro(ErroId.Symbol, "${lprint(sym)} is not defined.")
 	}
 	throw Erro(ErroId.Type, "cannot setq ${lprint(sym)}, must be SymbT.")
+}
+
+fun land (env: ICons, args: ICons): Any
+{
+	var ret: Any = t
+	var rest: Any = args
+	while (rest is Cons)
+	{
+		ret = leval(car(rest), env)
+		if (ret is Nil) { return nil }
+		rest = cdr(rest)
+	}
+	return ret
+}
+
+fun lor (env: ICons, args: ICons): Any
+{
+	var ret: Any = nil
+	var rest: Any = args
+	while (rest is Cons)
+	{
+		ret = leval(car(rest), env)
+		if (! (ret is Nil)) { return ret }
+		rest = cdr(rest)
+	}
+	return nil
 }
 
 fun ldo (env: ICons, args: ICons): Any
@@ -1053,7 +1102,7 @@ fun assoc (alist: ICons, key: Any): Cons?
 
 fun assocdr (alist: ICons, key: Any): Any?
 {
-	return assoc(alist, key)?.let { cdr(it as Cons) }
+	return assoc(alist, key)?.let { cdr(it as ICons) }
 }
 
 fun seekenv (env: ICons, sym: Symb): Any
@@ -1099,7 +1148,7 @@ fun lread (code: String): ICons
 		}
 		else if (')' == c)
 		{
-			throw Erro(ErroId.Syntax, "found excess close parennthesis.")
+			throw Erro(ErroId.Syntax, "found excess close parenthesis.")
 		}
 		else if ('[' == c)
 		{
@@ -1266,6 +1315,24 @@ fun lapply (proc: Any, args: ICons): Any
 	throw Erro(ErroId.UnCallable, "${lprint(proc)} is not callable.")
 }
 
+fun lthrow (eid: Int, estr: String)
+{
+	throw Erro(eid, estr)
+}
+
+fun lcatch (env: ICons, args: ICons): Any
+{
+	val excep = leval(car(args), env)
+	try
+	{
+		return leval(car(cdr(args) as ICons), env)
+	}
+	catch (erro: Erro)
+	{
+		return lapply(excep, l(erro.eid, leval(erro.estr, env)))
+	}
+}
+
 fun lprint (expr: Any): String
 {
 	val dup = seek_dup(expr, nil, nil).second
@@ -1398,6 +1465,7 @@ fun make_genv (): Cons
 	regist_subr1(genv, "last", ::last)
 	regist_subr2(genv, "nconc", ::nconc)
 	regist_subr1(genv, "nreverse", ::nreverse)
+	regist_subr1(genv, "load", ::lload)
 	regist(genv, "vect", Subr({args: ICons -> cons2vect(args)}, "vect"))
 
 	regist(genv, "queu", Subr({args: ICons -> Queu(args)}, "queu"))
@@ -1409,25 +1477,32 @@ fun make_genv (): Cons
 	regist_subr1(genv, "to-queu", ::to_queu)
 	regist_subr1(genv, "symbol", ::symbol)
 	regist(genv, "sprint", Subr(::lsprint, "sprint"))
+	regist_subr2(genv, "apply", ::lapply)
+	regist_subr2(genv, "throw", ::lthrow)
+
+	regist_subr1(genv, "type", ::ltype)
 
 	regist_subr1(genv, "tee", ::tee)
 
+	regist(genv, "quote", Spfm({env: ICons, args: ICons -> car(args)}, "quote"))
+
+	regist(genv, "quasiquote", Spfm(
+				{env: ICons, args: ICons -> expand_quasiquote(car(args), env)}
+				, "quasiquote"))
 	regist(genv, "if", Spfm(::lif, "if"))
 	regist(genv, "lambda"
 			, Spfm({env: ICons, args: ICons -> Func(car(args), nth(args, 1), env)}
 				, "lambda"))
 	regist(genv, "define", Spfm(::ldefine, "define"))
 	regist(genv, "setq", Spfm(::lsetq, "setq"))
-	regist(genv, "quote", Spfm({env: ICons, args: ICons -> car(args)}, "quote"))
 
-	regist(genv, "quasiquote", Spfm(
-				{env: ICons, args: ICons -> expand_quasiquote(car(args), env)}
-				, "quasiquote"))
-
+	regist(genv, "and", Spfm(::land, "and"))
+	regist(genv, "or", Spfm(::lor, "or"))
 	regist(genv, "!", Spfm(
 				{env: ICons, args: ICons ->
 				leval(lapply(leval(car(args), env), cdr(args) as ICons), env)}, "!"))
 	regist(genv, "do", Spfm(::ldo, "do"))
+	regist(genv, "catch", Spfm(::lcatch, "catch"))
 	return genv
 }
 

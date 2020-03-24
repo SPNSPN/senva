@@ -140,9 +140,6 @@
 (check "((lambda (head . rest) rest) 1 2 3 4)" '(2 3 4))
 (check "((lambda all all) 1 2 3 4)" '(1 2 3 4))
 (check "((lambda ((pa (pb pc) pd)) pc) (list 1 (list 2 3) 4))" 3)
-(check "(load \"senva/matrix.snv\")
-	   (matrix::determinant
-		 '((3 1 1 2 1) (5 1 3 4 1) (2 0 1 0 3) (1 3 2 1 1) (2 1 5 10 1)))" -292)
 (echeck "(throw 1 \"an error occured!\")" 1 "an error occured!")
 (echeck "(do 1 (throw 2 \"an error occured!\") 3)" 2 "an error occured!")
 (echeck "(if (throw 3 \"an error occured!\") 3 4)" 3 "an error occured!")
@@ -160,9 +157,6 @@
 (echeck "(" senva::error::syntax "not found close parenthesis.")
 (echeck ")" senva::error::syntax "found excess close parenthesis.")
 (echeck "(to-list 3)" senva::error::type "cannot cast 3 to ConsT.")
-(echeck "(load \"not/exist/path.ext\")"
-		senva::error::file-not-found "not found file: \"not/exist/path.ext\"")
-(echeck "(load 33)" senva::error::type "cannot apply load to 33")
 (echeck "(to-vect 33)" senva::error::type "cannot cast 33 to VectT.")
 (echeck "(symbol 33)" senva::error::type "cannot cast 33 to SymbT.")
 (echeck "(to-queu 33)" senva::error::type "cannot cast 33 to QueuT.")
@@ -227,6 +221,12 @@
 (check "(to-list \"a\\nb\\tc\\0\")" '(97 10 98 9 99 0))
 (check "`[1 2 ,3 ,(+ 2 2) @(if (> 3 1) '(5 6) nil) @(cons 7 `(8 ,(* 3 3))) 10]"
 	   [1 2 3 4 5 6 7 8 9 10])
+(check "(load \"senva/matrix.snv\")
+	   (matrix::determinant
+		 '((3 1 1 2 1) (5 1 3 4 1) (2 0 1 0 3) (1 3 2 1 1) (2 1 5 10 1)))" -292)
+(echeck "(load \"not/exist/path.ext\")"
+		senva::error::file-not-found "not found file: \"not/exist/path.ext\"")
+(echeck "(load 33)" senva::error::type "cannot apply load to 33")
 (if (eq 'javascript (processor))
   (check "(sprint ((lambda (c) (list (list c c) (cons c c))) (list 1 2)))"
 		 "$0 = (1 2), (($0 $0) ($0 . $0))")
