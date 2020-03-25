@@ -22,7 +22,7 @@ function Queu ()
 	this.push = function (val)
 	{
 		let c = new Cons(val, nil);
-		if (isnil(this.entr))
+		if (this.entr === nil)
 		{
 			this.entr = c;
 			this.exit = c;
@@ -37,7 +37,7 @@ function Queu ()
 
 	this.pop = function ()
 	{
-		if (isnil(this.exit)) { return nil; }
+		if (this.exit === nil) { return nil; }
 
 		let e = car(this.exit);
 		if (this.exit === this.entr)
@@ -54,7 +54,7 @@ function Queu ()
 
 	this.concat = function (queu)
 	{
-		if (isnil(this.entr))
+		if (this.entr === nil)
 		{
 			this.entr = queu.entr;
 			this.exit = queu.exit;
@@ -114,20 +114,17 @@ function cons (a, d)
 
 function car (o)
 {
-	if (isnil(o)) { return nil; }
-	return o.car;
+	return (o === nil) ? nil : o.car;
 }
 
 function cdr (o)
 {
-	if (isnil(o)) { return nil; }
-	return o.cdr;
+	return (o === nil) ? nil : o.cdr;
 }
 
 function atom (o)
 {
-	if (o instanceof Cons) { return nil; }
-	return t;
+	return (o instanceof Cons) ? nil : t;
 }
 
 function eq (a, b)
@@ -187,8 +184,7 @@ function equal (a, b)
 		cond = ((typeof a == typeof b) && (a == b));
 	}
 
-	if (cond) { return t; }
-	return nil;
+	return cond ? t : nil;
 }
 
 function rplaca (c, v)
@@ -328,18 +324,9 @@ function sprint ()
 {
 	return Array.from(arguments).reduce(function (strn, e)
 			{
-				if (e instanceof String || (typeof e) == "string")
-				{
-					return strn + e;
-				}
-				return strn + lprint(e);
+				return (e instanceof String || (typeof e) == "string") ?
+					 strn + e : strn + lprint(e);
 			}, "");
-}
-
-function isnil (o)
-{
-	if (o === nil) { return t; }
-	return nil;
 }
 
 function l ()
@@ -1029,7 +1016,7 @@ function leval (expr, env)
 			{
 				if ("if" == proc.name)
 				{
-					expr = (isnil(leval(car(args), env)))
+					expr = (leval(car(args), env) === nil)
 						? car(cdr(cdr(args))) : car(cdr(args));
 				}
 				else if ("do" == proc.name)
@@ -1110,18 +1097,15 @@ function lempty (coll)
 	if (coll === nil) { return t; }
 	if (Array.isArray(coll) || coll instanceof String || (typeof coll) == "string")
 	{
-		if (coll.length < 1) { return t; }
-		return nil;
+		return (coll.length < 1) ? t : nil;
 	}
 	if (coll instanceof Queu)
 	{
-		if (coll.exit === nil) { return t; }
-		return nil;
+		return (coll.exit === nil) ? t : nil;
 	}
 	if (coll instanceof Symb)
 	{
-		if (coll.name.length < 1) { return t; }
-		return nil;
+		return (coll.name.length < 1) ? t : nil;
 	}
 	return nil;
 }
@@ -1130,14 +1114,8 @@ function llprin ()
 {
 	Array.from(arguments).map(function (a)
 			{
-				if (a instanceof String || (typeof a) == "string")
-				{
-					console.log(a);
-				}
-				else
-				{
-					console.log(lprint(a));
-				}
+				console.log((a instanceof String || (typeof a) == "string")
+						? a : lprint(a));
 			});
 	return nil;
 }

@@ -42,7 +42,7 @@ class Queu:
 
 	def push (self, val):
 		c = Cons(val, nil)
-		if isnil(self.entr):
+		if self.entr is nil:
 			self.entr = c
 			self.exit = c
 		else:
@@ -51,7 +51,7 @@ class Queu:
 		return self
 
 	def pop (self):
-		if isnil(self.exit):
+		if self.exit is nil:
 			return nil
 
 		e = car(self.exit)
@@ -63,7 +63,7 @@ class Queu:
 		return e
 
 	def concat (self, queu):
-		if isnil(self.entr):
+		if self.entr is nil:
 			self = queu
 		elif isinstance(queu, Queu):
 			rplacd(self.entr, queu.exit)
@@ -165,10 +165,6 @@ def atom (o):
 		return nil
 	return t
 
-def isnil (o):
-	if isinstance(o, Nil):
-		return t
-	return nil
 
 def add (*nums):
 	acc = 0
@@ -312,7 +308,7 @@ def ldefine (env, args):
 def lsetq (env, args):
 	sym = car(args)
 	rest = env
-	while not isnil(rest):
+	while not rest is nil:
 		asc = assoc(car(rest), sym)
 		if not asc is None:
 			rplacd(asc, leval(car(cdr(args)), env))
@@ -344,10 +340,10 @@ def expand_quasiquote (expr, env):
 
 	eexpr = nil
 	rest = expr
-	while not isnil(rest):
+	while not rest is nil:
 		if not atom(car(rest)) and Symb("splicing") == car(car(rest)):
 			sexpr = leval(car(cdr(car(rest))), env)
-			while not isnil(sexpr):
+			while not sexpr is nil:
 				eexpr = cons(car(sexpr), eexpr)
 				sexpr = cdr(sexpr)
 		else:
@@ -364,7 +360,7 @@ def attr (obj, *anames):
 
 def ldo (env, args):
 	rest = args
-	while not isnil(rest) and not isnil(cdr(rest)):
+	while not rest is nil and not cdr(rest) is nil:
 		leval(car(rest), env)
 		rest = cdr(rest)
 	return leval(car(rest), env)
@@ -496,7 +492,7 @@ def lempty (coll):
 			return t
 		return nil
 	if isinstance(coll, Queu):
-		if isnil(coll.exit):
+		if coll.exit is nil:
 			return t
 		return nil
 	if isinstance(coll, Symb):
@@ -574,7 +570,7 @@ def lprint (expr):
 	s = ""
 	rest = dup
 	idx = 0
-	while not isnil(rest):
+	while not rest is nil:
 		s += "$" + str(idx) + " = " + lprint_rec(car(rest), dup, False) + "\n"
 		rest = cdr(rest)
 		idx += 1
@@ -695,7 +691,7 @@ def growth (tree, buff):
 def wrap_readmacros (o, rmacs):
 	wraped = o
 	rest = rmacs
-	while not isnil(rest):
+	while not rest is nil:
 		wraped = l(car(rest), wraped)
 		rest = cdr(rest)
 	return wraped
@@ -773,7 +769,7 @@ def take_string (code):
 def cons2vect (c):
 	arr = []
 	rest = c
-	while not isnil(rest):
+	while not rest is nil:
 		arr.append(car(rest))
 		rest = cdr(rest)
 	return arr
@@ -803,7 +799,7 @@ def bind (syms, vals):
 	rests = syms
 	restv = vals
 	ret = nil
-	while not isnil(rests):
+	while not rests is nil:
 		s = car(rests)
 		v = car(restv)
 		ret = cons(cons(s, v), ret)
@@ -814,7 +810,7 @@ def bind (syms, vals):
 def mapeval (args, env):
 	eargs = nil
 	rest = args
-	while not isnil(rest):
+	while not rest is nil:
 		e = car(rest)
 		eargs = cons(leval(e, env), eargs)
 		rest = cdr(rest)
@@ -823,7 +819,7 @@ def mapeval (args, env):
 def append1 (colla, collb):
 	app = collb
 	rest = reverse(colla)
-	while not isnil(rest):
+	while not rest is nil:
 		app = cons(car(rest), app)
 		rest = cdr(rest)
 	return app
@@ -831,7 +827,7 @@ def append1 (colla, collb):
 def reverse (coll):
 	rev = nil
 	rest = coll
-	while not isnil(rest):
+	while not rest is nil:
 		e = car(rest)
 		rev = cons(e, rev)
 		rest = cdr(rest)
@@ -839,7 +835,7 @@ def reverse (coll):
 
 def find (val, coll):
 	rest = coll
-	while not isnil(rest):
+	while not rest is nil:
 		if val == car(rest):
 			return t
 		rest = cdr(rest)
@@ -848,7 +844,7 @@ def find (val, coll):
 def findidx_eq (val, coll):
 	idx = 0
 	rest = coll
-	while not isnil(rest):
+	while not rest is nil:
 		if val is car(rest):
 			return idx
 		rest = cdr(rest)
@@ -866,7 +862,7 @@ def rplacd (c, o):
 def last (o):
 	if isinstance(o, Cons):
 		rest = o
-		while not isnil(cdr(rest)):
+		while not cdr(rest) is nil:
 			rest = cdr(rest)
 		return rest
 	if isinstance(o, Nil):
@@ -883,7 +879,7 @@ def last (o):
 	
 
 def nconc (colla, collb):
-	if isnil(colla):
+	if colla is nil:
 		return collb
 	las = last(colla)
 	rplacd(las, collb)
@@ -972,7 +968,7 @@ def symbol (obj):
 	if isinstance(obj, Cons):
 		rest = obj
 		strn = ""
-		while not isnil(rest):
+		while not rest is nil:
 			strn += chr(car(rest))
 			rest = cdr(rest)
 		return Symb(strn)
@@ -1015,7 +1011,7 @@ def drop (coll, n):
 
 def assoc (alist, key):
 	rest = alist
-	while not isnil(rest):
+	while not rest is nil:
 		e = car(rest)
 		if car(e) == key:
 			return e
@@ -1031,7 +1027,7 @@ def assocdr (alist, key):
 def associdx (alist, key):
 	idx = 0
 	rest = alist
-	while not isnil(rest):
+	while not rest is nil:
 		e = car(rest)
 		if car(e) == key:
 			return idx
@@ -1041,7 +1037,7 @@ def associdx (alist, key):
 
 def seekenv (env, sym):
 	rest = env
-	while not isnil(rest):
+	while not rest is nil:
 		e = car(rest)
 		val = assocdr(e, sym)
 		if not val is None:

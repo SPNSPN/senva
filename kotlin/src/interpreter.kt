@@ -465,12 +465,25 @@ fun ldiv (head: Any, nums: ICons): Number
 
 fun lmod (a: Any, b: Any): Long
 {
-	if ((b is Int || b is Long || b is Byte || b is Short)
-			&& (b is Int || b is Long || b is Byte || b is Short))
+	val na: Long = when (a)
 	{
-		return a.toLong() % b.toLong()
+		is Int -> a.toLong()
+		is Long -> a
+		is Byte -> a.toLong()
+		is Short -> a.toLong()
+		else -> throw Erro(ErroId.Type, "cannot mod ${lprint(l(a, b))}")
 	}
-	throw Erro(ErroId.Type, "cannot mod ${lprint(l(a, b))}")
+
+	val nb: Long = when (b)
+	{
+		is Int -> b.toLong()
+		is Long -> b
+		is Byte -> b.toLong()
+		is Short -> b.toLong()
+		else -> throw Erro(ErroId.Type, "cannot mod ${lprint(l(a, b))}")
+	}
+
+	return na % nb
 }
 
 fun lgt (head: Any, nums: ICons): Any
@@ -595,6 +608,18 @@ fun lle (head: Any, nums: ICons): Any
 		return t
 	}
 	throw Erro(ErroId.Type, "cannot le ${lprint(cons(head, nums))}")
+}
+
+fun lint (o: Any): Long
+{
+	if (o is Number) { return o.toLong() }
+	throw Erro(ErroId.Type, "cannot cast ${lprint(o)} to InumT.")
+}
+
+fun lfloat (o: Any): Double
+{
+	if (o is Number) { return o.toDouble() }
+	throw Erro(ErroId.Type, "cannot cast ${lprint(o)} to FnumT.")
 }
 
 fun ltype (o: Any): Symb
@@ -1333,6 +1358,86 @@ fun lcatch (env: ICons, args: ICons): Any
 	}
 }
 
+fun lempty (coll: Any): Any
+{
+	if (coll is Nil) { return t }
+	if (coll is MutableList<*>) { return if (coll.size < 1) t else nil }
+	if (coll is String) { return if (coll.length < 1) t else nil }
+	if (coll is Queu) { return if (coll.exit is Nil) t else nil }
+	if (coll is Symb) { return if (coll.name.length < 1) t else nil }
+	return nil
+}
+
+fun llprin (objs: ICons): Nil
+{
+	rest: Any = objs
+	while (rest is Cons)
+	{
+		val a = car(rest)
+		print(if (a is String) a else lprint(a))
+		rest = cdr(rest)
+	}
+	return nil
+}
+
+fun llprint (objs: ICons): Nil
+{
+	llprin(objs)
+	println("")
+	return nil
+}
+
+fun lgetat (vect: Any, idx: Number): Any
+{
+	if (vect is MutableList<*>) { return vect[idx] }
+	if (vect is String) { return vect[idx] }
+	if (vect is Symb) { return Symb(vect.name[idx]) }
+	throw Erro(ErroId.Type, "cannot apply getat to ${lprint(vect)}")
+}
+
+fun lsetat (vect: Any, idx: Number, valu: Any): Any
+{
+	if (vect is MutableList<*>)
+	{
+		vect[idx] = valu
+		return vect
+	}
+	if (vect is String)
+	{
+		return vect.substring(0..(idx - 1))
+			+ when (valu)
+			{
+				is Int   -> valu.toChar()
+				is Long  -> valu.toChar()
+				is Byte  -> valu.toChar()
+				is Short -> valu.toChar()
+				is String -> valu[0]
+				is Symb -> valu.name[0]
+				else -> throw Erro(ErroId.Type
+						, "cannot setat ${lprint(valu)} to ${lprint(vect)}")
+			}
+			+ vect.substring((idx + 1)..(vect.length - 1))
+	}
+	if (vect is Symb)
+	{
+		vect.name = vect.name.substring(0..(idx - 1))
+			+ when (valu)
+			{
+				is Int   -> valu.toChar()
+				is Long  -> valu.toChar()
+				is Byte  -> valu.toChar()
+				is Short -> valu.toChar()
+				is String -> valu[0]
+				is Symb -> valu.name[0]
+				else -> throw Erro(ErroId.Type
+						, "cannot setat ${lprint(valu)} to ${lprint(vect)}")
+			}
+			+ vect.name.substring((idx + 1)..(vect.name.length - 1))
+		return vect
+	}
+	throw Erro(ErroId.Type, "cannot apply setat to ${lprint(vect)}")
+}
+
 fun lprint (expr: Any): String
 {
 	val dup = seek_dup(expr, nil, nil).second
@@ -1455,17 +1560,14 @@ fun make_genv (): Cons
 	regist(genv, "<", Subr({args: ICons -> llt(car(args), cdr(args) as ICons)}, "<"))
 	regist(genv, ">=", Subr({args: ICons -> lge(car(args), cdr(args) as ICons)}, ">="))
 	regist(genv, "<=", Subr({args: ICons -> lle(car(args), cdr(args) as ICons)}, "<="))
-	regist(genv, "int"
-			, Subr({args: ICons -> (car(args) as Number).toLong() }, "int"))
-	regist(genv, "float"
-			, Subr({args: ICons -> (car(args) as Number).toDouble() }, "float"))
+	regist_subr1(genv, "int", ::lint)
+	regist_subr1(genv, "float", ::lfloat)
 
 	regist_subr2(genv, "rplaca", ::rplaca)
 	regist_subr2(genv, "rplacd", ::rplacd)
 	regist_subr1(genv, "last", ::last)
 	regist_subr2(genv, "nconc", ::nconc)
 	regist_subr1(genv, "nreverse", ::nreverse)
-	regist_subr1(genv, "load", ::lload)
 	regist(genv, "vect", Subr({args: ICons -> cons2vect(args)}, "vect"))
 
 	regist(genv, "queu", Subr({args: ICons -> Queu(args)}, "queu"))
@@ -1479,9 +1581,14 @@ fun make_genv (): Cons
 	regist(genv, "sprint", Subr(::lsprint, "sprint"))
 	regist_subr2(genv, "apply", ::lapply)
 	regist_subr2(genv, "throw", ::lthrow)
-
+	regist_subr1(genv, "empty", ::lempty)
+	regist(genv, "print", Subr({args: ICons -> llprint(args)}, "print"))
+	regist(genv, "prin", Subr({args: ICons -> llprin(args)}, "prin"))
 	regist_subr1(genv, "type", ::ltype)
-
+	regist_subr1(genv, "load", ::lload)
+	regist_subr2(genv, "getat", ::lgetat)
+	regist_subr2(genv, "setat", ::lsetat)
+	regist(genv, "processor", Subr({Symb("kotlin")}, "processor"))
 	regist_subr1(genv, "tee", ::tee)
 
 	regist(genv, "quote", Spfm({env: ICons, args: ICons -> car(args)}, "quote"))
