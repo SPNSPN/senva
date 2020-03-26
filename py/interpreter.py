@@ -42,7 +42,7 @@ class Queu:
 
 	def push (self, val):
 		c = Cons(val, nil)
-		if isnil(self.entr):
+		if self.entr is nil:
 			self.entr = c
 			self.exit = c
 		else:
@@ -51,7 +51,7 @@ class Queu:
 		return self
 
 	def pop (self):
-		if isnil(self.exit):
+		if self.exit is nil:
 			return nil
 
 		e = car(self.exit)
@@ -63,7 +63,7 @@ class Queu:
 		return e
 
 	def concat (self, queu):
-		if isnil(self.entr):
+		if self.entr is nil:
 			self = queu
 		elif isinstance(queu, Queu):
 			rplacd(self.entr, queu.exit)
@@ -165,26 +165,22 @@ def atom (o):
 		return nil
 	return t
 
-def isnil (o):
-	if isinstance(o, Nil):
-		return t
-	return nil
 
 def add (*nums):
 	acc = 0
 	for n in nums:
 		if not (isinstance(n, int) or isinstance(n, float)):
-			raise Erro(ErroId.Type, "cannot add " + lprint(array2cons(nums)))
+			raise Erro(ErroId.Type, "cannot add " + lprint(vect2cons(nums)))
 		acc += n
 	return acc
 
 def sub (head, *nums):
 	if not (isinstance(head, int) or isinstance(head, float)):
-		raise Erro(ErroId.Type, "cannot sub " + lprint(cons(head, array2cons(nums))))
+		raise Erro(ErroId.Type, "cannot sub " + lprint(cons(head, vect2cons(nums))))
 	acc = head
 	for n in nums:
 		if not (isinstance(n, int) or isinstance(n, float)):
-			raise Erro(ErroId.Type, "cannot sub " + lprint(cons(head, array2cons(nums))))
+			raise Erro(ErroId.Type, "cannot sub " + lprint(cons(head, vect2cons(nums))))
 		acc -= n
 	return acc
 
@@ -192,40 +188,18 @@ def mul (*nums):
 	acc = 1
 	for n in nums:
 		if not (isinstance(n, int) or isinstance(n, float)):
-			raise Erro(ErroId.Type, "cannot mul " + lprint(array2cons(nums)))
+			raise Erro(ErroId.Type, "cannot mul " + lprint(vect2cons(nums)))
 		acc *= n
 	return acc
 
-#def div (head, *nums):
-#	def fdiv ():
-#		acc = head
-#		for n in nums:
-#			if not (isinstance(n, int) or isinstance(n, float)):
-#				raise Erro(ErroId.Type, "cannot div "
-#						+ lprint(cons(head, array2cons(nums))))
-#			acc /= n
-#		return acc
-#
-#	if isinstance(head, float):
-#		return fdiv()
-#	if not isinstance(head, int):
-#		raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, array2cons(nums))))
-#	acc = head
-#	for n in nums:
-#		if not (isinstance(n, int) or isinstance(n, float)):
-#			raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, array2cons(nums))))
-#		if isinstance(n, float):
-#			return fdiv()
-#		acc //= n
-#	return acc
 def div (head, *nums):
 	if not (isinstance(head, int) or isinstance(head, float)):
-		raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, array2cons(nums))))
+		raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, vect2cons(nums))))
 	acc = head
 	iacc = int(head)
 	for n in nums:
 		if not (isinstance(n, int) or isinstance(n, float)):
-			raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, array2cons(nums))))
+			raise Erro(ErroId.Type, "cannot div " + lprint(cons(head, vect2cons(nums))))
 		acc /= n
 		iacc //= n
 	if acc == iacc:
@@ -334,7 +308,7 @@ def ldefine (env, args):
 def lsetq (env, args):
 	sym = car(args)
 	rest = env
-	while not isnil(rest):
+	while not rest is nil:
 		asc = assoc(car(rest), sym)
 		if not asc is None:
 			rplacd(asc, leval(car(cdr(args)), env))
@@ -344,7 +318,7 @@ def lsetq (env, args):
 
 def land (env, args):
 	ret = t
-	for a in cons2array(args):
+	for a in cons2vect(args):
 		ret = leval(a, env)
 		if ret is nil:
 			return nil
@@ -352,7 +326,7 @@ def land (env, args):
 
 def lor (env, args):
 	ret = nil
-	for a in cons2array(args):
+	for a in cons2vect(args):
 		ret = leval(a, env)
 		if not ret is nil:
 			return ret
@@ -364,18 +338,18 @@ def expand_quasiquote (expr, env):
 	if Symb("unquote") == car(expr):
 		return leval(car(cdr(expr)), env)
 
-	eexpr = Queu()
+	eexpr = nil
 	rest = expr
-	while not isnil(rest):
+	while not rest is nil:
 		if not atom(car(rest)) and Symb("splicing") == car(car(rest)):
 			sexpr = leval(car(cdr(car(rest))), env)
-			while not isnil(sexpr):
-				eexpr.push(car(sexpr))
+			while not sexpr is nil:
+				eexpr = cons(car(sexpr), eexpr)
 				sexpr = cdr(sexpr)
 		else:
-			eexpr.push(expand_quasiquote(car(rest), env))
+			eexpr = cons(expand_quasiquote(car(rest), env), eexpr)
 		rest = cdr(rest)
-	return to_list(eexpr)
+	return nreverse(eexpr)
 
 def attr (obj, *anames):
 	ret = obj
@@ -386,7 +360,7 @@ def attr (obj, *anames):
 
 def ldo (env, args):
 	rest = args
-	while not isnil(rest) and not isnil(cdr(rest)):
+	while not rest is nil and not cdr(rest) is nil:
 		leval(car(rest), env)
 		rest = cdr(rest)
 	return leval(car(rest), env)
@@ -443,6 +417,9 @@ def lread (code):
 		elif "@" == c:
 			tree = growth(tree, buff)
 			buff[1] = cons(Symb("splicing"), buff[1])
+		elif "^" == c:
+			tree = growth(tree, buff)
+			buff[1] = cons(Symb("tee"), buff[1])
 		elif "." == c:
 			if buff[0]:
 				buff[0] += "."
@@ -501,7 +478,7 @@ def lapply (proc, args):
 	if isinstance(proc, Func):
 		return proc(args)
 	if callable(proc):
-		return proc(*cons2array(args))
+		return proc(*cons2vect(args))
 	raise Erro(ErroId.UnCallable, lprint(proc) + " is not callable.")
 
 def lthrow (eid, estr):
@@ -515,7 +492,7 @@ def lempty (coll):
 			return t
 		return nil
 	if isinstance(coll, Queu):
-		if isnil(coll.exit):
+		if coll.exit is nil:
 			return t
 		return nil
 	if isinstance(coll, Symb):
@@ -544,6 +521,10 @@ def llprint (*args):
 	llprin(*args)
 	print("", flush = True)
 	return nil
+
+def tee (obj):
+	print(lprint(obj))
+	return obj
 
 def lgetc ():
 	return ord(sys.stdin.read(1))
@@ -589,7 +570,7 @@ def lprint (expr):
 	s = ""
 	rest = dup
 	idx = 0
-	while not isnil(rest):
+	while not rest is nil:
 		s += "$" + str(idx) + " = " + lprint_rec(car(rest), dup, False) + "\n"
 		rest = cdr(rest)
 		idx += 1
@@ -597,11 +578,11 @@ def lprint (expr):
 	return s
 
 def seek_dup (expr, printed, dup):
-	if find(expr, printed):
-		if find(expr, dup):
-			return printed, dup
-		else:
+	if not findidx_eq(expr, printed) is nil:
+		if findidx_eq(expr, dup) is nil:
 			return printed, cons(expr, dup)
+		else:
+			return printed, dup
 	if (isinstance(expr, Cons)):
 		printed, dup = seek_dup(car(expr), cons(expr, printed), dup)
 		return seek_dup(cdr(expr), printed, dup)
@@ -649,7 +630,7 @@ def printcons_rec (coll, dup, rec):
 		return "(" + lprint_rec(a, dup, rec) + ")"
 	if atom(d):
 		return "(" + lprint_rec(a, dup, rec) + " . " + lprint_rec(d, dup, rec) + ")"
-	if find(d, dup):
+	if not findidx_eq(d, dup) is nil:
 		return "(" + lprint_rec(a, dup, rec) + " . " + lprint_rec(d, dup, rec) + ")"
 	return "(" + lprint_rec(a, dup, rec) + " " + lprint_rec(d, dup, rec)[1:]
 
@@ -710,7 +691,7 @@ def growth (tree, buff):
 def wrap_readmacros (o, rmacs):
 	wraped = o
 	rest = rmacs
-	while not isnil(rest):
+	while not rest is nil:
 		wraped = l(car(rest), wraped)
 		rest = cdr(rest)
 	return wraped
@@ -785,15 +766,15 @@ def take_string (code):
 		idx += 1
 	raise Erro(ErroId.Syntax, "not found close double quote.")
 
-def cons2array (c):
+def cons2vect (c):
 	arr = []
 	rest = c
-	while not isnil(rest):
+	while not rest is nil:
 		arr.append(car(rest))
 		rest = cdr(rest)
 	return arr
 
-def array2cons (l):
+def vect2cons (l):
 	c = nil
 	for e in l:
 		c = cons(e, c)
@@ -818,7 +799,7 @@ def bind (syms, vals):
 	rests = syms
 	restv = vals
 	ret = nil
-	while not isnil(rests):
+	while not rests is nil:
 		s = car(rests)
 		v = car(restv)
 		ret = cons(cons(s, v), ret)
@@ -829,7 +810,7 @@ def bind (syms, vals):
 def mapeval (args, env):
 	eargs = nil
 	rest = args
-	while not isnil(rest):
+	while not rest is nil:
 		e = car(rest)
 		eargs = cons(leval(e, env), eargs)
 		rest = cdr(rest)
@@ -838,7 +819,7 @@ def mapeval (args, env):
 def append1 (colla, collb):
 	app = collb
 	rest = reverse(colla)
-	while not isnil(rest):
+	while not rest is nil:
 		app = cons(car(rest), app)
 		rest = cdr(rest)
 	return app
@@ -846,7 +827,7 @@ def append1 (colla, collb):
 def reverse (coll):
 	rev = nil
 	rest = coll
-	while not isnil(rest):
+	while not rest is nil:
 		e = car(rest)
 		rev = cons(e, rev)
 		rest = cdr(rest)
@@ -854,7 +835,7 @@ def reverse (coll):
 
 def find (val, coll):
 	rest = coll
-	while not isnil(rest):
+	while not rest is nil:
 		if val == car(rest):
 			return t
 		rest = cdr(rest)
@@ -863,7 +844,7 @@ def find (val, coll):
 def findidx_eq (val, coll):
 	idx = 0
 	rest = coll
-	while not isnil(rest):
+	while not rest is nil:
 		if val is car(rest):
 			return idx
 		rest = cdr(rest)
@@ -881,7 +862,7 @@ def rplacd (c, o):
 def last (o):
 	if isinstance(o, Cons):
 		rest = o
-		while not isnil(cdr(rest)):
+		while not cdr(rest) is nil:
 			rest = cdr(rest)
 		return rest
 	if isinstance(o, Nil):
@@ -898,19 +879,11 @@ def last (o):
 	
 
 def nconc (colla, collb):
-	if isnil(colla):
+	if colla is nil:
 		return collb
 	las = last(colla)
 	rplacd(las, collb)
 	return colla
-#def nconc (*args):
-#	if not args:
-#		return nil
-#	arr = args[0]
-#	for a in args[1:]:
-#		if not a is nil:
-#			rplacd(last(arr), a)
-#	return arr
 
 def nreverse (coll):
 	rev = nil
@@ -939,17 +912,17 @@ def vect (*args):
 
 def queu (*args):
 	q = Queu()
-	q.exit = array2cons(args)
+	q.exit = vect2cons(args)
 	q.entr = last(q.exit)
 	return q
 
 def to_list (obj):
 	if isinstance(obj, list):
-		return array2cons(obj)
+		return vect2cons(obj)
 	if isinstance(obj, Symb):
-		return array2cons([ord(c) for c in obj.name])
+		return vect2cons([ord(c) for c in obj.name])
 	if isinstance(obj, str):
-		return array2cons([ord(c) for c in obj])
+		return vect2cons([ord(c) for c in obj])
 	if isinstance(obj, Queu):
 		return obj.exit
 	if isinstance(obj, Cons):
@@ -960,13 +933,13 @@ def to_list (obj):
 
 def to_vect (obj):
 	if isinstance(obj, Cons):
-		return cons2array(obj)
+		return cons2vect(obj)
 	if isinstance(obj, Symb):
 		return [ord(c) for c in obj.name]
 	if isinstance(obj, str):
 		return [ord(c) for c in obj]
 	if isinstance(obj, Queu):
-		return cons2array(obj.exit)
+		return cons2vect(obj.exit)
 	if isinstance(obj, list):
 		return obj
 	if obj is nil:
@@ -995,7 +968,7 @@ def symbol (obj):
 	if isinstance(obj, Cons):
 		rest = obj
 		strn = ""
-		while not isnil(rest):
+		while not rest is nil:
 			strn += chr(car(rest))
 			rest = cdr(rest)
 		return Symb(strn)
@@ -1038,7 +1011,7 @@ def drop (coll, n):
 
 def assoc (alist, key):
 	rest = alist
-	while not isnil(rest):
+	while not rest is nil:
 		e = car(rest)
 		if car(e) == key:
 			return e
@@ -1054,7 +1027,7 @@ def assocdr (alist, key):
 def associdx (alist, key):
 	idx = 0
 	rest = alist
-	while not isnil(rest):
+	while not rest is nil:
 		e = car(rest)
 		if car(e) == key:
 			return idx
@@ -1064,7 +1037,7 @@ def associdx (alist, key):
 
 def seekenv (env, sym):
 	rest = env
-	while not isnil(rest):
+	while not rest is nil:
 		e = car(rest)
 		val = assocdr(e, sym)
 		if not val is None:
@@ -1073,7 +1046,7 @@ def seekenv (env, sym):
 	raise Erro(ErroId.Symbol, lprint(sym) + " is not defined.")
 
 def l (*args):
-	return array2cons(args)
+	return vect2cons(args)
 
 
 
@@ -1130,6 +1103,7 @@ def initenv ():
 	ienv = cons(cons(Symb("getat"), lgetat), ienv)
 	ienv = cons(cons(Symb("setat"), lsetat), ienv)
 	ienv = cons(cons(Symb("processor"), processor), ienv)
+	ienv = cons(cons(Symb("tee"), tee), ienv)
 	ienv = cons(cons(Symb("exit"), (lambda: exit())), ienv)
 	ienv = cons(cons(Symb("py"), (lambda expr: eval(expr))), ienv)
 	ienv = cons(cons(Symb("import"), (lambda mname:

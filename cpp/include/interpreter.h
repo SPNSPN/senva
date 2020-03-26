@@ -68,6 +68,7 @@ class Interpreter
 		Addr subr_list (Addr);
 		Addr subr_print (Addr);
 		Addr subr_prin (Addr);
+		Addr subr_tee (Addr);
 		Addr subr_sprint (Addr);
 		Addr subr_tolist (Addr);
 		Addr subr_load (Addr);

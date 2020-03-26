@@ -570,7 +570,7 @@ function apply ($proc, $args_)
 
 	if ($proc -is [scriptblock])
 	{
-		return & $proc (cons2array $args_);
+		return & $proc (cons2vect $args_);
 	}
 
 	lthrow $erroid{"Type"} ($proc + " is not appliable.");
@@ -794,7 +794,7 @@ function bind_tree ($treea, $treeb)
 	}
 }
 
-function cons2array ($c)
+function cons2vect ($c)
 {
 	$arr = @();
 	for ($rest = $c; -not (atom $rest); $rest = cdr $rest)
@@ -804,7 +804,7 @@ function cons2array ($c)
 	return $arr;
 }
 
-function array2cons ($a)
+function vect2cons ($a)
 {
 	$c = $nil;
 	for ($idx = $a.count - 1; $idx -gt -1; --$idx) { $c = (cons $a[$idx] $c); }
@@ -1378,7 +1378,7 @@ function lread ($src)
 		{
 			if (-not $buff[0])
 			{
-				[void]($ltree = array2cons $tree);
+				[void]($ltree = vect2cons $tree);
 				[void](rplacd (last $ltree)`
 					(car (lread $src.substring($idx + 1))));
 				return $ltree;
@@ -1412,13 +1412,18 @@ function lread ($src)
 			[void](growth $tree $buff);
 			$buff[1] = cons (new-object symb "splicing") $buff[1];
 		}
+		elseif ("^" -eq $c)
+		{
+			[void](growth $tree $buff);
+			$buff[1] = cons (new-object symb "print") $buff[1];
+		}
 		else
 		{
 			$buff[0] += $c;
 		}
 	}
 	[void](growth $tree $buff);
-	return array2cons $tree;
+	return vect2cons $tree;
 }
 
 function leval ($expr, $env)
@@ -1475,7 +1480,7 @@ function leval ($expr, $env)
 			}
 			elseif ($proc -is [scriptblock])
 			{
-				return & $proc (cons2array (mapeval $args_ $env))
+				return & $proc (cons2vect (mapeval $args_ $env))
 			}
 			else
 			{

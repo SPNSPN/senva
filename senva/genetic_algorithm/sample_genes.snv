@@ -1,0 +1,16 @@
+(load "senva/random.snv")
+
+(define generate (lambda ()
+  (map (! fn (random::randint 0 10)) (range 0 5))))
+
+(define cross (lambda (ga gb)
+  (map (! fn (! let ((a (- $0 2)) (b (+ $1 2)))
+				(if (= a b) a (random::randint a b)))) ga gb)))
+
+(define mutate (lambda (g)
+  (map (! fn (if (equal (random::randint 0 2) 0)
+			   $0
+			   (random::randint 0 10))) g)))
+
+(define score (lambda (g) (apply - g)))
+

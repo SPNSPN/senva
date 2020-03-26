@@ -1,4 +1,5 @@
 package senva
+import java.io.File
 
 interface ICons
 {
@@ -47,6 +48,12 @@ class Queu ()
 	var entr: ICons
 	var exit: ICons
 
+	constructor (c: ICons) : this()
+	{
+		this.entr = last(c)
+		this.exit = c
+	}
+
 	init
 	{
 		entr = nil;
@@ -93,7 +100,10 @@ class Queu ()
 			entr = queu.entr
 			exit = queu.exit
 		}
-		rplacd(entr as Cons, queu.exit)
+		else
+		{
+			rplacd(entr as Cons, queu.exit)
+		}
 		return this
 	}
 }
@@ -102,18 +112,22 @@ class Subr (val proc: (ICons) -> Any, val name: String)
 
 class Spfm (val proc: (ICons, ICons) -> Any, val name: String)
 
-class Func (val args: ICons, val body: ICons, val env: ICons)
+class Func (val args: Any, val body: Any, val env: ICons)
 
 fun cons (a: Any, d: Any): Cons = Cons(a, d)
 fun car (o: ICons): Any = o.car()
 fun cdr (o: ICons): Any = o.cdr()
 fun atom (o: Any): Any = if (o is Cons) nil else t
-fun eq (a: Any, b: Any): Any = if (a === b) t else nil
+fun eq (a: Any, b: Any): Any = if ((a === b) || (a is Symb && b is Symb && a.name == b.name)) t else nil
 
 fun equal (a: Any, b: Any): Any
 {
 	var cond: Any = nil
-	if (a is Symb && b is Symb)
+	if (a === b)
+	{
+		cond = t
+	}
+	else if (a is Symb && b is Symb)
 	{
 		cond = if (a.name == b.name) t else nil
 	}
@@ -149,6 +163,10 @@ fun equal (a: Any, b: Any): Any
 				}
 			}
 		}
+	}
+	else if (a is Number && b is Number)
+	{
+		cond = if (a.toDouble() == b.toDouble()) t else nil
 	}
 	else
 	{
@@ -445,9 +463,27 @@ fun ldiv (head: Any, nums: ICons): Number
 	}
 }
 
-fun lmod (a: Long, b: Long): Long
+fun lmod (a: Any, b: Any): Long
 {
-	return a % b
+	val na: Long = when (a)
+	{
+		is Int -> a.toLong()
+		is Long -> a
+		is Byte -> a.toLong()
+		is Short -> a.toLong()
+		else -> throw Erro(ErroId.Type, "cannot mod ${lprint(l(a, b))}")
+	}
+
+	val nb: Long = when (b)
+	{
+		is Int -> b.toLong()
+		is Long -> b
+		is Byte -> b.toLong()
+		is Short -> b.toLong()
+		else -> throw Erro(ErroId.Type, "cannot mod ${lprint(l(a, b))}")
+	}
+
+	return na % nb
 }
 
 fun lgt (head: Any, nums: ICons): Any
@@ -574,6 +610,34 @@ fun lle (head: Any, nums: ICons): Any
 	throw Erro(ErroId.Type, "cannot le ${lprint(cons(head, nums))}")
 }
 
+fun lint (o: Any): Long
+{
+	if (o is Number) { return o.toLong() }
+	throw Erro(ErroId.Type, "cannot cast ${lprint(o)} to InumT.")
+}
+
+fun lfloat (o: Any): Double
+{
+	if (o is Number) { return o.toDouble() }
+	throw Erro(ErroId.Type, "cannot cast ${lprint(o)} to FnumT.")
+}
+
+fun ltype (o: Any): Symb
+{
+	if (o is Cons) { return Symb("<cons>") }
+	if (o is Func) { return Symb("<func>") }
+	if (o is Spfm) { return Symb("<spfm>") }
+	if (o is Subr) { return Symb("<subr>") }
+	if (o is Symb) { return Symb("<symb>") }
+	if (o is String) { return Symb("<strn>") }
+	if (o is Int || o is Long || o is Byte || o is Short) { return Symb("<inum>") }
+	if (o is Double || o is Float) { return Symb("<fnum>") }
+	if (o is Nil) { return Symb("<nil>") }
+	if (o is MutableList<*>) { return Symb("<vect>") }
+	if (o is Queu) { return Symb("<queu>") }
+	return Symb("<kotlin ${o.javaClass.kotlin.simpleName}>")
+}
+
 fun last (o: ICons): ICons
 {
 	if (o is Cons)
@@ -610,11 +674,183 @@ fun nreverse (coll: ICons): ICons
 	return rev
 }
 
-fun lif () {}// TODO
-fun ldefine () {}
-fun lsetq () {}
-fun llambda () {}
-fun lquote () {}
+fun lload (path: String): Any
+{
+	val fin = File(path)
+	if (! fin.exists())
+	{
+		throw Erro(ErroId.FileNotFound, "not found file: ${lprint(path)}")
+	}
+	return leval(lreadtop(fin.readText()), genv)
+}
+
+fun to_list (obj: Any): ICons
+{
+	if (obj is MutableList<*>) { return vect2cons(obj) }
+	if (obj is Symb) { return vect2cons(obj.name.toCharArray().map({e -> e.toInt()}).toMutableList()) }
+	if (obj is String) { return vect2cons(obj.toCharArray().map({e -> e.toInt()}).toMutableList()) }
+	if (obj is Queu) { return obj.exit }
+	if (obj is ICons) { return obj }
+	throw Erro(ErroId.Type, "cannot cast ${lprint(obj)} to ConsT.")
+}
+
+fun to_vect (obj: Any): MutableList<Any>
+{
+	if (obj is ICons) { return cons2vect(obj) }
+	if (obj is Symb) { return obj.name.toCharArray().map({e -> e.toInt()}).toMutableList() }
+	if (obj is String) { return obj.toCharArray().map({e -> e.toInt()}).toMutableList() }
+	if (obj is Queu) { return cons2vect(obj.exit) }
+	if (obj is MutableList<*>) { return obj as MutableList<Any> }
+	throw Erro(ErroId.Type, "cannot cast ${lprint(obj)} to VectT.")
+}
+
+fun to_queu (obj: Any): Queu
+{
+	if (obj is Cons) { return Queu(obj) }
+	if (obj is Symb) { return Queu(vect2cons(obj.name.toCharArray().map({e -> e.toInt()}).toMutableList())) }
+	if (obj is String) { return Queu(vect2cons(obj.toCharArray().map({e -> e.toInt()}).toMutableList())) }
+	if (obj is MutableList<*>) { return Queu(vect2cons(obj as MutableList<Any>)) }
+	if (obj is Queu) { return obj }
+	if (obj is Nil) { return Queu() }
+	throw Erro(ErroId.Type, "cannot cast ${lprint(obj)} to QueuT.")
+}
+
+fun symbol (obj: Any): Symb
+{
+	if (obj is ICons)
+	{
+		var rest: Any = obj
+		var strn = ""
+		while (rest is Cons)
+		{
+			strn += (car(rest) as Number).toChar()
+			rest = cdr(rest)
+		}
+		return Symb(strn)
+	}
+	if (obj is Queu) { return symbol(to_vect(obj)) }
+	if (obj is MutableList<*>) { return Symb(obj.map({e -> (e as Number).toChar()}).joinToString("")) }
+	if (obj is String) { return Symb(obj) }
+	if (obj is Symb) { return obj }
+	throw Erro(ErroId.Type, "cannot cast ${lprint(obj)} to SymbT.")
+}
+
+fun lsprint (args: ICons): String
+{
+	var strn = ""
+		var rest: Any = args
+		while (rest is Cons)
+		{
+			val e = car(rest)
+				strn += if (e is String) e else lprint(e)
+				rest = cdr(rest)
+		}
+	return strn
+}
+
+fun tee (obj: Any): Any
+{
+	println(lprint(obj))
+	return obj
+}
+
+fun nth (c: ICons, n: Long): Any
+{
+	var rest: Any = c
+	var idx = 0L
+	while (idx < n)
+	{
+		if (rest is ICons)
+		{
+			rest = cdr(rest)
+		}
+		else
+		{
+			throw Erro(ErroId.ArgsUnmatch, "cannot got nth ${n} from ${lprint(c)}")
+		}
+		++idx
+	}
+	if (rest is ICons)
+	{
+		return car(rest)
+	}
+	throw Erro(ErroId.ArgsUnmatch, "cannot got nth ${n} from ${lprint(c)}")
+}
+
+fun lif (env: ICons, args: ICons): Any
+{
+	if (leval(car(args), env) is Nil)
+	{
+		return leval(nth(args, 2), env)
+	}
+	return leval(nth(args, 1), env)
+}
+
+fun ldefine (env: ICons, args: ICons): Symb
+{
+	val sym = car(args)
+	if (sym is Symb)
+	{
+		val asc = assoc(car(genv) as ICons, sym)
+		if (asc === null)
+		{
+			rplaca(genv, cons(cons(sym, leval(nth(args, 1), env)), car(genv)))
+		}
+		else
+		{
+			rplacd(asc, leval(nth(args, 1), env))
+		}
+		return sym
+	}
+	throw Erro(ErroId.Type, "cannot define ${lprint(sym)}, must be SymbT.")
+}
+
+fun lsetq (env: ICons, args: ICons): Any
+{
+	val sym = car(args)
+	if (sym is Symb)
+	{
+		var rest: Any = env
+		while (rest is Cons)
+		{
+			val asc = assoc(car(rest) as ICons, sym)
+			if (asc !== null)
+			{
+				rplacd(asc, leval(nth(args, 1), env))
+				return cdr(asc)
+			}
+			rest = cdr(rest)
+		}
+		throw Erro(ErroId.Symbol, "${lprint(sym)} is not defined.")
+	}
+	throw Erro(ErroId.Type, "cannot setq ${lprint(sym)}, must be SymbT.")
+}
+
+fun land (env: ICons, args: ICons): Any
+{
+	var ret: Any = t
+	var rest: Any = args
+	while (rest is Cons)
+	{
+		ret = leval(car(rest), env)
+		if (ret is Nil) { return nil }
+		rest = cdr(rest)
+	}
+	return ret
+}
+
+fun lor (env: ICons, args: ICons): Any
+{
+	var ret: Any = nil
+	var rest: Any = args
+	while (rest is Cons)
+	{
+		ret = leval(car(rest), env)
+		if (! (ret is Nil)) { return ret }
+		rest = cdr(rest)
+	}
+	return nil
+}
 
 fun ldo (env: ICons, args: ICons): Any
 {
@@ -625,6 +861,46 @@ fun ldo (env: ICons, args: ICons): Any
 		rest = cdr(rest)
 	}
 	return leval(car(rest as ICons), env)
+}
+
+fun expand_quasiquote (expr: Any, env: ICons): Any
+{
+	if (expr is Cons)
+	{
+		val sym = car(expr)
+		if (sym is Symb && sym.name == "unquote")
+		{
+			return leval(car(cdr(expr) as ICons), env)
+		}
+		var eexpr: ICons = nil
+		var rest = expr
+		while (rest is Cons)
+		{
+			var is_splicing = false
+			val e = car(rest)
+			if (e is Cons)
+			{
+				val sym = car(e)
+				if (sym is Symb && sym.name == "splicing")
+				{
+					is_splicing = true
+					var sexpr = leval(car(cdr(car(rest) as ICons) as ICons), env)
+					while (sexpr is Cons)
+					{
+						eexpr = cons(car(sexpr), eexpr)
+						sexpr = cdr(sexpr)
+					}
+				}
+			}
+			if (! is_splicing)
+			{
+				eexpr = cons(expand_quasiquote(car(rest), env), eexpr)
+			}
+			rest = cdr(rest)
+		}
+		return nreverse(eexpr)
+	}
+	return expr;
 }
 
 fun l (vararg args: Any): ICons = args.foldRight(nil
@@ -695,11 +971,16 @@ fun growth (tree: ICons, buff: ReadBuf): ICons
 fun find_co_paren (code: String): Int
 {
 	var sflg = false
+	var eflg = false
 	var layer = 1
 	for (idx in 0..(code.length - 1))
 	{
 		val c = code[idx]
-		if (! sflg && '(' == c)
+		if (eflg)
+		{
+			eflg = false
+		}
+		else if (! sflg && '(' == c)
 		{
 			++layer
 		}
@@ -709,6 +990,7 @@ fun find_co_paren (code: String): Int
 		}
 		else if ('\\' == c)
 		{
+			eflg = true
 			continue
 		}
 		else if ('"' == c)
@@ -724,10 +1006,15 @@ fun find_co_paren (code: String): Int
 fun find_co_bracket (code: String): Int
 {
 	var sflg = false
+	var eflg = false
 	var layer = 1
 	for (idx in 0..(code.length - 1))
 	{
 		val c = code[idx]
+		if (eflg)
+		{
+			eflg = false
+		}
 		if (! sflg && '[' == c)
 		{
 			++layer
@@ -738,6 +1025,7 @@ fun find_co_bracket (code: String): Int
 		}
 		else if ('\\' == c)
 		{
+			eflg = true
 			continue
 		}
 		else if ('"' == c)
@@ -773,18 +1061,18 @@ fun take_string (code: String): Pair<String, Int>
 			if (escape_char_table.containsKey(c)) { c = escape_char_table[c]!! }
 			eflg = false
 		}
-		if ('"' == c) { return Pair(strn, idx + 1) }
-		if ('\\' == c)
+		else if ('\\' == c)
 		{
 			eflg = true
 			continue
 		}
+		else if ('"' == c) { return Pair(strn, idx + 1) }
 		strn += c
 	}
 	throw Erro(ErroId.Syntax, "not found close double quote.")
 }
 
-fun cons2array (c: ICons): MutableList<Any>
+fun cons2vect (c: ICons): MutableList<Any>
 {
 	var arr = mutableListOf<Any>()
 	var rest: Any = c
@@ -796,9 +1084,9 @@ fun cons2array (c: ICons): MutableList<Any>
 	return arr
 }
 
-fun array2cons (l: MutableList<Any>): ICons
+fun<T> vect2cons (l: MutableList<T>): ICons
 {
-	return nreverse(l.fold(nil, fun (acc, e): ICons = cons(e, acc)))
+	return nreverse(l.fold(nil, fun (acc, e): ICons = cons(e as Any, acc)))
 }
 
 fun bind_tree (treea: Any, treeb: Any): ICons
@@ -822,13 +1110,16 @@ fun bind_tree (treea: Any, treeb: Any): ICons
 	}
 }
 
-fun assoc (alist: ICons, key: Any): Any?
+fun assoc (alist: ICons, key: Any): Cons?
 {
 	var rest: Any = alist
 	while (rest is Cons)
 	{
 		val e = car(rest)
-		if (! (equal(car(e as ICons), key) is Nil)) { return e }
+		if (e is Cons)
+		{
+			if (! (equal(car(e as ICons), key) is Nil)) { return e }
+		}
 		rest = cdr(rest)
 	}
 	return null
@@ -836,7 +1127,7 @@ fun assoc (alist: ICons, key: Any): Any?
 
 fun assocdr (alist: ICons, key: Any): Any?
 {
-	return assoc(alist, key)?.let { cdr(it as Cons) }
+	return assoc(alist, key)?.let { cdr(it as ICons) }
 }
 
 fun seekenv (env: ICons, sym: Symb): Any
@@ -882,7 +1173,7 @@ fun lread (code: String): ICons
 		}
 		else if (')' == c)
 		{
-			throw Erro(ErroId.Syntax, "found excess close parennthesis.")
+			throw Erro(ErroId.Syntax, "found excess close parenthesis.")
 		}
 		else if ('[' == c)
 		{
@@ -941,6 +1232,11 @@ fun lread (code: String): ICons
 			tree = growth(tree, buff)
 			buff.rmacs = cons(Symb("splicing"), buff.rmacs)
 		}
+		else if ('^' == c)
+		{
+			tree = growth(tree, buff)
+			buff.rmacs = cons(Symb("tee"), buff.rmacs)
+		}
 		else if ('.' == c)
 		{
 			if (buff.tok.isEmpty())
@@ -990,8 +1286,7 @@ fun leval (expr_: Any, env_: ICons): Any
 				if ("if" == proc.name)
 				{
 					expr = if (leval(car(args), env) is Nil)
-						car(cdr(cdr(args) as ICons) as ICons)
-						else car(cdr(args) as ICons)
+						nth(args, 2) else nth(args, 1)
 				}
 				else if ("do" == proc.name)
 				{
@@ -1045,6 +1340,99 @@ fun lapply (proc: Any, args: ICons): Any
 	throw Erro(ErroId.UnCallable, "${lprint(proc)} is not callable.")
 }
 
+fun lthrow (eid: Int, estr: String)
+{
+	throw Erro(eid, estr)
+}
+
+fun lcatch (env: ICons, args: ICons): Any
+{
+	val excep = leval(car(args), env)
+	try
+	{
+		return leval(car(cdr(args) as ICons), env)
+	}
+	catch (erro: Erro)
+	{
+		return lapply(excep, l(erro.eid, leval(erro.estr, env)))
+	}
+}
+
+fun lempty (coll: Any): Any
+{
+	if (coll is Nil) { return t }
+	if (coll is MutableList<*>) { return if (coll.size < 1) t else nil }
+	if (coll is String) { return if (coll.length < 1) t else nil }
+	if (coll is Queu) { return if (coll.exit is Nil) t else nil }
+	if (coll is Symb) { return if (coll.name.length < 1) t else nil }
+	return nil
+}
+
+fun llprin (objs: ICons): Nil
+{
+	var rest: Any = objs
+	while (rest is Cons)
+	{
+		val a = car(rest)
+		print(if (a is String) a else lprint(a))
+		rest = cdr(rest)
+	}
+	return nil
+}
+
+fun llprint (objs: ICons): Nil
+{
+	llprin(objs)
+	println("")
+	return nil
+}
+
+fun lgetat (vect: Any, idx: Number): Any
+{
+	if (vect is MutableList<*>) { return vect[idx.toInt()]!! }
+	if (vect is String) { return vect[idx.toInt()]!! }
+	if (vect is Symb) { return Symb(Character.toString(vect.name[idx.toInt()])) }
+	throw Erro(ErroId.Type, "cannot apply getat to ${lprint(vect)}")
+}
+
+fun lsetat (vect: Any, idx: Number, valu: Any): Any
+{
+	if (vect is MutableList<*>)
+	{
+		vect[idx.toInt()] = valu
+		return vect
+	}
+	if (vect is String)
+	{
+		return vect.substring(0..(idx - 1)) + when (valu)
+			{
+				is Int   -> valu.toChar()
+				is Long  -> valu.toChar()
+				is Byte  -> valu.toChar()
+				is Short -> valu.toChar()
+				is String -> valu[0]
+				is Symb -> valu.name[0]
+				else -> throw Erro(ErroId.Type, "cannot setat ${lprint(valu)} to ${lprint(vect)}")
+			} + vect.substring((idx + 1)..(vect.length - 1))
+	}
+	if (vect is Symb)
+	{
+		vect.name = vect.name.substring(0..(idx - 1)) + when (valu)
+			{
+				is Int   -> valu.toChar()
+				is Long  -> valu.toChar()
+				is Byte  -> valu.toChar()
+				is Short -> valu.toChar()
+				is String -> valu[0]
+				is Symb -> valu.name[0]
+				else -> throw Erro(ErroId.Type
+						, "cannot setat ${lprint(valu)} to ${lprint(vect)}")
+			} + vect.name.substring((idx + 1)..(vect.name.length - 1))
+		return vect
+	}
+	throw Erro(ErroId.Type, "cannot apply setat to ${lprint(vect)}")
+}
+
 fun lprint (expr: Any): String
 {
 	val dup = seek_dup(expr, nil, nil).second
@@ -1063,9 +1451,9 @@ fun lprint (expr: Any): String
 
 fun seek_dup (expr: Any, printed: ICons, dup: ICons): Pair<ICons, ICons>
 {
-	if (! (find(expr, printed) is Nil))
+	if (! (findidx_eq(expr, printed) is Nil))
 	{
-		if (! (find(expr, dup) is Nil)) { return Pair(printed, cons(expr, dup)) }
+		if (! (findidx_eq(expr, dup) is Nil)) { return Pair(printed, cons(expr, dup)) }
 		return Pair(printed, dup)
 	}
 	if (expr is Cons)
@@ -1107,7 +1495,6 @@ fun lprint_rec (expr: Any, dup: ICons, rec: Boolean): String
 	if (expr is Func) { return "<Func ${lprint_rec(expr.args, dup,  true)} ${lprint_rec(expr.body, dup, true)}>" }
 	if (expr is Spfm) { return "<Spfm ${expr.name}>" }
 	if (expr is Subr) { return "<Subr ${expr.name}>" }
-//	if (expr is Function<*>) { return "<Subr ${expr.name} >" } TODO
 	return expr.toString()
 }
 
@@ -1120,7 +1507,7 @@ fun printcons_rec (coll: Cons, dup: ICons, rec: Boolean): String
 	{
 		return "(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})"
 	}
-	if (! (find(d, dup) is Nil))
+	if (! (findidx_eq(d, dup) is Nil))
 	{
 		"(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})"
 	}
@@ -1143,7 +1530,16 @@ fun<T1, T2, R> regist_subr2 (env: Cons, name: String, proc: (T1, T2) -> R)
 {
 	regist(env, name
 			, Subr({args: ICons -> proc(car(args) as T1
-					, car(cdr(args) as ICons) as T2) as Any}, name))
+					, nth(args, 1) as T2) as Any}, name))
+}
+
+fun<T1, T2, T3, R> regist_subr3 (env: Cons, name: String, proc: (T1, T2, T3) -> R)
+{
+	regist(env, name
+			, Subr({args: ICons
+				-> proc(car(args) as T1
+						, nth(args, 1) as T2
+						, nth(args, 2) as T3) as Any}, name))
 }
 
 fun make_genv (): Cons
@@ -1168,8 +1564,56 @@ fun make_genv (): Cons
 	regist(genv, "<", Subr({args: ICons -> llt(car(args), cdr(args) as ICons)}, "<"))
 	regist(genv, ">=", Subr({args: ICons -> lge(car(args), cdr(args) as ICons)}, ">="))
 	regist(genv, "<=", Subr({args: ICons -> lle(car(args), cdr(args) as ICons)}, "<="))
+	regist_subr1(genv, "int", ::lint)
+	regist_subr1(genv, "float", ::lfloat)
 
+	regist_subr2(genv, "rplaca", ::rplaca)
+	regist_subr2(genv, "rplacd", ::rplacd)
+	regist_subr1(genv, "last", ::last)
+	regist_subr2(genv, "nconc", ::nconc)
+	regist_subr1(genv, "nreverse", ::nreverse)
+	regist(genv, "vect", Subr({args: ICons -> cons2vect(args)}, "vect"))
+
+	regist(genv, "queu", Subr({args: ICons -> Queu(args)}, "queu"))
+	regist_subr2(genv, "pushqueu", {queu: Queu, v: Any -> queu.push(v)})
+	regist_subr1(genv, "popqueu", {queu: Queu -> queu.pop()})
+	regist_subr2(genv, "concqueu", {qa: Queu, qb: Queu -> qa.concat(qb)})
+	regist_subr1(genv, "to-list", ::to_list)
+	regist_subr1(genv, "to-vect", ::to_vect)
+	regist_subr1(genv, "to-queu", ::to_queu)
+	regist_subr1(genv, "symbol", ::symbol)
+	regist(genv, "sprint", Subr(::lsprint, "sprint"))
+	regist_subr2(genv, "apply", ::lapply)
+	regist_subr2(genv, "throw", ::lthrow)
+	regist_subr1(genv, "empty", ::lempty)
+	regist(genv, "print", Subr({args: ICons -> llprint(args)}, "print"))
+	regist(genv, "prin", Subr({args: ICons -> llprin(args)}, "prin"))
+	regist_subr1(genv, "type", ::ltype)
+	regist_subr1(genv, "load", ::lload)
+	regist_subr2(genv, "getat", ::lgetat)
+	regist_subr3(genv, "setat", ::lsetat)
+	regist(genv, "processor", Subr({Symb("kotlin")}, "processor"))
+	regist_subr1(genv, "tee", ::tee)
+
+	regist(genv, "quote", Spfm({env: ICons, args: ICons -> car(args)}, "quote"))
+
+	regist(genv, "quasiquote", Spfm(
+				{env: ICons, args: ICons -> expand_quasiquote(car(args), env)}
+				, "quasiquote"))
+	regist(genv, "if", Spfm(::lif, "if"))
+	regist(genv, "lambda"
+			, Spfm({env: ICons, args: ICons -> Func(car(args), nth(args, 1), env)}
+				, "lambda"))
+	regist(genv, "define", Spfm(::ldefine, "define"))
+	regist(genv, "setq", Spfm(::lsetq, "setq"))
+
+	regist(genv, "and", Spfm(::land, "and"))
+	regist(genv, "or", Spfm(::lor, "or"))
+	regist(genv, "!", Spfm(
+				{env: ICons, args: ICons ->
+				leval(lapply(leval(car(args), env), cdr(args) as ICons), env)}, "!"))
 	regist(genv, "do", Spfm(::ldo, "do"))
+	regist(genv, "catch", Spfm(::lcatch, "catch"))
 	return genv
 }
 

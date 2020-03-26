@@ -143,7 +143,7 @@
 	(! let* ((rows (map to-list (split str "\n")))
 			 (ncol (max-in (map length rows))))
 	   (map (lambda (row)
-			  (append row (make-list (- ncol (length row)) befunge::space)))
+			  (append row (times (- ncol (length row)) befunge::space)))
 			rows))))
 
 (define befunge::eval

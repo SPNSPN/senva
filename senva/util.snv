@@ -19,6 +19,8 @@
 
 (define not (lambda (a) (if a nil t)))
 
+(define identity (lambda (o) o))
+
 (define some
   (lambda (pred coll)
 	(if coll
@@ -47,13 +49,6 @@
 	  coll
 	  (cons (copy (car coll)) (copy (cdr coll))))))
 
-(define zip
-  (lambda (colla collb)
-	(if (and colla collb)
-	  (cons (cons (car colla) (car collb))
-			(zip (cdr colla) (cdr collb)))
-	  nil)))
-
 ((lambda (reverse-rec)
    (do (setq reverse-rec
 			 (lambda (coll rcoll)
@@ -67,10 +62,10 @@
  nil)
 ;(define reverse (lambda (coll) (nreverse (shallow-copy coll))))
 
-(define map
+(define map1
   (lambda (func coll)
 	(if coll
-	  (cons (func (car coll)) (map func (cdr coll)))
+	  (cons (func (car coll)) (map1 func (cdr coll)))
 	  nil)))
 
 (define reduce
@@ -101,27 +96,23 @@
 	  (append1 (func (car coll)) (mapcat func (cdr coll)))
 	  nil)))
 
-;(define map ; TODO 複数リストを受け取るmap
-;  (lambda (func . colls)
-;	()))
-
 (define let
   (lambda (form expr)
-	(cons (list (quote lambda) (map car form) expr)
-		  (map (lambda (e) (car (cdr e))) form))))
+	(cons (list (quote lambda) (map1 car form) expr)
+		  (map1 (lambda (e) (car (cdr e))) form))))
 
 (define letrec
   (lambda (form expr)
-	(cons (list (quote lambda) (map car form)
+	(cons (list (quote lambda) (map1 car form)
 				(cons (quote do)
 					  (append1
-						(map (lambda (e)
+						(map1 (lambda (e)
 							   (list (quote setq)
 									 (car e)
 									 (car (cdr e))))
 							 form)
 						(list expr))))
-		  (map (lambda (e) nil) form))))
+		  (map1 (lambda (e) nil) form))))
 
 (define let*
   (! letrec
@@ -135,11 +126,36 @@
 							   (car rargs))
 						 expr))))
 		  (lambda (form expr)
-			(let*-rec (map car form)
-					  (map (lambda (e)
+			(let*-rec (map1 car form)
+					  (map1 (lambda (e)
 							 (car (cdr e)))
 						   form)
 					  expr))))
+
+(define map
+  (! letrec ((map-rec (lambda (func rest result)
+						(if (some identity rest)
+						  (map-rec func (map1 cdr rest)
+								   (cons (apply func (map1 car rest)) result))
+						  (reverse result)))))
+	 (lambda (func . colls)
+	(map-rec func colls ()))))
+
+(define zipc
+  (lambda (colla collb)
+	(if (and colla collb)
+	  (cons (cons (car colla) (car collb))
+			(zipc (cdr colla) (cdr collb)))
+	  nil)))
+
+(define zip
+  (! letrec ((zip-rec
+			   (lambda (rest result)
+				 (if (some identity rest)
+				   (zip-rec (map1 cdr rest) (cons (map1 car rest) result))
+				   (reverse result)))))
+	 (lambda colls
+	   (zip-rec colls ()))))
 
 (define nth
   (lambda (coll n)
@@ -184,13 +200,11 @@
 (define = equal)
 
 (define times
-  (! letrec
-		  ((times-rec
+  (! letrec ((times-rec
 			 (lambda (n obj acc)
 			   (if (< n 1)
 				 acc
-				 (times-rec (- n 1)
-							obj (cons obj acc))))))
+				 (times-rec (- n 1) obj (cons obj acc))))))
 		  (lambda (n obj) (times-rec n obj nil))))
 
 (define str-times (lambda (n str) (join (times n str) "")))
@@ -214,9 +228,9 @@
 		(drop (cdr coll) (- n 1)))
 	  nil)))
 
-(define tee
-  (lambda (expr)
-	(do (print expr) expr)))
+;(define tee
+;  (lambda (expr)
+;	(do (print expr) expr)))
 
 (define find-if
   (lambda (pred coll)
@@ -312,17 +326,16 @@
 
 (define range
   (! letrec
-		  ((range-rec
-			 (lambda (b e st acc)
-			   (if (equal b e)
-				 (cons b acc)
-				 (range-rec b (+ e st) st
-							(cons e acc))))))
-		  (lambda (begin end)
-			(! cond
-			  ((< begin end) (range-rec begin (- end 1) -1 nil)
-			   (> begin end) (range-rec begin (+ end 1) 1 nil)
-			   t nil)))))
+	 ((range-rec
+		(lambda (b e st acc)
+		  (if (or (and (< b e) (< st 0)) (and (> b e) (< 0 st)))
+			(range-rec b (+ e st) st (cons e acc))
+			(cons b acc)))))
+	 (lambda (begin end)
+	   (! cond
+		  ((< begin end) (range-rec begin (- end 1) -1 nil)
+		   (> begin end) (range-rec begin (+ end 1) 1 nil)
+		   t nil)))))
 
 (define max-in
   (! letrec ((max-in-rec
@@ -480,11 +493,11 @@
 
 (define incf
   (lambda (var)
-	`(do (setq var (+ var 1)) var)))
+	`(do (setq ,var (+ ,var 1)) ,var)))
 
 (define decf
   (lambda (var)
-	`(do (setq var (- var 1)) var)))
+	`(do (setq ,var (- ,var 1)) ,var)))
 
 (define split
   (! letrec ((split-rec
@@ -505,14 +518,6 @@
 	 (lambda (coll s)
 	   (if coll (join-rec (cdr coll) s (car coll)) ""))))
 
-(define make-list
-  (! letrec ((make-list-rec
-			   (lambda (n v res)
-				 (if (< n 1)
-				   res
-				   (make-list-rec (- n 1) v (cons v res))))))
-	 (lambda (len val)
-	   (make-list-rec len val nil))))
 
 (define back (lambda (coll) (car (last coll))))
 
@@ -587,8 +592,20 @@
 							<))
 				(keys (map (lambda (n) (symbol (sprint "$" n))) keynums))
 				(syms (map (lambda (argk) (symbol (sprint "_fn_arg_" argk))) keynums))
-				(_form (replacing form (zip keys syms))))
+				(_form (replacing form (zipc keys syms))))
 		  `(lambda ,syms ,_form)))))
+
+(define cut
+  (! letrec ((cut-rec (lambda (rest rest-size size result)
+						(if (> rest-size size)
+						  (cut-rec (drop rest size)
+								   (- rest-size size)
+								   size
+								   (cons (take rest size) result))
+						  (reverse (cons rest result))))))
+	 (lambda (coll size) (cut-rec coll (length coll) size nil) )))
+
+(define vsplit (lambda (coll n) (apply zip (cut coll n))))
 
 (define caar (lambda (o) (car (car o))))
 (define cadr (lambda (o) (car (cdr o))))

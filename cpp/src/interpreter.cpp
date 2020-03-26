@@ -46,6 +46,7 @@ Interpreter::Interpreter ()
 	subr.push_back(&Interpreter::subr_list);
 	subr.push_back(&Interpreter::subr_print);
 	subr.push_back(&Interpreter::subr_prin);
+	subr.push_back(&Interpreter::subr_tee);
 	subr.push_back(&Interpreter::subr_sprint);
 	subr.push_back(&Interpreter::subr_tolist);
 	subr.push_back(&Interpreter::subr_load);
@@ -207,6 +208,11 @@ Interpreter::Interpreter ()
 				pool.make_cons(pool.make_symb("prin")
 					, pool.make_subr("prin"
 						, findidx<Subr>(subr, &Interpreter::subr_prin)))
+				, pool.getcar(genv)));
+	pool.setcar(genv, pool.make_cons(
+				pool.make_cons(pool.make_symb("tee")
+					, pool.make_subr("tee"
+						, findidx<Subr>(subr, &Interpreter::subr_tee)))
 				, pool.getcar(genv)));
 	pool.setcar(genv, pool.make_cons(
 				pool.make_cons(pool.make_symb("sprint")
@@ -816,6 +822,13 @@ Addr Interpreter::subr_prin (Addr args)
 		}
 	}
 	return Pool::nil;
+}
+
+Addr Interpreter::subr_tee (Addr args)
+{
+	Addr obj = pool.getcar(args);
+	std::cout << print(obj) << std::endl;
+	return obj;
 }
 
 Addr Interpreter::subr_sprint (Addr args)
@@ -1641,6 +1654,11 @@ Addr Interpreter::read (std::istream &in)
 				growth(tree, buf, rmacs);
 				pool.pushcons(rmacs
 						, pool.make_symb("splicing"));
+				break;
+			case '^':
+				growth(tree, buf, rmacs);
+				pool.pushcons(rmacs
+						, pool.make_symb("tee"));
 				break;
 			default:
 				buf << c;

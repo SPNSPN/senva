@@ -22,7 +22,7 @@ function Queu ()
 	this.push = function (val)
 	{
 		let c = new Cons(val, nil);
-		if (isnil(this.entr))
+		if (this.entr === nil)
 		{
 			this.entr = c;
 			this.exit = c;
@@ -37,7 +37,7 @@ function Queu ()
 
 	this.pop = function ()
 	{
-		if (isnil(this.exit)) { return nil; }
+		if (this.exit === nil) { return nil; }
 
 		let e = car(this.exit);
 		if (this.exit === this.entr)
@@ -54,7 +54,7 @@ function Queu ()
 
 	this.concat = function (queu)
 	{
-		if (isnil(this.entr))
+		if (this.entr === nil)
 		{
 			this.entr = queu.entr;
 			this.exit = queu.exit;
@@ -114,20 +114,17 @@ function cons (a, d)
 
 function car (o)
 {
-	if (isnil(o)) { return nil; }
-	return o.car;
+	return (o === nil) ? nil : o.car;
 }
 
 function cdr (o)
 {
-	if (isnil(o)) { return nil; }
-	return o.cdr;
+	return (o === nil) ? nil : o.cdr;
 }
 
 function atom (o)
 {
-	if (o instanceof Cons) { return nil; }
-	return t;
+	return (o instanceof Cons) ? nil : t;
 }
 
 function eq (a, b)
@@ -187,8 +184,7 @@ function equal (a, b)
 		cond = ((typeof a == typeof b) && (a == b));
 	}
 
-	if (cond) { return t; }
-	return nil;
+	return cond ? t : nil;
 }
 
 function rplaca (c, v)
@@ -247,7 +243,7 @@ function vect ()
 function queu ()
 {
 	let q = new Queu();
-	q.exit = array2cons(Array.from(arguments));
+	q.exit = vect2cons(Array.from(arguments));
 	q.entr = last(q.exit);
 	return q;
 }
@@ -269,10 +265,10 @@ function concqueu (qa, qb)
 
 function to_list (obj)
 {
-	if (Array.isArray(obj)) { return array2cons(obj); }
-	if (obj instanceof Symb) { return array2cons(to_vect(obj.name)); } 
+	if (Array.isArray(obj)) { return vect2cons(obj); }
+	if (obj instanceof Symb) { return vect2cons(to_vect(obj.name)); } 
 	if (obj instanceof String || (typeof obj) == "string") {
-		return array2cons(to_vect(obj)); }
+		return vect2cons(to_vect(obj)); }
 	if (obj instanceof Queu) { return obj.exit; }
 	if (obj instanceof Cons) { return obj; }
 	if (obj === nil) { return obj; }
@@ -281,12 +277,12 @@ function to_list (obj)
 
 function to_vect (obj)
 {
-	if (obj instanceof Cons) { return cons2array(obj); }
+	if (obj instanceof Cons) { return cons2vect(obj); }
 	if (obj instanceof Symb) {
 		return obj.name.split("").map(function (c) { return c.charCodeAt(0); }); }
 	if (obj instanceof String || (typeof obj) == "string") {
 		return obj.split("").map(function (c) { return c.charCodeAt(0); }); }
-	if (obj instanceof Queu) { return cons2array(obj.exit); }
+	if (obj instanceof Queu) { return cons2vect(obj.exit); }
 	if (Array.isArray(obj)) { return obj; }
 	if (obj === nil) { return []; }
 	throw new Erro(ErroId.Type, `cannot cast ${lprint(obj)} to VectT.`);
@@ -313,9 +309,9 @@ function to_queu (obj)
 function symbol (obj)
 {
 	if (obj instanceof Cons) {
-		return new Symb(String.fromCharCode.apply(null, cons2array(obj))); }
+		return new Symb(String.fromCharCode.apply(null, cons2vect(obj))); }
 	if (obj instanceof Queu) {
-		return new Symb(String.fromCharCode.apply(null, cons2array(obj.exit))); }
+		return new Symb(String.fromCharCode.apply(null, cons2vect(obj.exit))); }
 	if (Array.isArray(obj)) {
 		return new Symb(String.fromCharCode.apply(null, obj)); }
 	if (obj instanceof String || (typeof obj) == "string") { return new Symb(obj); }
@@ -328,18 +324,9 @@ function sprint ()
 {
 	return Array.from(arguments).reduce(function (strn, e)
 			{
-				if (e instanceof String || (typeof e) == "string")
-				{
-					return strn + e;
-				}
-				return strn + lprint(e);
+				return (e instanceof String || (typeof e) == "string") ?
+					 strn + e : strn + lprint(e);
 			}, "");
-}
-
-function isnil (o)
-{
-	if (o === nil) { return t; }
-	return nil;
 }
 
 function l ()
@@ -406,7 +393,7 @@ function add ()
 				if (! Number.isFinite(n))
 				{
 					throw new Erro(ErroId.Type
-							, `cannot add ${lprint(array2cons(nums))}`);
+							, `cannot add ${lprint(vect2cons(nums))}`);
 				}
 				return acc + n;
 			}
@@ -417,13 +404,13 @@ function sub (head)
 {
 	let nums = Array.from(arguments).slice(1);
 	if (! Number.isFinite(head)) { throw new Erro(ErroId.Type
-			, `cannot sub ${lprint(cons(head, array2cons(nums)))}`); }
+			, `cannot sub ${lprint(cons(head, vect2cons(nums)))}`); }
 	return nums.reduce(function (acc, n)
 			{
 				if (! Number.isFinite(n))
 				{
 					throw new Erro(ErroId.Type
-							, `cannot sub ${lprint(cons(head, array2cons(nums)))}`);
+							, `cannot sub ${lprint(cons(head, vect2cons(nums)))}`);
 				}
 				return acc - n;
 			}
@@ -438,7 +425,7 @@ function mul ()
 				if (! Number.isFinite(n))
 				{
 					throw new Erro(ErroId.Type
-							, `cannot mul ${lprint(array2cons(nums))}`);
+							, `cannot mul ${lprint(vect2cons(nums))}`);
 				}
 				return acc * n;
 			}
@@ -449,13 +436,13 @@ function div (head)
 {
 	let nums = Array.from(arguments).slice(1);
 	if (! Number.isFinite(head)) { throw new Erro(ErroId.Type
-			, `cannot div ${lprint(cons(head, array2cons(nums)))}`); }
+			, `cannot div ${lprint(cons(head, vect2cons(nums)))}`); }
 	return nums.reduce(function (acc, n)
 			{
 				if (! Number.isFinite(n))
 				{
 					throw new Erro(ErroId.Type
-							, `cannot div ${lprint(cons(head, array2cons(nums)))}`);
+							, `cannot div ${lprint(cons(head, vect2cons(nums)))}`);
 				}
 				return acc / n;
 			}
@@ -678,7 +665,7 @@ function expand_quasiquote (expr, env)
 	if (atom(expr)) { return expr; }
 	if (car(expr) instanceof Symb && car(expr).name == "unquote") {
 		return leval(car(cdr(expr)), env); }
-	let eexpr = new Queu();
+	let eexpr = nil;
 	for (let rest = expr; ! atom(rest); rest = cdr(rest))
 	{
 		if (! atom(car(rest)) && car(car(rest)) instanceof Symb
@@ -687,15 +674,15 @@ function expand_quasiquote (expr, env)
 			for (let sexpr = leval(car(cdr(car(rest))), env)
 					; ! atom(sexpr); sexpr = cdr(sexpr))
 			{
-				eexpr.push(car(sexpr));
+				eexpr = cons(car(sexpr), eexpr);
 			}
 		}
 		else
 		{
-			eexpr.push(expand_quasiquote(car(rest), env));
+			eexpr = cons(expand_quasiquote(car(rest), env), eexpr);
 		}
 	}
-	return to_list(eexpr);
+	return nreverse(eexpr);
 }
 
 function inumable (str)
@@ -820,7 +807,7 @@ function take_string (code)
 	throw new Erro(ErroId.Syntax, "not found close double quote.");
 }
 
-function cons2array (c)
+function cons2vect (c)
 {
 	arr = [];
 	for (let rest = c; ! atom(rest); rest = cdr(rest))
@@ -830,7 +817,7 @@ function cons2array (c)
 	return arr;
 }
 
-function array2cons (l)
+function vect2cons (l)
 {
 	return nreverse(l.reduce((acc, e) => cons(e, acc), nil));
 }
@@ -981,6 +968,11 @@ function lread (code)
 			tree = growth(tree, buff);
 			buff[1] = cons(new Symb("splicing"), buff[1]);
 		}
+		else if ("^" == c)
+		{
+			tree = growth(tree, buff);
+			buff[1] = cons(new Symb("tee"), buff[1]);
+		}
 		else if ("." == c)
 		{
 			if (buff[0])
@@ -1024,7 +1016,7 @@ function leval (expr, env)
 			{
 				if ("if" == proc.name)
 				{
-					expr = (isnil(leval(car(args), env)))
+					expr = (leval(car(args), env) === nil)
 						? car(cdr(cdr(args))) : car(cdr(args));
 				}
 				else if ("do" == proc.name)
@@ -1073,7 +1065,7 @@ function lapply (proc, args)
 	}
 	if (proc instanceof Function || (typeof proc) == "function")
 	{
-		return proc.apply(null, cons2array(args));
+		return proc.apply(null, cons2vect(args));
 	}
 	throw new Erro(ErroId.UnCallable, `${lprint(proc)} is not callable.`);
 }
@@ -1105,18 +1097,15 @@ function lempty (coll)
 	if (coll === nil) { return t; }
 	if (Array.isArray(coll) || coll instanceof String || (typeof coll) == "string")
 	{
-		if (coll.length < 1) { return t; }
-		return nil;
+		return (coll.length < 1) ? t : nil;
 	}
 	if (coll instanceof Queu)
 	{
-		if (coll.exit === nil) { return t; }
-		return nil;
+		return (coll.exit === nil) ? t : nil;
 	}
 	if (coll instanceof Symb)
 	{
-		if (coll.name.length < 1) { return t; }
-		return nil;
+		return (coll.name.length < 1) ? t : nil;
 	}
 	return nil;
 }
@@ -1125,14 +1114,8 @@ function llprin ()
 {
 	Array.from(arguments).map(function (a)
 			{
-				if (a instanceof String || (typeof a) == "string")
-				{
-					console.log(a);
-				}
-				else
-				{
-					console.log(lprint(a));
-				}
+				console.log((a instanceof String || (typeof a) == "string")
+						? a : lprint(a));
 			});
 	return nil;
 }
@@ -1142,6 +1125,36 @@ function llprint ()
 	Array.from(arguments).map(function (e) { llprin(e); });
 	console.log(" ");
 	return nil;
+}
+
+function tee (obj)
+{
+	console.log(lprint(obj));
+	return obj;
+}
+
+function attr (obj)
+{
+	let anames = Array.from(arguments).slice(1);
+	let res = obj;
+	return anames.reduce(function (acc, aname)
+			{
+				let at = acc[aname];
+				if (at instanceof Function || (typeof at) == "function")
+				{
+					return function () { return at.apply(acc, arguments); };
+				}
+				else
+				{
+					return at;
+				}
+			}, res);
+}
+
+function lnew (cname)
+{
+	let args = Array.from(arguments);
+	return new (Function.prototype.bind.apply(eval(cname), args));
 }
 
 function lgetat (vect, idx)
@@ -1204,88 +1217,16 @@ function lsetat (vect, idx, val)
 		}
 		return vect;
 	}
-	throw new Erro(ErroId.Type, `cannot apply setat to ${lprint(vect)}`);
+	try
+	{
+		vect[idx] = val;
+		return vect;
+	}
+	catch (e)
+	{
+		throw new Erro(ErroId.Type, `cannot apply setat to ${lprint(vect)}`);
+	}
 }
-
-//function lprint (expr)
-//{
-//	let dup = seek_dup(expr, nil, nil);
-//	let s = "";
-//	for (let idx = 0, rest = dup; ! isnil(rest); ++idx, rest = cdr(rest))
-//	{
-//		s += `\$${idx} = ${lprint_rec(car(rest), dup, false)}\n`;
-//	}
-//	s += lprint_rec(expr, dup, true);
-//	return s;
-//}
-
-//function seek_dup (expr, printed,  dup)
-//{
-//	if (find(expr, printed)) { return cons(expr, dup); }
-//	if (atom(expr)) { return dup; }
-//	let pd = cons(expr, printed);
-//	return append1(seek_dup(car(expr), pd, dup), seek_dup(cdr(expr), pd, dup));
-//}
-
-//function lprint_rec (expr, dup, rec)
-//{
-//	let idx = findidx_eq(expr, dup);
-//	if (rec && ! isnil(idx)) { return `\$${idx}`; }
-//	if (isnil(expr)) { return "NIL"; }
-//	if (atom(expr))
-//	{
-//		if (expr instanceof Symb)
-//		{
-//			return expr.name;
-//		}
-//		if (expr instanceof String || (typeof expr) == "string")
-//		{
-//			return `\"${expr}\"`;
-//		}
-//		if (Array.isArray(expr))
-//		{
-//			return `[${expr.map(lprint).join(" ")}]`;
-//		}
-//		if (expr instanceof Queu)
-//		{
-//			return `/${lprint(expr.exit)}/`;
-//		}
-//		if (expr instanceof Func)
-//		{
-//			return `<Func ${lprint(expr.args)} ${lprint(expr.body)}>`;
-//		}
-//		if (expr instanceof Spfm)
-//		{
-//			return `<Spfm ${expr.name}>`;
-//		}
-//		if (expr instanceof Function || (typeof expr) == "function")
-//		{
-//			return `<Subr ${expr.name}>`;
-//		}
-//		return expr.toString();
-//	}
-//	else
-//	{
-//		return printcons_rec(expr, dup, true);
-//	}
-//
-//}
-//
-//function printcons_rec (coll, dup, rec)
-//{
-//	let a = car(coll);
-//	let d = cdr(coll);
-//	if (isnil(d)) { return `(${lprint_rec(a, dup, rec)})`; }
-//	if (atom(d))
-//	{
-//		return `(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})`;
-//	}
-//	if (isnil(findidx_eq(d, dup)))
-//	{
-//		return `(${lprint_rec(a, dup, rec)} ${lprint_rec(d, dup, rec).slice(1)}`;
-//	}
-//	return `(${lprint_rec(a, dup, rec)} ${lprint_rec(d, dup, rec)})`;
-//}
 
 function lprint (expr)
 {
@@ -1304,9 +1245,9 @@ function lprint (expr)
 
 function seek_dup (expr, printed, dup)
 {
-	if (find(expr, printed))
+	if (findidx_eq(expr, printed) !== nil)
 	{
-		if (find(expr, dup)) { return {printed: printed, dup: dup}; }
+		if (findidx_eq(expr, dup) !== nil) { return {printed: printed, dup: dup}; }
 		return {printed: printed, dup: cons(expr, dup)}
 	}
 	if (expr instanceof Cons)
@@ -1369,7 +1310,7 @@ function printcons_rec (coll, dup, rec)
 	{
 		return `(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})`;
 	}
-	if (find(d, dup) !== nil)
+	if (findidx_eq(d, dup) !== nil)
 	{
 		return `(${lprint_rec(a,  dup, rec)} . ${lprint_rec(d, dup, rec)})`;
 	}
@@ -1428,7 +1369,10 @@ regist("load", lload);
 regist("getat", lgetat);
 regist("setat", lsetat);
 regist("processor", function () { return new Symb("javascript"); });
-// TODO
+regist("tee", tee);
+regist("js", eval);
+regist("->", attr);
+regist("new", lnew);
 		
 regist("quote", new Spfm(function (env, args) { return car(args); }, "quote"));
 regist("quasiquote", new Spfm(function (env, args)

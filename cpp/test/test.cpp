@@ -1368,8 +1368,6 @@ int main (int argc, char **argv)
 	ITP_CHECK("((lambda (head . rest) rest) 1 2 3 4)" , "(2 3 4)");
 	ITP_CHECK("((lambda all all) 1 2 3 4)" , "(1 2 3 4)");
 	ITP_CHECK("((lambda ((pa (pb pc) pd)) pc) (list 1 (list 2 3) 4))" , "3");
-	ITP_CHECK("(load \"senva/matrix.snv\") (matrix::determinant '((3 1 1 2 1) (5 1 3 4 1) (2 0 1 0 3) (1 3 2 1 1) (2 1 5 10 1)))"
-			, "-292");
 	ITP_CHECK("(throw 1 \"an error occured!\")"
 			, "<Erro \"an error occured!\">");
 	ITP_CHECK("(do 1 (throw 2 \"an error occured!\") 3)"
@@ -1391,9 +1389,6 @@ int main (int argc, char **argv)
 	ITP_CHECK("(", "<Erro \"not found close parenthesis.\">");
 	ITP_CHECK(")", "<Erro \"found excess close parenthesis.\">");
 	ITP_CHECK("(to-list 3)", "<Erro \"cannot cast 3 to ConsT.\">");
-	ITP_CHECK("(load \"not/exist/path.ext\")"
-			, "<Erro \"not found file: \"not/exist/path.ext\"\">");
-	ITP_CHECK("(load 33)", "<Erro \"cannot apply load to 33\">");
 	ITP_CHECK("(to-vect 33)", "<Erro \"cannot cast 33 to VectT.\">");
 	ITP_CHECK("(symbol 33)", "<Erro \"cannot cast 33 to SymbT.\">");
 	ITP_CHECK("(to-queu 33)", "<Erro \"cannot cast 33 to QueuT.\">");
@@ -1453,6 +1448,11 @@ int main (int argc, char **argv)
 	ITP_CHECK("(to-list \"a\\nb\\tc\\0\")", "(97 10 98 9 99 0)");
 	ITP_CHECK("`[1 2 ,3 ,(+ 2 2) @(if (> 3 1) '(5 6) nil) @(cons 7 `(8 ,(* 3 3))) 10]"
 			, "[1 2 3 4 5 6 7 8 9 10]");
+	ITP_CHECK("(load \"senva/matrix.snv\") (matrix::determinant '((3 1 1 2 1) (5 1 3 4 1) (2 0 1 0 3) (1 3 2 1 1) (2 1 5 10 1)))"
+			, "-292");
+	ITP_CHECK("(load \"not/exist/path.ext\")"
+			, "<Erro \"not found file: \"not/exist/path.ext\"\">");
+	ITP_CHECK("(load 33)", "<Erro \"cannot apply load to 33\">");
 	ITP_CHECK("((lambda (c) (list (list c c) (cons c c))) (list 1 2))"
 			, "$0 = (1 2)\n(($0 $0) ($0 . $0))");
 //	ITP_CHECK("((lambda (c v) [v c [[v c] (list v c)] (list (list c v) [c v])]) (list 1 2) [1 2])"
