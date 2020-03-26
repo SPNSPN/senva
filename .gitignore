@@ -1,2 +1,4 @@
 /cpp/build/
 *.swp
+/kotlin/build/
+/kotlin/META-INF/

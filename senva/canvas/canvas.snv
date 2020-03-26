@@ -1,0 +1,11 @@
+(load "senva/util.snv")
+
+(define canvas ((-> (js "document") "getElementById") "main-canvas"))
+(define context ((-> canvas "getContext") "2d"))
+((-> context "fillRect") 20 20 300 200)
+(define img (new "Image"))
+(setat img "src" "perl.png")
+((-> context "drawImage") img 0 0)
+
+; TODO シーンクラス　レイアウト、イベント
+; TODO オブジェクトクラス　アニメーション、クリックイベント

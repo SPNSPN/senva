@@ -1,0 +1,37 @@
+(load "senva/util.snv")
+
+(define simple-ga
+  (lambda (generate cross mutate score
+		   group-size cross-n mutate-n matching-size)
+	(! let* ((n-step 0)
+			 (cmp (! fn (> (car $0) (car $1))))
+			 (genes  (sort (map (! fn (! let ((g (generate))) (list (score g) g)))
+								(range 0 group-size)) cmp))
+			 (split-genes (lambda (gs)
+							(! let* ((vgs (map (! fn (keep identity $0))
+											   (vsplit gs 3)))
+									 (ngs (append (cadr vgs)
+												  (caddr vgs)
+												  (reverse (car vgs)))))
+							   (list (take ngs cross-n)
+									 (take (drop ngs cross-n) mutate-n)
+									 (drop ngs (+ cross-n mutate-n)))))))
+	   (list (cons 'step
+				   (lambda ()
+					 (do (! let (((parents mutants survivers) (split-genes
+																(map cadr genes))))
+							(setq genes
+								  (sort (map (! fn (list (score $0) $0))
+											 (append
+											   survivers
+											   (mapcat (lambda (partners)
+														 (map (! fn (apply cross partners))
+															  (range 0 matching-size)))
+													   (cut parents matching-size))
+											   (map mutate mutants)))
+										cmp)))
+					   (! incf n-step))))
+			 (cons 'state (lambda ()
+							(list n-step genes)))))))
+
+
