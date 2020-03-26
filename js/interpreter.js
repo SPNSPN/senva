@@ -1306,7 +1306,7 @@ function printcons_rec (coll, dup, rec)
 	let a = car(coll);
 	let d = cdr(coll);
 	if (d === nil) { return `(${lprint_rec(a, dup, rec)})`; }
-	if (atom(d) !== nil)
+	if (atom(d))
 	{
 		return `(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})`;
 	}

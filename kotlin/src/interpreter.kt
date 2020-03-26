@@ -1389,9 +1389,9 @@ fun llprint (objs: ICons): Nil
 
 fun lgetat (vect: Any, idx: Number): Any
 {
-	if (vect is MutableList<*>) { return vect[idx.toInt()]!! }
-	if (vect is String) { return vect[idx.toInt()]!! }
-	if (vect is Symb) { return Symb(Character.toString(vect.name[idx.toInt()])) }
+	if (vect is MutableList<*>) { return vect[idx.toInt()] ?: mutableListOf<Any>() }
+	if (vect is String) { return Character.toString(vect[idx.toInt()]) ?: "" }
+	if (vect is Symb) { return Symb(Character.toString(vect.name[idx.toInt()]) ?: "") }
 	throw Erro(ErroId.Type, "cannot apply getat to ${lprint(vect)}")
 }
 
@@ -1399,12 +1399,12 @@ fun lsetat (vect: Any, idx: Number, valu: Any): Any
 {
 	if (vect is MutableList<*>)
 	{
-		vect[idx.toInt()] = valu
+		(vect as MutableList<Any>)[idx.toInt()]  = valu
 		return vect
 	}
 	if (vect is String)
 	{
-		return vect.substring(0..(idx - 1)) + when (valu)
+		return vect.substring(0..(idx.toInt() - 1)) + when (valu)
 			{
 				is Int   -> valu.toChar()
 				is Long  -> valu.toChar()
@@ -1413,11 +1413,11 @@ fun lsetat (vect: Any, idx: Number, valu: Any): Any
 				is String -> valu[0]
 				is Symb -> valu.name[0]
 				else -> throw Erro(ErroId.Type, "cannot setat ${lprint(valu)} to ${lprint(vect)}")
-			} + vect.substring((idx + 1)..(vect.length - 1))
+			} + vect.substring((idx.toInt() + 1)..(vect.length - 1))
 	}
 	if (vect is Symb)
 	{
-		vect.name = vect.name.substring(0..(idx - 1)) + when (valu)
+		vect.name = vect.name.substring(0..(idx.toInt() - 1)) + when (valu)
 			{
 				is Int   -> valu.toChar()
 				is Long  -> valu.toChar()
@@ -1427,7 +1427,7 @@ fun lsetat (vect: Any, idx: Number, valu: Any): Any
 				is Symb -> valu.name[0]
 				else -> throw Erro(ErroId.Type
 						, "cannot setat ${lprint(valu)} to ${lprint(vect)}")
-			} + vect.name.substring((idx + 1)..(vect.name.length - 1))
+			} + vect.name.substring((idx.toInt() + 1)..(vect.name.length - 1))
 		return vect
 	}
 	throw Erro(ErroId.Type, "cannot apply setat to ${lprint(vect)}")
@@ -1453,8 +1453,7 @@ fun seek_dup (expr: Any, printed: ICons, dup: ICons): Pair<ICons, ICons>
 {
 	if (! (findidx_eq(expr, printed) is Nil))
 	{
-		if (! (findidx_eq(expr, dup) is Nil)) { return Pair(printed, cons(expr, dup)) }
-		return Pair(printed, dup)
+		return Pair(printed, if (findidx_eq(expr, dup) is Nil) cons(expr, dup) else dup)
 	}
 	if (expr is Cons)
 	{
@@ -1523,23 +1522,50 @@ fun regist (env: Cons, name: String, obj: Any)
 
 fun<T, R> regist_subr1 (env: Cons, name: String, proc: (T) -> R)
 {
-	regist(env, name, Subr({args: ICons -> proc(car(args) as T) as Any}, name))
+	fun subr_ (args: ICons): Any
+	{
+		try
+		{
+			return proc(car(args) as T) as Any
+		}
+		catch (e: java.lang.ClassCastException)
+		{
+			throw Erro(ErroId.Type, "cannot apply ${name} to ${lprint(car(args))}")
+		}
+	}
+	regist(env, name, Subr(::subr_, name))
 }
 
 fun<T1, T2, R> regist_subr2 (env: Cons, name: String, proc: (T1, T2) -> R)
 {
-	regist(env, name
-			, Subr({args: ICons -> proc(car(args) as T1
-					, nth(args, 1) as T2) as Any}, name))
+	fun subr_ (args: ICons): Any
+	{
+		try
+		{
+			return proc(car(args) as T1, car(cdr(args) as ICons) as T2) as Any
+		}
+		catch (e: java.lang.ClassCastException)
+		{
+			throw Erro(ErroId.Type, "cannot apply ${name} to ${lprint(args)}")
+		}
+	}
+	regist(env, name, Subr(::subr_, name))
 }
 
 fun<T1, T2, T3, R> regist_subr3 (env: Cons, name: String, proc: (T1, T2, T3) -> R)
 {
-	regist(env, name
-			, Subr({args: ICons
-				-> proc(car(args) as T1
-						, nth(args, 1) as T2
-						, nth(args, 2) as T3) as Any}, name))
+	fun subr_ (args: ICons): Any
+	{
+		try
+		{
+			return proc(car(args) as T1, car(cdr(args) as ICons) as T2, car(cdr(cdr(args) as ICons) as ICons) as T3) as Any
+		}
+		catch (e: java.lang.ClassCastException)
+		{
+			throw Erro(ErroId.Type, "cannot apply ${name} to ${lprint(args)}")
+		}
+	}
+	regist(env, name, Subr(::subr_, name))
 }
 
 fun make_genv (): Cons
