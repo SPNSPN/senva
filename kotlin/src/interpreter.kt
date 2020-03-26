@@ -1370,7 +1370,7 @@ fun lempty (coll: Any): Any
 
 fun llprin (objs: ICons): Nil
 {
-	rest: Any = objs
+	var rest: Any = objs
 	while (rest is Cons)
 	{
 		val a = car(rest)
@@ -1389,9 +1389,9 @@ fun llprint (objs: ICons): Nil
 
 fun lgetat (vect: Any, idx: Number): Any
 {
-	if (vect is MutableList<*>) { return vect[idx] }
-	if (vect is String) { return vect[idx] }
-	if (vect is Symb) { return Symb(vect.name[idx]) }
+	if (vect is MutableList<*>) { return vect[idx.toInt()]!! }
+	if (vect is String) { return vect[idx.toInt()]!! }
+	if (vect is Symb) { return Symb(Character.toString(vect.name[idx.toInt()])) }
 	throw Erro(ErroId.Type, "cannot apply getat to ${lprint(vect)}")
 }
 
@@ -1399,13 +1399,12 @@ fun lsetat (vect: Any, idx: Number, valu: Any): Any
 {
 	if (vect is MutableList<*>)
 	{
-		vect[idx] = valu
+		vect[idx.toInt()] = valu
 		return vect
 	}
 	if (vect is String)
 	{
-		return vect.substring(0..(idx - 1))
-			+ when (valu)
+		return vect.substring(0..(idx - 1)) + when (valu)
 			{
 				is Int   -> valu.toChar()
 				is Long  -> valu.toChar()
@@ -1413,15 +1412,12 @@ fun lsetat (vect: Any, idx: Number, valu: Any): Any
 				is Short -> valu.toChar()
 				is String -> valu[0]
 				is Symb -> valu.name[0]
-				else -> throw Erro(ErroId.Type
-						, "cannot setat ${lprint(valu)} to ${lprint(vect)}")
-			}
-			+ vect.substring((idx + 1)..(vect.length - 1))
+				else -> throw Erro(ErroId.Type, "cannot setat ${lprint(valu)} to ${lprint(vect)}")
+			} + vect.substring((idx + 1)..(vect.length - 1))
 	}
 	if (vect is Symb)
 	{
-		vect.name = vect.name.substring(0..(idx - 1))
-			+ when (valu)
+		vect.name = vect.name.substring(0..(idx - 1)) + when (valu)
 			{
 				is Int   -> valu.toChar()
 				is Long  -> valu.toChar()
@@ -1431,8 +1427,7 @@ fun lsetat (vect: Any, idx: Number, valu: Any): Any
 				is Symb -> valu.name[0]
 				else -> throw Erro(ErroId.Type
 						, "cannot setat ${lprint(valu)} to ${lprint(vect)}")
-			}
-			+ vect.name.substring((idx + 1)..(vect.name.length - 1))
+			} + vect.name.substring((idx + 1)..(vect.name.length - 1))
 		return vect
 	}
 	throw Erro(ErroId.Type, "cannot apply setat to ${lprint(vect)}")
@@ -1538,6 +1533,15 @@ fun<T1, T2, R> regist_subr2 (env: Cons, name: String, proc: (T1, T2) -> R)
 					, nth(args, 1) as T2) as Any}, name))
 }
 
+fun<T1, T2, T3, R> regist_subr3 (env: Cons, name: String, proc: (T1, T2, T3) -> R)
+{
+	regist(env, name
+			, Subr({args: ICons
+				-> proc(car(args) as T1
+						, nth(args, 1) as T2
+						, nth(args, 2) as T3) as Any}, name))
+}
+
 fun make_genv (): Cons
 {
 	var genv = Cons(nil, nil)
@@ -1587,7 +1591,7 @@ fun make_genv (): Cons
 	regist_subr1(genv, "type", ::ltype)
 	regist_subr1(genv, "load", ::lload)
 	regist_subr2(genv, "getat", ::lgetat)
-	regist_subr2(genv, "setat", ::lsetat)
+	regist_subr3(genv, "setat", ::lsetat)
 	regist(genv, "processor", Subr({Symb("kotlin")}, "processor"))
 	regist_subr1(genv, "tee", ::tee)
 
