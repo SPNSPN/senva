@@ -473,13 +473,13 @@ function seekenv ($env, $key)
 
 function rplaca ($c, $val)
 {
-	$c.car = $val;
+	if ($c -is [cons]) { $c.car = $val; }
 	return $c;
 }
 
 function rplacd ($c, $val)
 {
-	$c.cdr = $val;
+	if ($c -is [cons]) { $c.cdr = $val; }
 	return $c;
 }
 
