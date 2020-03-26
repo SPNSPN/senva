@@ -2,3 +2,4 @@
 *.swp
 /kotlin/build/
 /kotlin/META-INF/
+/ps/senva/
