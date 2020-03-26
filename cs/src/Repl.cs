@@ -15,7 +15,7 @@ namespace ReplForm
 		{
 			this.label = new Label();
 			this.label.Dock = DockStyle.Fill;
-			senva = new Senva.Interpreter();
+			this.senva = new Senva.Interpreter();
 			this.label.Text = senva.print(
 					senva.eval(senva.read("(list 1 'symb \"strn\" nil)")));
 			this.Controls.Add(this.label);
