@@ -59,9 +59,12 @@ class Cons : ICons
 class Interpreter
 {
 	public Nil nil;
+	public Cons genv;
+
 	public Interpreter ()
 	{
 		this.nil = new Nil();
+		this.genv = new Cons(this.nil, this.nil);
 	}
 
 	public ICons read (string code)

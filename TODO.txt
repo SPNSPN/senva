@@ -1,5 +1,6 @@
 ;simple_ga.snv
 js senva canvas game
+cs win app api voiceroid control
 switchのプチコン4版senva
 pasoconmini mz-80c pc-8001 版
 web audio apiによる効果音生成器
