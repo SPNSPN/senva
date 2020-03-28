@@ -57,8 +57,8 @@ class Queu ()
 
 	init
 	{
-		entr = nil;
-		exit = entr;
+		entr = nil
+		exit = entr
 	}
 
 	fun push (v: Any): Queu
@@ -660,7 +660,7 @@ fun last (o: Any): Any
 
 fun nconc (colla: ICons, collb: ICons): ICons
 {
-	if (colla is Nil) { return collb; }
+	if (colla is Nil) { return collb }
 	val las = last(colla)
 	rplacd(las as Cons, collb)
 	return colla
@@ -906,7 +906,7 @@ fun expand_quasiquote (expr: Any, env: ICons): Any
 		}
 		return nreverse(eexpr)
 	}
-	return expr;
+	return expr
 }
 
 fun l (vararg args: Any): ICons = args.foldRight(nil
@@ -992,7 +992,7 @@ fun find_co_paren (code: String): Int
 		}
 		else if (! sflg && ')' == c)
 		{
-			--layer;
+			--layer
 		}
 		else if ('\\' == c)
 		{
