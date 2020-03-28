@@ -230,9 +230,5 @@ fun main (args: Array<String>)
 	CHECK("(processor)", "kotlin")
 	CHECK("(environment)", lprint(genv))
 	CHECK("(load \"senva/test.snv\")", "NIL")
-
-	CHECK("((py \"len\") (vect 1 2 3 4 5))", "5")
-	CHECK("((-> \"-\" \"join\") [\"a\" \"b\" \"c\"])", "\"a-b-c\"")
-	CHECK("(define m (import \"math\")) ((-> m \"ceil\") 2.3)", "3")
 }
 

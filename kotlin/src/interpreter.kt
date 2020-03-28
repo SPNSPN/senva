@@ -50,7 +50,7 @@ class Queu ()
 
 	constructor (c: ICons) : this()
 	{
-		this.entr = last(c)
+		this.entr = last(c) as ICons
 		this.exit = c
 	}
 
@@ -651,9 +651,9 @@ fun last (o: Any): Any
 	}
 	if (o is Nil) { return nil }
 	if (o is Queu) { return o.entr }
-	if (o is Symb) { return Symb(o.name[o.name.length - 1]) }
-	if (o is String) { return o[o.length - 1] }
-	if (o is MutableList<*>) { return mutableListOf(o[o.length - 1]) }
+	if (o is Symb) { return Symb(o.name[o.name.length - 1].toString()) }
+	if (o is String) { return o[o.length - 1].toString() }
+	if (o is MutableList<*>) { return mutableListOf(o[o.size - 1]) }
 	throw Erro(ErroId.Type, "cannot apply last to ${lprint(o)}")
 }
 
