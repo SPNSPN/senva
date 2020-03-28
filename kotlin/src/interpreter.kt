@@ -1100,7 +1100,7 @@ fun lread (code: String): ICons
 						, cons(car(tree)
 							, car(lread(code.substring((idx + 1)..(code.length - 1))))))
 			}
-			else { buff.tok += "." }
+			buff.tok += "."
 		}
 		else { buff.tok += c }
 

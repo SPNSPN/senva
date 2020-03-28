@@ -975,20 +975,14 @@ function lread (code)
 		}
 		else if ("." == c)
 		{
-			if (buff[0])
-			{
-				buff[0] += ".";
-			}
+			if (buff[0]) { buff[0] += "."; }
 			else
 			{
 				return nconc(reverse(cdr(tree)), cons(car(tree)
 							, car(lread(code.slice(idx + 1)))));
 			}
 		}
-		else
-		{
-			buff[0] += c
-		}
+		else { buff[0] += c }
 	}
 	tree = growth(tree, buff);
 	return nreverse(tree);
