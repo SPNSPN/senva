@@ -1290,6 +1290,11 @@ int main (int argc, char **argv)
 	ITP_CHECK("(rplaca (cons nil 44) 34)", "(34 . 44)");
 	ITP_CHECK("(rplacd (cons 44 55) (cons 3 nil))", "(44 3)");
 	ITP_CHECK("(last (list 3 4 5 6))", "(6)");
+	ITP_CHECK("(last nil)", "NIL");
+	ITP_CHECK("(last (queu 1 2 3))", "(3)");
+	ITP_CHECK("(last 'abc)", "c");
+	ITP_CHECK("(last \"abc\")", "\"c\"");
+	ITP_CHECK("(last [1 2 3])", "[3]");
 	ITP_CHECK("(nconc (list 1 2 3) (list 4 5))", "(1 2 3 4 5)");
 	ITP_CHECK("(nreverse (list 1 2 3 4))", "(4 3 2 1)");
 	ITP_CHECK("(/ (+ 71 55) (- (* 2 3) 3))", "42");

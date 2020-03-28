@@ -1,5 +1,5 @@
 import kotlin.system.exitProcess
-import senva.*;
+import senva.*
 
 fun CHECK (code: String, succ: Any?)
 {
@@ -66,6 +66,11 @@ fun main (args: Array<String>)
 	CHECK("(rplaca (cons nil 44) 34)", "(34 . 44)")
 	CHECK("(rplacd (cons 44 55) (cons 3 nil))", "(44 3)")
 	CHECK("(last (list 1 2 3 4))", "(4)")
+	CHECK("(last nil)", "NIL")
+	CHECK("(last (queu 1 2 3))", "(3)")
+	CHECK("(last 'abc)", "c")
+	CHECK("(last \"abc\")", "\"c\"")
+	CHECK("(last [1 2 3])", "[3]")
 	CHECK("(nconc (list 1 2 3) (list 4 5))", "(1 2 3 4 5)")
 	CHECK("(nreverse (list 1 2 3 4))", "(4 3 2 1)")
 	CHECK("(/ (+ 71 55) (- (* 2 3) 3))", "42")
@@ -222,10 +227,10 @@ fun main (args: Array<String>)
 			, "$0 = (1 2)\n$1 = [1 2]\n[$1 $0 [[$1 $0] ($1 $0)] (($0 $1) [$0 $1])]")
 	CHECK("((lambda (rpc) (rplacd rpc rpc)) (list 1 2))", "$0 = (1 . $0)\n$0")
 	CHECK("((lambda (rpv) (setat rpv 1 rpv)) [1 2])", "$0 = [1 $0]\n$0")
-	CHECK("(processor)", "python")
+	CHECK("(processor)", "kotlin")
+	CHECK("(environment)", lprint(genv))
 	CHECK("(load \"senva/test.snv\")", "NIL")
 
-	CHECK("(environment)", lprint(genv))
 	CHECK("((py \"len\") (vect 1 2 3 4 5))", "5")
 	CHECK("((-> \"-\" \"join\") [\"a\" \"b\" \"c\"])", "\"a-b-c\"")
 	CHECK("(define m (import \"math\")) ((-> m \"ceil\") 2.3)", "3")

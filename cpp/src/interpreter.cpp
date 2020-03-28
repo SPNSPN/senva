@@ -467,20 +467,25 @@ Addr Interpreter::subr_last (Addr args)
 		for (; pool.consp(pool.getcdr(rest)); rest = pool.getcdr(rest)) { ; }
 		return rest;
 	}
-
-	if (Pool::NilT == typ)
+	if (Pool::NilT == typ) { return Pool::nil; }
+	if (Pool::QueuT == typ) { return pool.getentr(obj); }
+	if (Pool::VectT == typ)
 	{
-		return Pool::nil;
+		Addr vect = pool.make_vect(1);
+		pool.setatvect(vect, 0, pool.getatvect(obj, pool.getvsize(obj) - 1));
+		return vect;
 	}
-
-	if (Pool::QueuT == typ)
+	if (Pool::StrnT == typ)
 	{
-		return pool.getentr(obj);
+		Addr vect = pool.make_vect(1);
+		pool.setatvect(vect, 0, pool.getatvect(obj, pool.getvsize(obj) - 1));
+		return pool.make_strn(vect);
 	}
-
-	if (Pool::VectT == typ || Pool::StrnT == typ || Pool::SymbT == typ)
+	if (Pool::SymbT == typ)
 	{
-		return pool.getatvect(obj, pool.getvsize(obj) - 1);
+		Addr vect = pool.make_vect(1);
+		pool.setatvect(vect, 0, pool.getatvect(obj, pool.getvsize(obj) - 1));
+		return pool.make_symb(vect);
 	}
 
 	return pool.make_erro(Type

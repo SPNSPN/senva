@@ -870,11 +870,11 @@ def last (o):
 	if isinstance(o, Queu):
 		return o.entr
 	if isinstance(o, Symb):
-		return o[-1]
+		return Symb(o.name[-1])
 	if isinstance(o, str):
 		return o[-1]
 	if isinstance(o, list):
-		return o[-1]
+		return [o[-1]]
 	raise Erro(ErroId.Type, "cannot apply last to {0}".format(lprint(o)))
 	
 

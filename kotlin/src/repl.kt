@@ -1,4 +1,4 @@
-import senva.*;
+import senva.*
 
 fun main (args: Array<String>)
 {

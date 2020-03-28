@@ -207,10 +207,10 @@ function last (o)
 	}
 	if (o === nil) { return nil; }
 	if (o instanceof Queu) { return o.entr; }
-	if (o instanceof Symb) { return o.name.slice(-1); }
+	if (o instanceof Symb) { return new Symb(o.name.slice(-1)); }
 	if (o instanceof String
 			|| (typeof o) == "string") { return o.slice(-1); }
-	if (Array.isArray(o)) { return o[o.length - 1]; }
+	if (Array.isArray(o)) { return [o[o.length - 1]]; }
 	throw new Erro(ErroId.Type, `cannot apply last to ${lprint(o)}`);
 }
 

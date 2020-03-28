@@ -328,6 +328,18 @@ function last ($c)
 	{
 		return $nil;
 	}
+	if ($c -is [symb])
+	{
+		return new-object symb $c.name[$c.name.length - 1];
+	}
+	if ($c -is [string])
+	{
+		return $c[$c.length - 1];
+	}
+	if (($c -is [vect]) -or ($c -is [array]))
+	{
+		return (vect $c[$c.length - 1])
+	}
 	lthrow $erroid["Type"] ("cannot apply last to " + (lprint $c));
 }
 

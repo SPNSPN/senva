@@ -154,7 +154,7 @@ fun equal (a: Any, b: Any): Any
 		if (a.size == b.size)
 		{
 			cond = t
-			for (idx in 0..(a.size))
+			for (idx in 0..(a.size - 1))
 			{
 				if (equal(a[idx]!!, b[idx]!!) is Nil)
 				{
@@ -638,7 +638,7 @@ fun ltype (o: Any): Symb
 	return Symb("<kotlin ${o.javaClass.kotlin.simpleName}>")
 }
 
-fun last (o: ICons): ICons
+fun last (o: Any): Any
 {
 	if (o is Cons)
 	{
@@ -649,7 +649,12 @@ fun last (o: ICons): ICons
 		}
 		return rest
 	}
-	return nil	
+	if (o is Nil) { return nil }
+	if (o is Queu) { return o.entr }
+	if (o is Symb) { return Symb(o.name[o.name.length - 1]) }
+	if (o is String) { return o[o.length - 1] }
+	if (o is MutableList<*>) { return mutableListOf(o[o.length - 1]) }
+	throw Erro(ErroId.Type, "cannot apply last to ${lprint(o)}")
 }
 
 fun nconc (colla: ICons, collb: ICons): ICons
@@ -1501,14 +1506,14 @@ fun printcons_rec (coll: Cons, dup: ICons, rec: Boolean): String
 {
 	val a = car(coll)
 	val d = cdr(coll)
-	if (d is Nil) { return "(${lprint_rec(a,  dup, rec)})" }
+	if (d is Nil) { return "(${lprint_rec(a, dup, rec)})" }
 	if (! (d is Cons))
 	{
 		return "(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})"
 	}
 	if (! (findidx_eq(d, dup) is Nil))
 	{
-		"(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})"
+		return "(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})"
 	}
 	val dstr = lprint_rec(d, dup, rec)
 	return "(${lprint_rec(a, dup, rec)} ${dstr.substring(1..(dstr.length - 1))}"
@@ -1620,6 +1625,7 @@ fun make_genv (): Cons
 	regist_subr3(genv, "setat", ::lsetat)
 	regist(genv, "processor", Subr({Symb("kotlin")}, "processor"))
 	regist_subr1(genv, "tee", ::tee)
+	regist(genv, "exit", Subr({args: ICons -> System.exit(0)}, "exit"))
 
 	regist(genv, "quote", Spfm({env: ICons, args: ICons -> car(args)}, "quote"))
 
@@ -1640,6 +1646,7 @@ fun make_genv (): Cons
 				leval(lapply(leval(car(args), env), cdr(args) as ICons), env)}, "!"))
 	regist(genv, "do", Spfm(::ldo, "do"))
 	regist(genv, "catch", Spfm(::lcatch, "catch"))
+	regist(genv, "environment",  Spfm({env: ICons, args: ICons -> env}, "environment"))
 	return genv
 }
 
