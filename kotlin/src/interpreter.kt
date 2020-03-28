@@ -834,22 +834,20 @@ fun growth (tree: ICons, buff: ReadBuf): ICons
 {
 	val buf: String = buff.tok
 	val rmacs = buff.rmacs
-	if (! buf.isEmpty())
-	{
-		buff.tok = ""
-		buff.rmacs = nil
-		if ("nil" == buf || "NIL" == buf)
-		{
-			return cons(wrap_readmacros(nil, rmacs), tree)
-		}
-		val inum = buf.toIntOrNull(10) 
-		if (inum != null) { return cons(wrap_readmacros(inum, rmacs), tree) }
-		val fnum = buf.toDoubleOrNull() 
-		if (fnum != null) { return cons(wrap_readmacros(fnum, rmacs), tree) }
+	if (buf.isEmpty()) { return tree }
 
-		return cons(wrap_readmacros(Symb(buf), rmacs), tree)
+	buff.tok = ""
+	buff.rmacs = nil
+	if ("nil" == buf || "NIL" == buf)
+	{
+		return cons(wrap_readmacros(nil, rmacs), tree)
 	}
-	return tree
+	val inum = buf.toIntOrNull(10) 
+	if (inum != null) { return cons(wrap_readmacros(inum, rmacs), tree) }
+	val fnum = buf.toDoubleOrNull() 
+	if (fnum != null) { return cons(wrap_readmacros(fnum, rmacs), tree) }
+
+	return cons(wrap_readmacros(Symb(buf), rmacs), tree)
 }
 
 fun find_co_paren (code: String): Int
