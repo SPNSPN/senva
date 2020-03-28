@@ -87,10 +87,7 @@ class Queu ()
 			exit = nil
 			entr = nil
 		}
-		else
-		{
-			exit = cdr(exit) as ICons
-		}
+		else { exit = cdr(exit) as ICons }
 		return e
 	}
 
@@ -101,10 +98,7 @@ class Queu ()
 			entr = queu.entr
 			exit = queu.exit
 		}
-		else
-		{
-			rplacd(entr as Cons, queu.exit)
-		}
+		else { rplacd(entr as Cons, queu.exit) }
 		return this
 	}
 }
@@ -124,22 +118,13 @@ fun eq (a: Any, b: Any): Any = if ((a === b) || (a is Symb && b is Symb && a.nam
 fun equal (a: Any, b: Any): Any
 {
 	var cond: Any = nil
-	if (a === b)
-	{
-		cond = t
-	}
-	else if (a is Symb && b is Symb)
-	{
-		cond = if (a.name == b.name) t else nil
-	}
+	if (a === b) { cond = t }
+	else if (a is Symb && b is Symb) { cond = if (a.name == b.name) t else nil }
 	else if (a is Cons && b is Cons)
 	{
 		cond = if (! (equal(a.a, b.a) is Nil || equal(a.d, b.d) is Nil)) t else nil
 	}
-	else if (a is Queu && b is Queu)
-	{
-		cond = equal(a.exit, b.exit)
-	}
+	else if (a is Queu && b is Queu) { cond = equal(a.exit, b.exit) }
 	else if (a is Func && b is Func)
 	{
 		cond = if (! (equal(a.args, b.args) is Nil
@@ -169,10 +154,7 @@ fun equal (a: Any, b: Any): Any
 	{
 		cond = if (a.toDouble() == b.toDouble()) t else nil
 	}
-	else
-	{
-		cond = if (a == b) t else nil
-	}
+	else { cond = if (a == b) t else nil }
 	return cond
 }
 
@@ -197,22 +179,10 @@ fun ladd (nums: ICons): Number
 	while (rest is Cons)
 	{
 		val n = car(rest)
-		if (n is Int)
-		{
-			iacc += n
-		}
-		else if (n is Long)
-		{
-			iacc += n
-		}
-		else if (n is Byte)
-		{
-			iacc += n
-		}
-		else if (n is Short)
-		{
-			iacc += n
-		}
+		if (n is Int) { iacc += n }
+		else if (n is Long) { iacc += n }
+		else if (n is Byte) { iacc += n }
+		else if (n is Short) { iacc += n }
 		else if (n is Double)
 		{
 			facc += n
@@ -223,10 +193,7 @@ fun ladd (nums: ICons): Number
 			facc += n
 			isint = false
 		}
-		else
-		{
-			throw Erro(ErroId.Type, "cannot add ${lprint(nums)}")
-		}
+		else { throw Erro(ErroId.Type, "cannot add ${lprint(nums)}") }
 		rest = cdr(rest)
 	}
 	if (isint) { return iacc }
@@ -240,22 +207,10 @@ fun lsub (head: Any, nums: ICons): Number
 		var isint = true
 		var iacc: Long = 0
 		var facc: Double = 0.0
-		if (head is Int)
-		{
-			iacc = head.toLong()
-		}
-		else if (head is Long)
-		{
-			iacc = head
-		}
-		else if (head is Byte)
-		{
-			iacc = head.toLong()
-		}
-		else if (head is Short)
-		{
-			iacc = head.toLong()
-		}
+		if (head is Int) { iacc = head.toLong() }
+		else if (head is Long) { iacc = head }
+		else if (head is Byte) { iacc = head.toLong() }
+		else if (head is Short) { iacc = head.toLong() }
 		else if (head is Double)
 		{
 			facc = head
@@ -270,22 +225,10 @@ fun lsub (head: Any, nums: ICons): Number
 		while (rest is Cons)
 		{
 			val n = car(rest)
-			if (n is Int)
-			{
-				iacc -= n
-			}
-			else if (n is Long)
-			{
-				iacc -= n
-			}
-			else if (n is Byte)
-			{
-				iacc -= n
-			}
-			else if (n is Short)
-			{
-				iacc -= n
-			}
+			if (n is Int) { iacc -= n }
+			else if (n is Long) { iacc -= n }
+			else if (n is Byte) { iacc -= n }
+			else if (n is Short) { iacc -= n }
 			else if (n is Double)
 			{
 				facc -= n
@@ -320,22 +263,10 @@ fun lmul (nums: ICons): Number
 	while (rest is Cons)
 	{
 		val n = car(rest)
-		if (n is Int)
-		{
-			iacc *= n
-		}
-		else if (n is Long)
-		{
-			iacc *= n
-		}
-		else if (n is Byte)
-		{
-			iacc *= n
-		}
-		else if (n is Short)
-		{
-			iacc *= n
-		}
+		if (n is Int) { iacc *= n }
+		else if (n is Long) { iacc *= n }
+		else if (n is Byte) { iacc *= n }
+		else if (n is Short) { iacc *= n }
 		else if (n is Double)
 		{
 			facc *= n
@@ -346,10 +277,7 @@ fun lmul (nums: ICons): Number
 			facc *= n
 			isint = false
 		}
-		else
-		{
-			throw Erro(ErroId.Type, "cannot mul ${lprint(nums)}")
-		}
+		else { throw Erro(ErroId.Type, "cannot mul ${lprint(nums)}") }
 		rest = cdr(rest)
 	}
 	if (isint) { return iacc }
@@ -363,40 +291,20 @@ fun ldiv (head: Any, nums: ICons): Number
 		var isint = true
 		var iacc: Long = 1
 		var facc: Double = 1.0
-		if (head is Int)
-		{
-			iacc = head.toLong()
-		}
-		else if (head is Long)
-		{
-			iacc = head
-		}
-		else if (head is Byte)
-		{
-			iacc = head.toLong()
-		}
-		else if (head is Short)
-		{
-			iacc = head.toLong()
-		}
-		else if (head is Double)
-		{
-			facc = head
-		}
-		else if (head is Float)
-		{
-			facc = head.toDouble()
-		}
+		if (head is Int) { iacc = head.toLong() }
+		else if (head is Long) { iacc = head }
+		else if (head is Byte) { iacc = head.toLong() }
+		else if (head is Short) { iacc = head.toLong() }
+		else if (head is Double) { facc = head }
+		else if (head is Float) { facc = head.toDouble() }
+
 		var rest: Any = nums
 		while (rest is Cons)
 		{
 			val n = car(rest)
 			if (n is Int)
 			{
-				if (iacc % n == 0L)
-				{
-					iacc /= n
-				}
+				if (iacc % n == 0L) { iacc /= n }
 				else
 				{
 					facc /= n
@@ -405,10 +313,7 @@ fun ldiv (head: Any, nums: ICons): Number
 			}
 			else if (n is Long)
 			{
-				if (iacc % n == 0L)
-				{
-					iacc /= n
-				}
+				if (iacc % n == 0L) { iacc /= n }
 				else
 				{
 					facc /= n
@@ -417,10 +322,7 @@ fun ldiv (head: Any, nums: ICons): Number
 			}
 			else if (n is Byte)
 			{
-				if (iacc % n == 0L)
-				{
-					iacc /= n
-				}
+				if (iacc % n == 0L) { iacc /= n }
 				else
 				{
 					facc /= n
@@ -429,10 +331,7 @@ fun ldiv (head: Any, nums: ICons): Number
 			}
 			else if (n is Short)
 			{
-				if (iacc % n == 0L)
-				{
-					iacc /= n
-				}
+				if (iacc % n == 0L) { iacc /= n }
 				else
 				{
 					facc /= n
@@ -458,10 +357,7 @@ fun ldiv (head: Any, nums: ICons): Number
 		if (isint) { return iacc }
 		return iacc * facc
 	}
-	else
-	{
-		throw Erro(ErroId.Type, "cannot div ${lprint(cons(head, nums))}")
-	}
+	else { throw Erro(ErroId.Type, "cannot div ${lprint(cons(head, nums))}") }
 }
 
 fun lmod (a: Any, b: Any): Long
@@ -498,14 +394,8 @@ fun lgt (head: Any, nums: ICons): Any
 			if (car(rest) is Number)
 			{
 				val n = (car(rest) as Number).toDouble()
-				if (a > n)
-				{
-					a = n
-				}
-				else
-				{
-					return nil
-				}
+				if (a > n) { a = n }
+				else { return nil }
 			}
 			else
 			{
@@ -529,14 +419,8 @@ fun llt (head: Any, nums: ICons): Any
 			if (car(rest) is Number)
 			{
 				val n = (car(rest) as Number).toDouble()
-				if (a < n)
-				{
-					a = n
-				}
-				else
-				{
-					return nil
-				}
+				if (a < n) { a = n }
+				else { return nil }
 			}
 			else
 			{
@@ -560,14 +444,8 @@ fun lge (head: Any, nums: ICons): Any
 			if (car(rest) is Number)
 			{
 				val n = (car(rest) as Number).toDouble()
-				if (a >= n)
-				{
-					a = n
-				}
-				else
-				{
-					return nil
-				}
+				if (a >= n) { a = n }
+				else { return nil }
 			}
 			else
 			{
@@ -591,14 +469,8 @@ fun lle (head: Any, nums: ICons): Any
 			if (car(rest) is Number)
 			{
 				val n = (car(rest) as Number).toDouble()
-				if (a <= n)
-				{
-					a = n
-				}
-				else
-				{
-					return nil
-				}
+				if (a <= n) { a = n }
+				else { return nil }
 			}
 			else
 			{
@@ -644,10 +516,7 @@ fun last (o: Any): Any
 	if (o is Cons)
 	{
 		var rest: ICons = o
-		while (cdr(rest) is Cons)
-		{
-			rest = cdr(rest) as Cons
-		}
+		while (cdr(rest) is Cons) { rest = cdr(rest) as Cons }
 		return rest
 	}
 	if (o is Nil) { return nil }
@@ -693,8 +562,14 @@ fun lload (path: String): Any
 fun to_list (obj: Any): ICons
 {
 	if (obj is MutableList<*>) { return vect2cons(obj) }
-	if (obj is Symb) { return vect2cons(obj.name.toCharArray().map({e -> e.toInt()}).toMutableList()) }
-	if (obj is String) { return vect2cons(obj.toCharArray().map({e -> e.toInt()}).toMutableList()) }
+	if (obj is Symb)
+	{
+		return vect2cons(obj.name.toCharArray().map({e -> e.toInt()}).toMutableList())
+	}
+	if (obj is String)
+	{
+		return vect2cons(obj.toCharArray().map({e -> e.toInt()}).toMutableList())
+	}
 	if (obj is Queu) { return obj.exit }
 	if (obj is ICons) { return obj }
 	throw Erro(ErroId.Type, "cannot cast ${lprint(obj)} to ConsT.")
@@ -703,8 +578,14 @@ fun to_list (obj: Any): ICons
 fun to_vect (obj: Any): MutableList<Any>
 {
 	if (obj is ICons) { return cons2vect(obj) }
-	if (obj is Symb) { return obj.name.toCharArray().map({e -> e.toInt()}).toMutableList() }
-	if (obj is String) { return obj.toCharArray().map({e -> e.toInt()}).toMutableList() }
+	if (obj is Symb)
+	{
+		return obj.name.toCharArray().map({e -> e.toInt()}).toMutableList()
+	}
+	if (obj is String)
+	{
+		return obj.toCharArray().map({e -> e.toInt()}).toMutableList()
+	}
 	if (obj is Queu) { return cons2vect(obj.exit) }
 	if (obj is MutableList<*>) { return obj as MutableList<Any> }
 	throw Erro(ErroId.Type, "cannot cast ${lprint(obj)} to VectT.")
@@ -713,8 +594,14 @@ fun to_vect (obj: Any): MutableList<Any>
 fun to_queu (obj: Any): Queu
 {
 	if (obj is Cons) { return Queu(obj) }
-	if (obj is Symb) { return Queu(vect2cons(obj.name.toCharArray().map({e -> e.toInt()}).toMutableList())) }
-	if (obj is String) { return Queu(vect2cons(obj.toCharArray().map({e -> e.toInt()}).toMutableList())) }
+	if (obj is Symb)
+	{
+		return Queu(vect2cons(obj.name.toCharArray().map({e -> e.toInt()}).toMutableList()))
+	}
+	if (obj is String)
+	{
+		return Queu(vect2cons(obj.toCharArray().map({e -> e.toInt()}).toMutableList()))
+	}
 	if (obj is MutableList<*>) { return Queu(vect2cons(obj as MutableList<Any>)) }
 	if (obj is Queu) { return obj }
 	if (obj is Nil) { return Queu() }
@@ -735,7 +622,10 @@ fun symbol (obj: Any): Symb
 		return Symb(strn)
 	}
 	if (obj is Queu) { return symbol(to_vect(obj)) }
-	if (obj is MutableList<*>) { return Symb(obj.map({e -> (e as Number).toChar()}).joinToString("")) }
+	if (obj is MutableList<*>)
+	{
+		return Symb(obj.map({e -> (e as Number).toChar()}).joinToString(""))
+	}
 	if (obj is String) { return Symb(obj) }
 	if (obj is Symb) { return obj }
 	throw Erro(ErroId.Type, "cannot cast ${lprint(obj)} to SymbT.")
@@ -744,13 +634,13 @@ fun symbol (obj: Any): Symb
 fun lsprint (args: ICons): String
 {
 	var strn = ""
-		var rest: Any = args
-		while (rest is Cons)
-		{
-			val e = car(rest)
-				strn += if (e is String) e else lprint(e)
-				rest = cdr(rest)
-		}
+	var rest: Any = args
+	while (rest is Cons)
+	{
+		val e = car(rest)
+		strn += if (e is String) e else lprint(e)
+		rest = cdr(rest)
+	}
 	return strn
 }
 
@@ -766,29 +656,20 @@ fun nth (c: ICons, n: Long): Any
 	var idx = 0L
 	while (idx < n)
 	{
-		if (rest is ICons)
-		{
-			rest = cdr(rest)
-		}
+		if (rest is ICons) { rest = cdr(rest) }
 		else
 		{
 			throw Erro(ErroId.ArgsUnmatch, "cannot got nth ${n} from ${lprint(c)}")
 		}
 		++idx
 	}
-	if (rest is ICons)
-	{
-		return car(rest)
-	}
+	if (rest is ICons) { return car(rest) }
 	throw Erro(ErroId.ArgsUnmatch, "cannot got nth ${n} from ${lprint(c)}")
 }
 
 fun lif (env: ICons, args: ICons): Any
 {
-	if (leval(car(args), env) is Nil)
-	{
-		return leval(nth(args, 2), env)
-	}
+	if (leval(car(args), env) is Nil) { return leval(nth(args, 2), env) }
 	return leval(nth(args, 1), env)
 }
 
@@ -802,10 +683,7 @@ fun ldefine (env: ICons, args: ICons): Symb
 		{
 			rplaca(genv, cons(cons(sym, leval(nth(args, 1), env)), car(genv)))
 		}
-		else
-		{
-			rplacd(asc, leval(nth(args, 1), env))
-		}
+		else { rplacd(asc, leval(nth(args, 1), env)) }
 		return sym
 	}
 	throw Erro(ErroId.Type, "cannot define ${lprint(sym)}, must be SymbT.")
@@ -982,27 +860,15 @@ fun find_co_paren (code: String): Int
 	for (idx in 0..(code.length - 1))
 	{
 		val c = code[idx]
-		if (eflg)
-		{
-			eflg = false
-		}
-		else if (! sflg && '(' == c)
-		{
-			++layer
-		}
-		else if (! sflg && ')' == c)
-		{
-			--layer
-		}
+		if (eflg) { eflg = false }
+		else if (! sflg && '(' == c) { ++layer }
+		else if (! sflg && ')' == c) { --layer }
 		else if ('\\' == c)
 		{
 			eflg = true
 			continue
 		}
-		else if ('"' == c)
-		{
-			sflg = ! sflg
-		}
+		else if ('"' == c) { sflg = ! sflg }
 
 		if (layer < 1) { return idx }
 	}
@@ -1017,27 +883,15 @@ fun find_co_bracket (code: String): Int
 	for (idx in 0..(code.length - 1))
 	{
 		val c = code[idx]
-		if (eflg)
-		{
-			eflg = false
-		}
-		if (! sflg && '[' == c)
-		{
-			++layer
-		}
-		else if (! sflg && ']' == c)
-		{
-			--layer
-		}
+		if (eflg) { eflg = false }
+		if (! sflg && '[' == c) { ++layer }
+		else if (! sflg && ']' == c) { --layer }
 		else if ('\\' == c)
 		{
 			eflg = true
 			continue
 		}
-		else if ('"' == c)
-		{
-			sflg = ! sflg
-		}
+		else if ('"' == c) { sflg = ! sflg }
 
 		if (layer < 1) { return idx }
 	}
@@ -1122,10 +976,7 @@ fun assoc (alist: ICons, key: Any): Cons?
 	while (rest is Cons)
 	{
 		val e = car(rest)
-		if (e is Cons)
-		{
-			if (! (equal(car(e as ICons), key) is Nil)) { return e }
-		}
+		if (e is Cons) { if (! (equal(car(e as ICons), key) is Nil)) { return e } }
 		rest = cdr(rest)
 	}
 	return null
@@ -1251,15 +1102,9 @@ fun lread (code: String): ICons
 						, cons(car(tree)
 							, car(lread(code.substring((idx + 1)..(code.length - 1))))))
 			}
-			else
-			{
-				buff.tok += "."
-			}
+			else { buff.tok += "." }
 		}
-		else
-		{
-			buff.tok += c
-		}
+		else { buff.tok += c }
 
 		++idx
 	}
@@ -1308,28 +1153,16 @@ fun leval (expr_: Any, env_: ICons): Any
 				{
 					expr = lapply(leval(car(args), env), cdr(args) as ICons)
 				}
-				else
-				{
-					return proc.proc(env, args)
-				}
+				else { return proc.proc(env, args) }
 			}
-			else if (proc is Subr)
-			{
-				return lapply(proc, mapeval(args, env))
-			}
+			else if (proc is Subr) { return lapply(proc, mapeval(args, env)) }
 			else
 			{
 				throw Erro(ErroId.UnCallable, "${lprint(proc)} is not callable.")
 			}
 		}
-		else if (expr is Symb)
-		{
-			return seekenv(env, expr)
-		}
-		else
-		{
-			return expr
-		}
+		else if (expr is Symb) { return seekenv(env, expr) }
+		else { return expr }
 	}
 }
 
@@ -1339,10 +1172,7 @@ fun lapply (proc: Any, args: ICons): Any
 	{
 		return leval(proc.body, cons(bind_tree(proc.args, args), proc.env))
 	}
-	if (proc is Subr)
-	{
-		return proc.proc(args)
-	}
+	if (proc is Subr) { return proc.proc(args) }
 	throw Erro(ErroId.UnCallable, "${lprint(proc)} is not callable.")
 }
 
@@ -1466,20 +1296,14 @@ fun seek_dup (expr: Any, printed: ICons, dup: ICons): Pair<ICons, ICons>
 		val (eprinted, edup) = seek_dup(car(expr), cons(expr, printed), dup)
 		return seek_dup(cdr(expr), eprinted, edup)
 	}
-	if (expr is Queu)
-	{
-		return seek_dup(expr.exit, cons(expr, printed), dup)
-	}
+	if (expr is Queu) { return seek_dup(expr.exit, cons(expr, printed), dup) }
 	if (expr is MutableList<*>)
 	{
 		return expr.fold(Pair<ICons, ICons>(cons(expr, printed), dup)
 				, fun (res: Pair<ICons, ICons>, elm: Any?): Pair<ICons, ICons>
 					= seek_dup(elm ?: "null", res.first, res.second))
 	}
-	if (expr is Erro)
-	{
-		return seek_dup(expr.estr, cons(expr, printed), dup)
-	}
+	if (expr is Erro) { return seek_dup(expr.estr, cons(expr, printed), dup) }
 	return Pair(printed, dup)
 }
 
@@ -1497,7 +1321,10 @@ fun lprint_rec (expr: Any, dup: ICons, rec: Boolean): String
 		return "[${s.joinToString(" ")}]"
 	}
 	if (expr is Queu) { return "/${lprint_rec(expr.exit, dup, true)}/" }
-	if (expr is Func) { return "<Func ${lprint_rec(expr.args, dup,  true)} ${lprint_rec(expr.body, dup, true)}>" }
+	if (expr is Func)
+	{
+		return "<Func ${lprint_rec(expr.args, dup,  true)} ${lprint_rec(expr.body, dup, true)}>"
+	}
 	if (expr is Spfm) { return "<Spfm ${expr.name}>" }
 	if (expr is Subr) { return "<Subr ${expr.name}>" }
 	return expr.toString()
