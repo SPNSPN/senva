@@ -1,5 +1,6 @@
 package senva
 import java.io.File
+import kotlin.system.exitProcess
 
 interface ICons
 {
@@ -1625,7 +1626,7 @@ fun make_genv (): Cons
 	regist_subr3(genv, "setat", ::lsetat)
 	regist(genv, "processor", Subr({Symb("kotlin")}, "processor"))
 	regist_subr1(genv, "tee", ::tee)
-	regist(genv, "exit", Subr({args: ICons -> System.exit(0)}, "exit"))
+	regist(genv, "exit", Subr({args: ICons -> exitProcess(0)}, "exit"))
 
 	regist(genv, "quote", Spfm({env: ICons, args: ICons -> car(args)}, "quote"))
 
