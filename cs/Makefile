@@ -1,5 +1,5 @@
 CSC := '/mnt/c/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe'
-LIB := 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319,C:\\Windows\Microsoft.NET\\assembly\\GAC_MSIL'
+LIB := 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319,C:\\Windows\\Microsoft.NET\\assembly\\GAC_MSIL'
 
 SRC := src
 BLD := build
@@ -7,11 +7,11 @@ BLD := build
 .PHONY: all
 all: $(BLD)/repl.exe $(BLD)/test.exe
 
-$(BLD)/repl.exe: $(SRC)/Repl.cs $(SRC)/Senva.cs
-	$(CSC) /out:'$(BLD)\\repl.exe' /lib:$(LIB) $(SRC)\\Repl.cs $(SRC)\\Senva.cs
+$(BLD)/repl.exe: $(SRC)/Repl.cs $(SRC)/Interpreter.cs
+	$(CSC) /out:'$(BLD)\\repl.exe' /lib:$(LIB) $(SRC)\\Repl.cs $(SRC)\\Interpreter.cs
 
-$(BLD)/test.exe: $(SRC)/Test.cs $(SRC)/Senva.cs
-	$(CSC) /out:'$(BLD)\\test.exe' /lib:$(LIB) $(SRC)\\Test.cs $(SRC)\\Senva.cs
+$(BLD)/test.exe: $(SRC)/Test.cs $(SRC)/Interpreter.cs
+	$(CSC) /out:'$(BLD)\\test.exe' /lib:$(LIB) $(SRC)\\Test.cs $(SRC)\\Interpreter.cs
 
 .PHONY: repl test clean
 repl: $(BLD)/repl.exe

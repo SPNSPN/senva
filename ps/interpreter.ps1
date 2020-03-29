@@ -330,15 +330,19 @@ function last ($c)
 	}
 	if ($c -is [symb])
 	{
-		return new-object symb $c.name[$c.name.length - 1];
+		return new-object symb $c.name[$c.name.length - 1].ToString();
 	}
 	if ($c -is [string])
 	{
 		return $c[$c.length - 1];
 	}
-	if (($c -is [vect]) -or ($c -is [array]))
+	if ($c -is [array])
 	{
 		return (vect $c[$c.length - 1])
+	}
+	if ($c -is [vect])
+	{
+		return (vect $c.mem[$c.len - 1])
 	}
 	lthrow $erroid["Type"] ("cannot apply last to " + (lprint $c));
 }
@@ -386,7 +390,7 @@ function ltype ($o)
 	if ($o -is [vect]) { return (new-object symb "<vect>"); }
 	if (($o -is [array]) -or ($o -is [system.collections.arraylist])) { return (new-object symb "<array>"); }
 	if ($o -is [queu]) { return (new-object symb "<queu>"); }
-	return $nil;
+	return new-object symb ("<ps " + $o.GetType() + ">");
 }
 
 function getat ($vect, $idx)
@@ -1145,33 +1149,6 @@ regist_subr $genv { param($args_);`
 	}
 	return $acc;
 } "*";
-#regist_subr $genv { param($args_);`
-#	if (isnil $args_) { return 0; }
-#	if (-not (isnum (car $args_)))
-#	{
-#		lthrow $erroid["Type"] ("cannot div " + (lprint $args_));
-#	}
-#	$acc = car $args_;
-#	$fflg = $nil;
-#	for ($rest = cdr $args_; -not (atom $rest); $rest = cdr $rest)
-#	{
-#		$n = car $rest;
-#		if (-not (isnum $n))
-#		{
-#			lthrow $erroid["Type"] ("cannot div " + (lprint $args_));
-#		}
-#		if ($n -is [double]) { $fflg = $t; }
-#		if (isnil $fflg)
-#		{
-#			$acc = [math]::truncate($acc / $n);
-#		}
-#		else
-#		{
-#			$acc /= $n;
-#		}
-#	}
-#	return $acc;
-#} "/";
 regist_subr $genv { param($args_);`
 	if (isnil $args_) { return 0; }
 	if (-not (isnum (car $args_)))
@@ -1245,6 +1222,7 @@ regist_subr $genv { param($args_);
 regist_subr $genv { param($args_); return (getat (car $args_) (car (cdr $args_))) } "getat";
 regist_subr $genv { param($args_); return (setat (car $args_) (car (cdr $args_)) (car (cdr (cdr $args_)))); } "setat";
 regist_subr $genv { param($args_); return (processor); } "processor";
+regist_subr $genv { exit; } "exit";
 regist_subr $genv { param($args_); return (getc); } "getc";
 
 
