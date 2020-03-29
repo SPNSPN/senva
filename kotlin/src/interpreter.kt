@@ -117,34 +117,37 @@ fun eq (a: Any, b: Any): Any = if ((a === b) || (a is Symb && b is Symb && a.nam
 
 fun equal (a: Any, b: Any): Any
 {
-	var cond: Any = nil
-	if (a === b) { cond = t }
-	else if (a is Symb && b is Symb) { cond = if (a.name == b.name) t else nil }
+	var cond: Boolean = false
+	if (a === b) { cond = true }
+	else if (a is Symb && b is Symb) { cond = (a.name == b.name) }
 	else if (a is Cons && b is Cons)
 	{
-		cond = if (! (equal(a.a, b.a) is Nil || equal(a.d, b.d) is Nil)) t else nil
+		cond = (! (equal(a.a, b.a) is Nil || equal(a.d, b.d) is Nil))
 	}
-	else if (a is Queu && b is Queu) { cond = equal(a.exit, b.exit) }
+	else if (a is Queu && b is Queu)
+	{
+		cond = if (equal(a.exit, b.exit) is Nil) false else true
+	}
 	else if (a is Func && b is Func)
 	{
-		cond = if (! (equal(a.args, b.args) is Nil
+		cond = (! (equal(a.args, b.args) is Nil
 					|| equal(a.body, b.body) is Nil
-					|| equal(a.env, b.env) is Nil)) t else nil
+					|| equal(a.env, b.env) is Nil))
 	}
 	else if (a is Spfm && b is Spfm)
 	{
-		cond = if (! (equal(a.proc, b.proc) is Nil || equal(a.name, b.name) is Nil)) t else nil
+		cond = (! (equal(a.proc, b.proc) is Nil || equal(a.name, b.name) is Nil))
 	}
 	else if (a is MutableList<*> && b is MutableList<*>)
 	{
 		if (a.size == b.size)
 		{
-			cond = t
+			cond = true
 			for (idx in 0..(a.size - 1))
 			{
 				if (equal(a[idx]!!, b[idx]!!) is Nil)
 				{
-					cond = nil
+					cond = false
 					break
 				}
 			}
@@ -152,11 +155,54 @@ fun equal (a: Any, b: Any): Any
 	}
 	else if (a is Number && b is Number)
 	{
-		cond = if (a.toDouble() == b.toDouble()) t else nil
+		cond = (a.toDouble() == b.toDouble())
 	}
-	else { cond = if (a == b) t else nil }
-	return cond
+	else { cond = (a == b) }
+	return if (cond) t else nil
 }
+
+//fun equal (a: Any, b: Any): Any
+//{
+//	var cond: Any = nil
+//	if (a === b) { cond = t }
+//	else if (a is Symb && b is Symb) { cond = if (a.name == b.name) t else nil }
+//	else if (a is Cons && b is Cons)
+//	{
+//		cond = if (! (equal(a.a, b.a) is Nil || equal(a.d, b.d) is Nil)) t else nil
+//	}
+//	else if (a is Queu && b is Queu) { cond = equal(a.exit, b.exit) }
+//	else if (a is Func && b is Func)
+//	{
+//		cond = if (! (equal(a.args, b.args) is Nil
+//					|| equal(a.body, b.body) is Nil
+//					|| equal(a.env, b.env) is Nil)) t else nil
+//	}
+//	else if (a is Spfm && b is Spfm)
+//	{
+//		cond = if (! (equal(a.proc, b.proc) is Nil || equal(a.name, b.name) is Nil)) t else nil
+//	}
+//	else if (a is MutableList<*> && b is MutableList<*>)
+//	{
+//		if (a.size == b.size)
+//		{
+//			cond = t
+//			for (idx in 0..(a.size - 1))
+//			{
+//				if (equal(a[idx]!!, b[idx]!!) is Nil)
+//				{
+//					cond = nil
+//					break
+//				}
+//			}
+//		}
+//	}
+//	else if (a is Number && b is Number)
+//	{
+//		cond = if (a.toDouble() == b.toDouble()) t else nil
+//	}
+//	else { cond = if (a == b) t else nil }
+//	return cond
+//}
 
 fun rplaca (c: Cons, o: Any): Cons
 {
