@@ -1134,8 +1134,7 @@ fun leval (expr_: Any, env_: ICons): Any
 			{
 				if ("if" == proc.name)
 				{
-					expr = if (leval(car(args), env) is Nil)
-						nth(args, 2) else nth(args, 1)
+					expr = nth(args, if (leval(car(args), env) is Nil) 2 else 1)
 				}
 				else if ("do" == proc.name)
 				{
