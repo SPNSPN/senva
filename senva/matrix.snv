@@ -6,8 +6,8 @@
 	(! let ((row (lambda (i)
 						(append (times i 0)
 								(list 1)
-								(times (- n i) 0)))))
-			(map row (range n)))))
+								(times (- n i 1) 0)))))
+			(map row (range 0 n)))))
 
 (define matrix::transverse
   (! letrec ((transverse-rec
