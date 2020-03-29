@@ -944,7 +944,7 @@ fun cons2vect (c: ICons): MutableList<Any>
 
 fun<T> vect2cons (l: MutableList<T>): ICons
 {
-	return nreverse(l.fold(nil, fun (acc, e): ICons = cons(e as Any, acc)))
+	return l.foldRight(nil, fun (e, acc): ICons = cons(e as Any, acc))
 }
 
 fun bind_tree (treea: Any, treeb: Any): ICons
