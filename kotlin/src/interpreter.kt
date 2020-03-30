@@ -1302,7 +1302,8 @@ fun lsetat (vect: Any, idx: Number, valu: Any): Any
 				is Short -> valu.toChar()
 				is String -> valu[0]
 				is Symb -> valu.name[0]
-				else -> throw Erro(ErroId.Type, "cannot setat ${lprint(valu)} to ${lprint(vect)}")
+				else -> throw Erro(ErroId.Type
+						, "cannot setat ${lprint(valu)} to ${lprint(vect)}")
 			} + vect.substring((idx.toInt() + 1)..(vect.length - 1))
 	}
 	if (vect is Symb)
