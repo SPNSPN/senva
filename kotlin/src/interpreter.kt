@@ -723,8 +723,7 @@ fun nth (c: ICons, n: Long): Any
 
 fun lif (env: ICons, args: ICons): Any
 {
-	if (leval(car(args), env) is Nil) { return leval(nth(args, 2), env) }
-	return leval(nth(args, 1), env)
+	return leval(nth(args, if (leval(car(args), env) is Nil) 2 else 1), env)
 }
 
 fun ldefine (env: ICons, args: ICons): Symb
