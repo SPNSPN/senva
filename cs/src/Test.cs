@@ -244,7 +244,7 @@ class Program
 				, "$0 = (1 2)\n$1 = [1 2]\n[$1 $0 [[$1 $0] ($1 $0)] (($0 $1) [$0 $1])]");
 		CHECK("((lambda (rpc) (rplacd rpc rpc)) (list 1 2))", "$0 = (1 . $0)\n$0");
 		CHECK("((lambda (rpv) (setat rpv 1 rpv)) [1 2])", "$0 = [1 $0]\n$0");
-		CHECK("(processor)", "kotlin");
+		CHECK("(processor)", "cs");
 		CHECK("(environment)", Senva.Interpreter.lprint(senva.genv));
 		CHECK("(load \"senva/test.snv\")", "NIL");
 	}

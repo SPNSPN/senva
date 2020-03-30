@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -165,11 +166,11 @@ class Interpreter
 
 	public class LFunc
 	{
-		public ICons args;
-		public ICons body;
+		public object args;
+		public object body;
 		public ICons env;
 
-		public LFunc (ICons args_, ICons body_, ICons env_)
+		public LFunc (object args_, object body_, ICons env_)
 		{
 			this.args = args_;
 			this.body = body_;
@@ -254,6 +255,21 @@ class Interpreter
 		regist_subr1<object, Symb>(genv, "symbol", symbol);
 		regist(genv, "sprint", new Subr(lsprint, "sprint"));
 		regist_subr2<object, ICons, object>(genv, "apply", lapply);
+		regist_subr2<long, string, object>(genv, "throw", lthrow);
+		regist_subr1<object, object>(genv, "empty", lempty);
+		regist(genv, "print", new Subr(
+					(ICons args) => { return llprint(args); }, "print"));
+		regist(genv, "prin", new Subr(
+					(ICons args) => { return llprin(args); }, "prin"));
+		regist_subr1<object, Symb>(genv, "type", ltype);
+		regist_subr1<string, object>(genv, "load", lload);
+		regist_subr2<object, long, object>(genv, "getat", lgetat);
+		regist_subr3<object, long, object, object>(genv, "setat", lsetat);
+		regist(genv, "processor", new Subr(
+					(ICons args) => { return new Symb("cs"); }, "processor"));
+		regist_subr1<object, object>(genv, "tee", tee);
+		regist(genv, "exit", new Subr(
+					(ICons args) => { Environment.Exit(0); return nil; }, "exit"));
 
 		regist(genv, "quote", new Spfm((ICons env, ICons args)
 					=> { return car(args); }, "quote"));
@@ -263,16 +279,20 @@ class Interpreter
 					, "quasiquote"));
 		regist(genv, "if", new Spfm(lif, "if"));
 		regist(genv, "lambda", new Spfm((ICons env, ICons args)
-					=> { return new LFunc(car(args) as ICons, nth(args, 1) as ICons, env); }
+					=> { return new LFunc(car(args), nth(args, 1), env); }
 					, "lambda"));
 		regist(genv, "define", new Spfm(ldefine, "define"));
 		regist(genv, "setq", new Spfm(lsetq, "setq"));
-
+		regist(genv, "and", new Spfm(land, "and"));
+		regist(genv, "or", new Spfm(lor, "or"));
 		regist(genv, "!", new Spfm((ICons env, ICons args) =>
 					{
 						return leval(lapply(leval(car(args), env), cdr(args) as ICons), env);
 					}, "!"));
 		regist(genv, "do", new Spfm(ldo, "do"));
+		regist(genv, "catch", new Spfm(lcatch, "catch"));
+		regist(genv, "environment", new Spfm(
+					(ICons env, ICons args) => { return env; }, "environment"));
 
 	}
 
@@ -404,7 +424,7 @@ class Interpreter
 		}
 		else if ((is_inum(a) || is_fnum(a)) && (is_inum(b) || is_fnum(b)))
 		{
-			cond = (a.Equals(b));
+			cond = (Convert.ToDouble(a) == Convert.ToDouble(b));
 		}
 		else { cond = (a == b); }
 		return (cond) ? t as object : nil as object;
@@ -637,6 +657,22 @@ class Interpreter
 				, string.Format("cannot cast {0} to FnumT.", lprint(o)));
 	}
 
+	static public Symb ltype (object o)
+	{
+		if (o is Cons) { return new Symb("<cons>"); }
+		if (o is LFunc) { return new Symb("<func>"); }
+		if (o is Spfm) { return new Symb("<spfm>"); }
+		if (o is Subr) { return new Symb("<subr>"); }
+		if (o is Symb) { return new Symb("<symb>"); }
+		if (o is string) { return new Symb("<strn>"); }
+		if (is_inum(o)) { return new Symb("<inum>"); }
+		if (is_fnum(o)) { return new Symb("<fnum>"); }
+		if (o is Nil) { return new Symb("<nil>"); }
+		if (o.GetType().IsArray) { return new Symb("<vect>"); }
+		if (o is Queu) { return new Symb("<queu>"); }
+		return new Symb(string.Format("<cs {0}>", o.GetType()));
+	}
+
 
 	static public object last (object o)
 	{
@@ -675,7 +711,18 @@ class Interpreter
 		return rev;
 	}
 
-	static public object lload () { return nil; } // TODO
+	public object lload (string path)
+	{
+		try
+		{
+			return leval(lreadtop(System.IO.File.ReadAllText(path)), genv);
+		}
+		catch (System.IO.DirectoryNotFoundException)
+		{
+			throw new Erro(ErroId.FileNotFound
+					, string.Format("not found file: {0}", lprint(path)));
+		}
+	}
 
 	static public ICons to_list (object obj)
 	{
@@ -774,6 +821,11 @@ class Interpreter
 		return strn;
 	}
 
+	static public object tee (object obj)
+	{
+		Console.WriteLine(lprint(obj));
+		return obj;
+	}
 
 	static public object nth (ICons c, long n)
 	{
@@ -835,6 +887,29 @@ class Interpreter
 				, string.Format("cannot setq {0}, must be SymbT.", lprint(sym)));
 	}
 
+	public object land (ICons env, ICons args)
+	{
+		object ret = t;
+		for (object rest = args; rest is Cons; rest = cdr(rest as Cons))
+		{
+			ret = leval(car(rest as Cons),  env);
+			if (ret is Nil) { return nil; }
+		}
+		return ret;
+	}
+
+	public object lor (ICons env, ICons args)
+	{
+		object ret = nil;
+		for (object rest = args; rest is Cons; rest = cdr(rest as Cons))
+		{
+			ret = leval(car(rest as Cons), env);
+			if (! (ret is Nil)) { return ret; }
+		}
+		return nil;
+	}
+
+
 	public object ldo (ICons env, ICons args)
 	{
 		object rest = args;
@@ -864,7 +939,8 @@ class Interpreter
 				if (esym is Symb && (esym as Symb).name == "splicing")
 				{
 					is_splicing = true;
-					for (var sexpr = leval(car(cdr(car(rest as Cons) as ICons) as ICons)
+					for (var sexpr
+							= leval(car(cdr(car(rest as Cons) as ICons) as ICons)
 								, env); sexpr is Cons; sexpr = cdr(sexpr as Cons))
 					{
 						eexpr = cons(car(sexpr as Cons), eexpr);
@@ -1221,6 +1297,111 @@ class Interpreter
 		throw new Erro(ErroId.UnCallable
 				, string.Format("{0} is not callable.", lprint(proc)));
 	}
+
+	static public object lthrow (long eid, string estr)
+	{
+		throw new Erro(eid, estr);
+		return nil;
+	}
+
+	public object lcatch (ICons env, ICons args)
+	{
+		var excep = leval(car(args), env);
+		try
+		{
+			return leval(nth(args, 1), env);
+		}
+		catch (Erro erro)
+		{
+			return lapply(excep, l(erro.eid, leval(erro.Message, env)));
+		}
+	}
+
+	static public object lempty (object coll)
+	{
+		if (coll is Nil) { return t; }
+		if (coll.GetType().IsArray)
+		{
+			return ((coll as object[]).Length < 1) ? t as object : nil as object;
+		}
+		if (coll is string)
+		{
+			return ((coll as string).Length < 1) ? t as object : nil as object;
+		}
+		if (coll is Queu)
+		{
+			return ((coll as Queu).exit is Nil) ? t as object : nil as object;
+		}
+		if (coll is Symb)
+		{
+			return ((coll as Symb).name.Length < 1) ? t as object : nil as object;
+		}
+		return nil;
+	}
+
+	static public Nil llprin (ICons objs)
+	{
+		for (object rest = objs; rest is Cons; rest = cdr(rest as Cons))
+		{
+			var a = car(rest as Cons);
+			Console.Write((a is string) ? a : lprint(a));
+		}
+		return nil;
+	}
+
+	static public Nil llprint (ICons objs)
+	{
+		llprin(objs);
+		Console.WriteLine("");
+		return nil;
+	}
+
+	static public object lgetat (object vect, long idx)
+	{
+		if (vect.GetType().IsArray) { return (vect as object[])[Convert.ToInt32(idx)]; }
+		if (vect is string) { return (vect as string)[Convert.ToInt32(idx)].ToString(); }
+		if (vect is Symb) { return new Symb((vect as Symb).name[Convert.ToInt32(idx)].ToString()); }
+		throw new Erro(ErroId.Type
+				, string.Format("cannot apply getat to {0}", lprint(vect)));
+	}
+
+	static public object lsetat (object vect, long idx, object valu)
+	{
+		if (vect.GetType().IsArray)
+		{
+			(vect as object[])[idx] = valu;
+			return vect;
+		}
+		if (vect is string)
+		{
+			char c;
+			if (is_inum(valu)) { c = Convert.ToChar(valu); }
+			else if (valu is string) { c = (valu as string)[0]; }
+			else if (valu is Symb) { c = (valu as Symb).name[0]; }
+			else { throw new Erro(ErroId.Type
+					, string.Format("cannot setat {0} to {1}"
+						, lprint(valu), lprint(vect))); }
+			return (vect as string).Substring(0, Convert.ToInt32(idx))
+				+ c.ToString()
+				+ (vect as string).Substring(Convert.ToInt32(idx) + 1);
+		}
+		if (vect is Symb)
+		{
+			char c;
+			if (is_inum(valu)) { c = Convert.ToChar(valu); }
+			else if (valu is string) { c = (valu as string)[0]; }
+			else if (valu is Symb) { c = (valu as Symb).name[0]; }
+			else { throw new Erro(ErroId.Type
+					, string.Format("cannot setat {0} to {1}"
+						, lprint(valu), lprint(vect))); }
+			(vect as Symb).name = (vect as Symb).name.Substring(0, (Convert.ToInt32(idx)))
+				+ c.ToString()
+				+ (vect as Symb).name.Substring(Convert.ToInt32(idx) + 1);
+			return vect;
+		}
+		throw new Erro(ErroId.Type, string.Format("cannot apply setat to {0}", lprint(vect)));
+	}
+
 
 	static public string lprint (object expr)
 	{
