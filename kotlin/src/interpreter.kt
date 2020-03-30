@@ -675,7 +675,11 @@ fun symbol (obj: Any): Symb
 		}
 		return Symb(strn)
 	}
-	if (obj is Queu) { return symbol(to_vect(obj)) }
+	if (obj is Queu)
+	{
+		return Symb(cons2vect(obj.exit).map(
+					{e -> (e as Number).toChar()}).joinToString(""))
+	}
 	if (obj is MutableList<*>)
 	{
 		return Symb(obj.map({e -> (e as Number).toChar()}).joinToString(""))

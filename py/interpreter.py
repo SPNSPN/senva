@@ -971,7 +971,7 @@ def symbol (obj):
 			rest = cdr(rest)
 		return Symb(strn)
 	if isinstance(obj, Queu):
-		return symbol(to_vect(obj))
+		return Symb("".join([chr(e) for e in cons2vect(obj.exit)]))
 	if isinstance(obj, list):
 		return Symb("".join([chr(e) for e in obj]))
 	if isinstance(obj, str):
