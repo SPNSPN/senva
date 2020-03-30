@@ -498,8 +498,8 @@ fun lge (head: Any, nums: ICons): Any
 			if (car(rest) is Number)
 			{
 				val n = (car(rest) as Number).toDouble()
-				if (a >= n) { a = n }
-				else { return nil }
+				if (a < n) { return nil }
+				a = n
 			}
 			else
 			{
@@ -523,8 +523,8 @@ fun lle (head: Any, nums: ICons): Any
 			if (car(rest) is Number)
 			{
 				val n = (car(rest) as Number).toDouble()
-				if (a <= n) { a = n }
-				else { return nil }
+				if (a > n) { return nil }
+				a = n
 			}
 			else
 			{

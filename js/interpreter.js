@@ -464,14 +464,8 @@ function gt (head)
 	let a = head;
 	for (let idx = 0; idx < nums.length; ++idx)
 	{
-		if (a > nums[idx])
-		{
-			a = nums[idx];
-		}
-		else
-		{
-			return nil;
-		}
+		if (a > nums[idx]) { a = nums[idx]; }
+		else { return nil; }
 	}
 	return t;
 }
@@ -482,14 +476,8 @@ function ge (head)
 	let a = head;
 	for (let idx = 0; idx < nums.length; ++idx)
 	{
-		if (a >= nums[idx])
-		{
-			a = nums[idx];
-		}
-		else
-		{
-			return nil;
-		}
+		if (a < nums[idx]) { return nil; }
+		a = nums[idx];
 	}
 	return t;
 }
@@ -500,14 +488,8 @@ function lt (head)
 	let a = head;
 	for (let idx = 0; idx < nums.length; ++idx)
 	{
-		if (a < nums[idx])
-		{
-			a = nums[idx];
-		}
-		else
-		{
-			return nil;
-		}
+		if (a < nums[idx]) { a = nums[idx]; }
+		else { return nil; }
 	}
 	return t;
 }
@@ -518,14 +500,8 @@ function le (head)
 	let a = head;
 	for (let idx = 0; idx < nums.length; ++idx)
 	{
-		if (a <= nums[idx])
-		{
-			a = nums[idx];
-		}
-		else
-		{
-			return nil;
-		}
+		if (a > nums[idx]) { return nil; }
+		a = nums[idx];
 	}
 	return t;
 }
