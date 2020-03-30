@@ -341,8 +341,16 @@ fun ldiv (head: Any, nums: ICons): Number
 		else if (head is Long) { iacc = head }
 		else if (head is Byte) { iacc = head.toLong() }
 		else if (head is Short) { iacc = head.toLong() }
-		else if (head is Double) { facc = head }
-		else if (head is Float) { facc = head.toDouble() }
+		else if (head is Double)
+		{
+			facc = head
+			isint = false
+		}
+		else if (head is Float)
+		{
+			facc = head.toDouble()
+			isint = false
+		}
 
 		var rest: Any = nums
 		while (rest is Cons)
