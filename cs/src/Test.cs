@@ -102,8 +102,8 @@ class Program
 		CHECK("(int 2.3)", "2");
 		CHECK("(int -555.3)", "-555");
 		CHECK("(int 123)", "123");
-		CHECK("(float 4)", "4.0");
-		CHECK("(float -1555)", "-1555.0");
+		CHECK("(float 4)", "4");
+		CHECK("(float -1555)", "-1555");
 		CHECK("(float -15.356)", "-15.356");
 		CHECK("(if nil 40 (if t 42 41))", "42");
 		CHECK("(if 0 1 2)", "1");

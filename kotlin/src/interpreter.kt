@@ -821,8 +821,8 @@ fun expand_quasiquote (expr: Any, env: ICons): Any
 			val e = car(rest)
 			if (e is Cons)
 			{
-				val sym = car(e)
-				if (sym is Symb && sym.name == "splicing")
+				val esym = car(e)
+				if (esym is Symb && esym.name == "splicing")
 				{
 					is_splicing = true
 					var sexpr = leval(car(cdr(car(rest) as ICons) as ICons), env)

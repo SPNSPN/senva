@@ -90,8 +90,8 @@ class Interpreter
 			var e = car(exit as Cons);
 			if (ReferenceEquals(exit, entr))
 			{
-				exit = nil
-				entr = nil
+				exit = nil;
+				entr = nil;
 			}
 			else { exit = cdr(exit as Cons) as ICons; }
 			return e;
@@ -243,17 +243,35 @@ class Interpreter
 		regist(genv, "queu", new Subr((ICons args)
 					=> { return new Queu(args); }, "queu"));
 		regist_subr2<Queu, object, Queu>(genv, "pushqueu"
-				, new Subr((Queu queu, object o) => { return queu.push(o); }
-					, "pushqueu"));
+				, (Queu queu, object o) => { return queu.push(o); });
 		regist_subr1<Queu, object>(genv, "popqueu"
-				, new Subr((Queu queu) => { return queu.pop(); }, "popqueu"));
+				, (Queu queu) => { return queu.pop(); });
 		regist_subr2<Queu, Queu, Queu>(genv, "concqueu"
-				, new Subr((Queu qa, Queu qb) => { return qa.concat(qb); }
-					, "concqueu"));
+				, (Queu qa, Queu qb) => { return qa.concat(qb); });
+		regist_subr1<object, ICons>(genv, "to-list", to_list);
+		regist_subr1<object, object[]>(genv, "to-vect", to_vect);
+		regist_subr1<object, Queu>(genv, "to-queu", to_queu);
+		regist_subr1<object, Symb>(genv, "symbol", symbol);
+		regist(genv, "sprint", new Subr(lsprint, "sprint"));
+		regist_subr2<object, ICons, object>(genv, "apply", lapply);
 
 		regist(genv, "quote", new Spfm((ICons env, ICons args)
 					=> { return car(args); }, "quote"));
+		regist(genv, "quasiquote", new Spfm(
+					(ICons env, ICons args)
+					=> { return expand_quasiquote(car(args), env); }
+					, "quasiquote"));
+		regist(genv, "if", new Spfm(lif, "if"));
+		regist(genv, "lambda", new Spfm((ICons env, ICons args)
+					=> { return new LFunc(car(args) as ICons, nth(args, 1) as ICons, env); }
+					, "lambda"));
+		regist(genv, "define", new Spfm(ldefine, "define"));
+		regist(genv, "setq", new Spfm(lsetq, "setq"));
 
+		regist(genv, "!", new Spfm((ICons env, ICons args) =>
+					{
+						return leval(lapply(leval(car(args), env), cdr(args) as ICons), env);
+					}, "!"));
 		regist(genv, "do", new Spfm(ldo, "do"));
 
 	}
@@ -657,6 +675,106 @@ class Interpreter
 		return rev;
 	}
 
+	static public object lload () { return nil; } // TODO
+
+	static public ICons to_list (object obj)
+	{
+		if (obj.GetType().IsArray) { return vect2cons(obj as object[]); }
+		if (obj is Symb)
+		{
+			return vect2cons((obj as Symb).name.ToCharArray().Select(
+						(e) => { return Convert.ToInt64(e) as object; }).ToArray());
+		}
+		if (obj is string)
+		{
+			return vect2cons((obj as string).ToCharArray().Select(
+						(e) => { return Convert.ToInt64(e) as object; }).ToArray());
+		}
+		if (obj is Queu) { return (obj as Queu).exit; }
+		if (obj is ICons) { return obj as ICons; }
+		throw new Erro(ErroId.Type
+				, string.Format("cannot cast {0} to ConsT.", lprint(obj)));
+	}
+
+	static public object[] to_vect (object obj)
+	{
+		if (obj is ICons) { return cons2vect(obj as ICons); }
+		if (obj is Symb)
+		{
+			return (obj as Symb).name.ToCharArray().Select(
+					(e) => { return Convert.ToInt64(e) as object; }).ToArray();
+		}
+		if (obj is string)
+		{
+			return (obj as string).ToCharArray().Select(
+					(e) => { return Convert.ToInt64(e) as object; }).ToArray();
+		}
+		if (obj is Queu) { return cons2vect((obj as Queu).exit); }
+		if (obj.GetType().IsArray) { return obj as object[]; }
+		throw new Erro(ErroId.Type
+				, string.Format("cannot cast {0} to VectT.", lprint(obj)));
+	}
+
+	static public Queu to_queu (object obj)
+	{
+		if (obj is Cons) { return new Queu(obj as Cons); }
+		if (obj is Symb)
+		{
+			return new Queu(vect2cons((obj as Symb).name.ToCharArray().Select((e)
+							=> { return Convert.ToInt64(e) as object; }).ToArray()));
+		}
+		if (obj is string)
+		{
+			return new Queu(vect2cons((obj as string).ToCharArray().Select((e)
+							=> { return Convert.ToInt64(e) as object; }).ToArray()));
+		}
+		if (obj.GetType().IsArray) { return new Queu(vect2cons(obj as object[])); }
+		if (obj is Queu) { return obj as Queu; }
+		if (obj is Nil) { return new Queu(); }
+		throw new Erro(ErroId.Type
+				, string.Format("cannot cast {0} to QueuT.", lprint(obj)));
+	}
+
+	static public Symb symbol (object obj)
+	{
+		if (obj is ICons)
+		{
+			var strn = "";
+			for (object rest = obj; rest is Cons; rest = cdr(rest as Cons))
+			{
+				strn += Convert.ToChar(car(rest as Cons));
+			}
+			return new Symb(strn);
+		}
+		if (obj is Queu)
+		{
+			return new Symb(cons2vect((obj as Queu).exit).Aggregate(""
+						, (string acc, object e) => { return acc + Convert.ToChar(e).ToString(); } ));
+		}
+		if (obj.GetType().IsArray)
+		{
+			return new Symb((obj as object[]).Aggregate(""
+							,(string acc, object e)
+							=> { return acc + Convert.ToChar(e).ToString(); }));
+		}
+		if (obj is string) { return new Symb(obj as string); }
+		if (obj is Symb) { return obj as Symb; }
+		throw new Erro(ErroId.Type
+				, string.Format("cannot cast {0} to SymbT.", lprint(obj)));
+	}
+
+	static public string lsprint (ICons args)
+	{
+		var strn = "";
+		for (object rest = args; rest is Cons; rest = cdr(rest as Cons))
+		{
+			var e = car(rest as Cons);
+			strn += (e is string) ? e as string : lprint(e);
+		}
+		return strn;
+	}
+
+
 	static public object nth (ICons c, long n)
 	{
 		object rest = c;
@@ -674,6 +792,49 @@ class Interpreter
 				, string.Format("cannot got nth {0} from {1}", n, lprint(c)));
 	}
 
+	public object lif (ICons env, ICons args)
+	{
+		return leval(nth(args, (leval(car(args), env) is Nil) ? 2 : 1), env);
+	}
+
+	public object ldefine (ICons env, ICons args)
+	{
+		var sym = car(args);
+		if (sym is Symb)
+		{
+			var asc = assoc(car(genv) as ICons, sym);
+			if (asc is Nil)
+			{
+				rplaca(genv, cons(cons(sym, leval(nth(args, 1), env)), car(genv)));
+			}
+			else { rplacd(asc as Cons, leval(nth(args, 1), env)); }
+			return sym;
+		}
+		throw new Erro(ErroId.Type
+				, string.Format("cannot define {0}, must be SymbT.", lprint(sym)));
+	}
+
+	public object lsetq (ICons env, ICons args)
+	{
+		var sym = car(args);
+		if (sym is Symb)
+		{
+			for (object rest = env; rest is Cons; rest = cdr(rest as Cons))
+			{
+				var asc = assoc(car(rest as Cons) as ICons, sym);
+				if (asc is Cons)
+				{
+					rplacd(asc as Cons, leval(nth(args, 1), env));
+					return cdr(asc as ICons);
+				}
+			}
+			throw new Erro(ErroId.Symbol, string.Format("{0} is not defined."
+						, lprint(sym)));
+		}
+		throw new Erro(ErroId.Type
+				, string.Format("cannot setq {0}, must be SymbT.", lprint(sym)));
+	}
+
 	public object ldo (ICons env, ICons args)
 	{
 		object rest = args;
@@ -682,6 +843,40 @@ class Interpreter
 			leval(car(rest as Cons), env);
 		}
 		return leval(car(rest as ICons), env);
+	}
+
+	public object expand_quasiquote (object expr, ICons env)
+	{
+		if (! (expr is Cons)) { return expr; }
+		var sym = car(expr as Cons);
+		if (sym is Symb && (sym as Symb).name == "unquote")
+		{
+			return leval(nth(expr as Cons, 1), env);
+		}
+		ICons eexpr = nil;
+		for (object rest = expr; rest is Cons; rest = cdr(rest as Cons))
+		{
+			var is_splicing = false;
+			var e = car(rest as Cons);
+			if (e is Cons)
+			{
+				var esym = car(e as Cons);
+				if (esym is Symb && (esym as Symb).name == "splicing")
+				{
+					is_splicing = true;
+					for (var sexpr = leval(car(cdr(car(rest as Cons) as ICons) as ICons)
+								, env); sexpr is Cons; sexpr = cdr(sexpr as Cons))
+					{
+						eexpr = cons(car(sexpr as Cons), eexpr);
+					}
+				}
+			}
+			if (! is_splicing)
+			{
+				eexpr = cons(expand_quasiquote(car(rest as Cons), env), eexpr);
+			}
+		}
+		return nreverse(eexpr);
 	}
 
 	static public ICons l (params object[] args)
@@ -833,29 +1028,22 @@ class Interpreter
 		}
 	}
 
-	static public object assoc (ICons alist, object key)
+	static public ICons assoc (ICons alist, object key)
 	{
 		for (object rest = alist; rest is Cons; rest = cdr(rest as Cons))
 		{
 			var e = car(rest as Cons);
-			if (e is Cons && (! (equal(car(e as ICons), key) is Nil))) { return e; }
+			if (e is Cons && (! (equal(car(e as Cons), key) is Nil))) { return e as Cons; }
 		}
-		return null;
-	}
-
-	static public object assocdr (ICons alist, object key)
-	{
-		var res = assoc(alist, key);
-		if (res == null) { return null; }
-		return cdr(res as ICons);
+		return nil;
 	}
 	
 	static private object seekenv (ICons env, Symb sym)
 	{
 		for (object rest = env; rest is Cons; rest = cdr(rest as Cons))
 		{
-			var res = assocdr(car(rest as Cons) as ICons, sym);
-			if (res != null) { return res; }
+			var res = assoc(car(rest as Cons) as ICons, sym);
+			if (res is Cons) { return cdr(res); }
 		}
 		throw new Erro(ErroId.Symbol
 				, string.Format("{0} is not defined.", lprint(sym)));
