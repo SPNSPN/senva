@@ -557,7 +557,7 @@ function ldefine (env, args)
 {
 	let sym = car(args);
 	let asc = assoc(car(genv), sym);
-	if (asc === null)
+	if (asc === nil)
 	{
 		rplaca(genv, cons(cons(sym, leval(car(cdr(args)), env)), car(genv)));
 	}
@@ -574,7 +574,7 @@ function lsetq (env, args)
 	for (let rest = env; ! atom(rest); rest = cdr(rest))
 	{
 		let asc = assoc(car(rest), sym);
-		if (asc !== null)
+		if (asc !== nil)
 		{
 			rplacd(asc, leval(car(cdr(args)), env));
 			return cdr(asc);
@@ -833,24 +833,24 @@ function assoc (alist, key)
 		let e = car(rest);
 		if (equal(car(e), key)) { return e; }
 	}
-	return null;
+	return nil;
 }
 
 function assocdr (alist, key)
 {
 	let asc = assoc(alist, key);
-	if (asc) { return cdr(asc) }
-	return null;
+	if (asc === nil) { return null; }
+	return cdr(asc);
 }
 
 function seekenv (env, sym)
 {
 	for (let rest = env; ! atom(rest); rest = cdr(rest))
 	{
-		let val = assocdr(car(rest), sym);
-		if (val != null)
+		let val = assoc(car(rest), sym);
+		if (val != nil)
 		{
-			return val;
+			return cdr(val);
 		}
 	}
 	throw new Erro(ErroId.Symbol, `${lprint(sym)} is not defined.`);

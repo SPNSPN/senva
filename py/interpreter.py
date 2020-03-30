@@ -297,7 +297,7 @@ def lif (env, args):
 def ldefine (env, args):
 	sym = car(args)
 	asc = assoc(car(genv), sym)
-	if asc is None:
+	if asc is nil:
 		rplaca(genv, cons(cons(sym, leval(car(cdr(args)), env)), car(genv)))
 	else:
 		rplacd(asc, leval(car(cdr(args)), env))
@@ -308,7 +308,7 @@ def lsetq (env, args):
 	rest = env
 	while not rest is nil:
 		asc = assoc(car(rest), sym)
-		if not asc is None:
+		if not asc is nil:
 			rplacd(asc, leval(car(cdr(args)), env))
 			return cdr(asc)
 		rest = cdr(rest)
@@ -1014,7 +1014,7 @@ def assoc (alist, key):
 		if car(e) == key:
 			return e
 		rest = cdr(rest)
-	return None
+	return nil
 
 def assocdr (alist, key):
 	asc = assoc(alist, key)
@@ -1037,9 +1037,9 @@ def seekenv (env, sym):
 	rest = env
 	while not rest is nil:
 		e = car(rest)
-		val = assocdr(e, sym)
-		if not val is None:
-			return val
+		val = assoc(e, sym)
+		if not val is nil:
+			return cdr(val)
 		rest = cdr(rest)
 	raise Erro(ErroId.Symbol, lprint(sym) + " is not defined.")
 
