@@ -535,6 +535,7 @@ function reverse ($coll)
 
 function nconc ($a, $b)
 {
+	if (isnil $a) { return $b; }
 	[void](rplacd (last $a) $b);
 	return $a;
 }

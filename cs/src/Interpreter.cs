@@ -82,6 +82,31 @@ class Interpreter
 			}
 			return this;
 		}
+
+		public object pop ()
+		{
+			if (exit is Nil) { return nil; }
+
+			var e = car(exit as Cons);
+			if (ReferenceEquals(exit, entr))
+			{
+				exit = nil
+				entr = nil
+			}
+			else { exit = cdr(exit as Cons) as ICons; }
+			return e;
+		}
+
+		public Queu concat (Queu queu)
+		{
+			if (entr is Nil)
+			{
+				entr = queu.entr;
+				exit = queu.exit;
+			}
+			else { rplacd(entr as Cons, queu.exit); }
+			return this;
+		}
 	}
 
 	public enum ErroId
@@ -101,15 +126,15 @@ class Interpreter
 	[Serializable()]
 	public class Erro : System.Exception
 	{
-		public int eid;
+		public long eid;
 
 		public Erro () : base() {}
-		public Erro (int eid_, string estr) : base(estr) { this.eid = eid_; }
-		public Erro (ErroId eid_, string estr) : base(estr) { this.eid = (int)eid_; }
-		public Erro (int eid_, string estr, System.Exception inner)
+		public Erro (long eid_, string estr) : base(estr) { this.eid = eid_; }
+		public Erro (ErroId eid_, string estr) : base(estr) { this.eid = (long)eid_; }
+		public Erro (long eid_, string estr, System.Exception inner)
 			: base(estr, inner) { this.eid = eid_; }
 		public Erro (ErroId eid_, string estr, System.Exception inner)
-			: base(estr, inner) { this.eid = (int)eid_; }
+			: base(estr, inner) { this.eid = (long)eid_; }
 		public Erro (System.Runtime.Serialization.SerializationInfo info
 				, System.Runtime.Serialization.StreamingContext context) {}
 	}
@@ -190,6 +215,41 @@ class Interpreter
 		regist_subr2<object, object, object>(genv, "equal", equal);
 		regist_subr1<object, object>(genv, "atom", atom);
 		regist(genv, "list", new Subr((ICons args) => { return args; }, "list"));
+		regist(genv, "+", new Subr((ICons args) => { return ladd(args); }, "+"));
+		regist(genv, "-", new Subr((ICons args)
+					=> { return lsub(car(args), cdr(args) as ICons); }, "-"));
+		regist(genv, "*", new Subr((ICons args) => { return lmul(args); }, "*"));
+		regist(genv, "/", new Subr((ICons args)
+					=> { return ldiv(car(args), cdr(args) as ICons); }, "/"));
+		regist_subr2<object, object, long>(genv, "%", lmod);
+		regist(genv, ">", new Subr((ICons args)
+					=> { return lgt(car(args), cdr(args) as ICons); }, ">"));
+		regist(genv, "<", new Subr((ICons args)
+					=> { return llt(car(args), cdr(args) as ICons); }, "<"));
+		regist(genv, ">=", new Subr((ICons args)
+					=> { return lge(car(args), cdr(args) as ICons); }, ">="));
+		regist(genv, "<=", new Subr((ICons args)
+					=> { return lle(car(args), cdr(args) as ICons); }, "<="));
+		regist_subr1<object, long>(genv, "int", lint);
+		regist_subr1<object, double>(genv, "float", lfloat);
+
+		regist_subr2<Cons, object, Cons>(genv, "rplaca", rplaca);
+		regist_subr2<Cons, object, Cons>(genv, "rplacd", rplacd);
+		regist_subr1<object, object>(genv, "last", last);
+		regist_subr2<ICons, ICons, ICons>(genv, "nconc", nconc);
+		regist_subr1<ICons, ICons>(genv, "nreverse", nreverse);
+		regist(genv, "vect", new Subr((ICons args)
+					=> { return cons2vect(args); }, "vect"));
+		regist(genv, "queu", new Subr((ICons args)
+					=> { return new Queu(args); }, "queu"));
+		regist_subr2<Queu, object, Queu>(genv, "pushqueu"
+				, new Subr((Queu queu, object o) => { return queu.push(o); }
+					, "pushqueu"));
+		regist_subr1<Queu, object>(genv, "popqueu"
+				, new Subr((Queu queu) => { return queu.pop(); }, "popqueu"));
+		regist_subr2<Queu, Queu, Queu>(genv, "concqueu"
+				, new Subr((Queu qa, Queu qb) => { return qa.concat(qb); }
+					, "concqueu"));
 
 		regist(genv, "quote", new Spfm((ICons env, ICons args)
 					=> { return car(args); }, "quote"));
@@ -227,7 +287,7 @@ class Interpreter
 					{
 						try
 						{
-							return proc((T1)(car(args)), (T2)(nth(args, 1)));
+							return proc((T1)(car(args)), (T2)(nth(args, 1L)));
 						}
 						catch (InvalidCastException)
 						{
@@ -246,8 +306,8 @@ class Interpreter
 						try
 						{
 							return proc((T1)(car(args))
-									, (T2)(nth(args, 1))
-									, (T3)(nth(args, 2)));
+									, (T2)(nth(args, 1L))
+									, (T3)(nth(args, 2L)));
 						}
 						catch (InvalidCastException)
 						{
@@ -314,7 +374,7 @@ class Interpreter
 			if ((a as object[]).Length == (b as object[]).Length)
 			{
 				cond = true;
-				for (var idx = 0; idx < (a as object[]).Length; ++idx)
+				for (var idx = 0L; idx < (a as object[]).Length; ++idx)
 				{
 					if (equal((a as object[])[idx], (b as object[])[idx]) is Nil)
 					{
@@ -326,7 +386,7 @@ class Interpreter
 		}
 		else if ((is_inum(a) || is_fnum(a)) && (is_inum(b) || is_fnum(b)))
 		{
-			cond = (a == b);
+			cond = (a.Equals(b));
 		}
 		else { cond = (a == b); }
 		return (cond) ? t as object : nil as object;
@@ -343,6 +403,222 @@ class Interpreter
 		c.d = o;
 		return c;
 	}
+
+	static public object ladd (ICons nums)
+	{
+		var iacc = 0L;
+		var facc = 0.0;
+		var isint = true;
+		for (object rest = nums; rest is Cons; rest = cdr(rest as Cons))
+		{
+			var n = car(rest as Cons);
+			if (is_inum(n)) { iacc += Convert.ToInt64(n); }
+			else if (is_fnum(n)) { facc += Convert.ToDouble(n); isint = false; }
+			else { throw new Erro(ErroId.Type
+					, string.Format("cannot add {0}", lprint(nums))); }
+		}
+		return (isint) ? iacc : iacc + facc;
+	}
+
+	static public object lsub (object head, ICons nums)
+	{
+		if (! (is_inum(head) || is_fnum(head)))
+		{
+			throw new Erro(ErroId.Type, string.Format("cannot sub {0}"
+						, lprint(cons(head, nums))));
+		}
+
+		var isint = true;
+		var iacc = 0L;
+		var facc = 0.0;
+		if (is_inum(head)) { iacc = Convert.ToInt64(head); }
+		else if (is_fnum(head)) { facc = Convert.ToDouble(head); isint = false; }
+		for (object rest = nums; rest is Cons; rest = cdr(rest as Cons))
+		{
+			var n = car(rest as Cons);
+			if (is_inum(n)) { iacc -= Convert.ToInt64(n); }
+			else if (is_fnum(n)) { facc -= Convert.ToDouble(n); isint = false; }
+			else { throw new Erro(ErroId.Type
+					, string.Format("cannot sub {0}", lprint(cons(head, nums)))); }
+		}
+		return (isint) ? iacc : iacc + facc;
+	}
+
+	static public object lmul (ICons nums)
+	{
+		var iacc = 1L;
+		var facc = 1.0;
+		var isint = true;
+		for (object rest = nums; rest is Cons; rest = cdr(rest as Cons))
+		{
+			var n = car(rest as Cons);
+			if (is_inum(n)) { iacc *= Convert.ToInt64(n); }
+			else if (is_fnum(n)) { facc *= Convert.ToDouble(n); isint = false; }
+			else { throw new Erro(ErroId.Type
+					, string.Format("cannot mul {0}", lprint(nums))); }
+		}
+		return (isint) ? iacc : iacc * facc;
+	}
+
+	static public object ldiv (object head, ICons nums)
+	{
+		if (! (is_inum(head) || is_fnum(head)))
+		{
+			throw new Erro(ErroId.Type
+					, string.Format("cannot div {0}", lprint(cons(head, nums))));
+		}
+
+		var isint = true;
+		var iacc = 1L;
+		var facc = 1.0;
+		if (is_inum(head)) { iacc = Convert.ToInt64(head); }
+		else if (is_fnum(head)) { facc = Convert.ToDouble(head); isint = false; }
+
+		for (object rest = nums; rest is Cons; rest = cdr(rest as Cons))
+		{
+			var n = car(rest as Cons);
+			if (is_inum(n))
+			{
+				var ln = Convert.ToInt64(n);
+				if ((iacc % ln).Equals(0L)) { iacc /= Convert.ToInt64(ln); }
+				else
+				{
+					facc /= Convert.ToDouble(n);
+					isint = false;
+				}
+			}
+			else if (is_fnum(n))
+			{
+				facc /= Convert.ToDouble(n);
+				isint = false;
+			}
+			else { throw new Erro(ErroId.Type
+					, string.Format("cannot div {0}", lprint(cons(head, nums)))); }
+		}
+		return (isint) ? iacc : iacc * facc;
+	}
+
+	static public long lmod (object a, object b)
+	{
+		if (! (is_inum(a) && is_inum(b)))
+		{
+			throw new Erro(ErroId.Type
+					, string.Format("cannot mod {0}", lprint(l(a, b))));
+		}
+
+		return Convert.ToInt64(a) % Convert.ToInt64(b);
+	}
+
+	static public object lgt (object head, ICons nums)
+	{
+		if (! (is_inum(head) || is_fnum(head)))
+		{
+			throw new Erro(ErroId.Type
+					, string.Format("cannot gt {0}", lprint(cons(head, nums))));
+		}
+
+		var a = Convert.ToDouble(head);
+		for (object rest = nums; rest is Cons; rest = cdr(rest as Cons))
+		{
+			if (! (is_inum(car(rest as Cons)) || is_fnum(car(rest as Cons))))
+			{
+				throw new Erro(ErroId.Type
+						, string.Format("cannot gt {0}", lprint(cons(head, nums))));
+			}
+
+			var n = Convert.ToDouble(car(rest as Cons));
+			if (a > n) { a = n; }
+			else { return nil; }
+		}
+		return t;
+	}
+
+	static public object llt (object head, ICons nums)
+	{
+		if (! (is_inum(head) || is_fnum(head)))
+		{
+			throw new Erro(ErroId.Type
+					, string.Format("cannot lt {0}", lprint(cons(head, nums))));
+		}
+
+		var a = Convert.ToDouble(head);
+		for (object rest = nums; rest is Cons; rest = cdr(rest as Cons))
+		{
+			if (! (is_inum(car(rest as Cons)) || is_fnum(car(rest as Cons))))
+			{
+				throw new Erro(ErroId.Type
+						, string.Format("cannot lt {0}", lprint(cons(head, nums))));
+			}
+
+			var n = Convert.ToDouble(car(rest as Cons));
+			if (a < n) { a = n; }
+			else { return nil; }
+		}
+		return t;
+	}
+	
+	static public object lge (object head, ICons nums)
+	{
+		if (! (is_inum(head) || is_fnum(head)))
+		{
+			throw new Erro(ErroId.Type
+					, string.Format("cannot ge {0}", lprint(cons(head, nums))));
+		}
+
+		var a = Convert.ToDouble(head);
+		for (object rest = nums; rest is Cons; rest = cdr(rest as Cons))
+		{
+			if (! (is_inum(car(rest as Cons)) || is_fnum(car(rest as Cons))))
+			{
+				throw new Erro(ErroId.Type
+						, string.Format("cannot ge {0}", lprint(cons(head, nums))));
+			}
+
+			var n = Convert.ToDouble(car(rest as Cons));
+			if (a < n) { return nil; }
+			a = n;
+		}
+		return t;
+	}
+
+	static public object lle (object head, ICons nums)
+	{
+		if (! (is_inum(head) || is_fnum(head)))
+		{
+			throw new Erro(ErroId.Type
+					, string.Format("cannot le {0}", lprint(cons(head, nums))));
+		}
+
+		var a = Convert.ToDouble(head);
+		for (object rest = nums; rest is Cons; rest = cdr(rest as Cons))
+		{
+			if (! (is_inum(car(rest as Cons)) || is_fnum(car(rest as Cons))))
+			{
+				throw new Erro(ErroId.Type
+						, string.Format("cannot le {0}", lprint(cons(head, nums))));
+			}
+
+			var n = Convert.ToDouble(car(rest as Cons));
+			if (a > n) { return nil; }
+			a = n;
+		}
+		return t;
+	}
+
+	static public long lint (object o)
+	{
+		if (is_inum(o) || is_fnum(o)) { return Convert.ToInt64(o); }
+		throw new Erro(ErroId.Type
+				, string.Format("cannot cast {0} to InumT.", lprint(o)));
+	}
+
+	static public double lfloat (object o)
+	{
+		if (is_inum(o) || is_fnum(o)) { return Convert.ToDouble(o); }
+		throw new Erro(ErroId.Type
+				, string.Format("cannot cast {0} to FnumT.", lprint(o)));
+	}
+
 
 	static public object last (object o)
 	{
@@ -381,10 +657,10 @@ class Interpreter
 		return rev;
 	}
 
-	static public object nth (ICons c, int n)
+	static public object nth (ICons c, long n)
 	{
 		object rest = c;
-		for (var idx = 0; idx < n; ++idx)
+		for (var idx = 0L; idx < n; ++idx)
 		{
 			if (rest is Cons) { rest = cdr(rest as Cons); }
 			else
@@ -426,7 +702,7 @@ class Interpreter
 
 	static private object findidx_eq (object o, ICons coll)
 	{
-		var idx = 0;
+		var idx = 0L;
 		for (object rest = coll; rest is Cons; rest = cdr(rest as Cons))
 		{
 			if (ReferenceEquals(o, car(rest as Cons))) { return idx; }
@@ -716,7 +992,7 @@ class Interpreter
 				{
 					if ("if" == (proc as Spfm).name)
 					{
-						expr = nth(args, (leval(car(args), env) is Nil) ? 2 : 1);
+						expr = nth(args, (leval(car(args), env) is Nil) ? 2L : 1L);
 					}
 					else if ("do" == (proc as Spfm).name)
 					{
@@ -762,7 +1038,7 @@ class Interpreter
 	{
 		var dup = seek_dup(expr, nil, nil).dup;
 		var s = "";
-		var idx = 0;
+		var idx = 0L;
 		for (var rest = dup; rest is Cons; rest = cdr(rest as Cons))
 		{
 			s += string.Format("${0} = {1}\n"
