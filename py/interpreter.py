@@ -233,19 +233,17 @@ def lt (head, *nums):
 def ge (head, *nums):
 	a = head
 	for n in nums:
-		if a >= n:
-			a = n
-		else:
+		if a < n:
 			return nil
+		a = n
 	return t
 
 def le (head, *nums):
 	a = head
 	for n in nums:
-		if a <= n:
-			a = n
-		else:
+		if a > n:
 			return nil
+		a = n
 	return t
 
 def lint (n):
