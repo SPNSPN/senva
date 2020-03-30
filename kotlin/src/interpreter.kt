@@ -618,11 +618,11 @@ fun to_list (obj: Any): ICons
 	if (obj is MutableList<*>) { return vect2cons(obj) }
 	if (obj is Symb)
 	{
-		return vect2cons(obj.name.toCharArray().map({e -> e.toInt()}).toMutableList())
+		return vect2cons(obj.name.toCharArray().map({e -> e.toLong()}).toMutableList())
 	}
 	if (obj is String)
 	{
-		return vect2cons(obj.toCharArray().map({e -> e.toInt()}).toMutableList())
+		return vect2cons(obj.toCharArray().map({e -> e.toLong()}).toMutableList())
 	}
 	if (obj is Queu) { return obj.exit }
 	if (obj is ICons) { return obj }
@@ -634,11 +634,11 @@ fun to_vect (obj: Any): MutableList<Any>
 	if (obj is ICons) { return cons2vect(obj) }
 	if (obj is Symb)
 	{
-		return obj.name.toCharArray().map({e -> e.toInt()}).toMutableList()
+		return obj.name.toCharArray().map({e -> e.toLong()}).toMutableList()
 	}
 	if (obj is String)
 	{
-		return obj.toCharArray().map({e -> e.toInt()}).toMutableList()
+		return obj.toCharArray().map({e -> e.toLong()}).toMutableList()
 	}
 	if (obj is Queu) { return cons2vect(obj.exit) }
 	if (obj is MutableList<*>) { return obj as MutableList<Any> }
@@ -650,11 +650,11 @@ fun to_queu (obj: Any): Queu
 	if (obj is Cons) { return Queu(obj) }
 	if (obj is Symb)
 	{
-		return Queu(vect2cons(obj.name.toCharArray().map({e -> e.toInt()}).toMutableList()))
+		return Queu(vect2cons(obj.name.toCharArray().map({e -> e.toLong()}).toMutableList()))
 	}
 	if (obj is String)
 	{
-		return Queu(vect2cons(obj.toCharArray().map({e -> e.toInt()}).toMutableList()))
+		return Queu(vect2cons(obj.toCharArray().map({e -> e.toLong()}).toMutableList()))
 	}
 	if (obj is MutableList<*>) { return Queu(vect2cons(obj as MutableList<Any>)) }
 	if (obj is Queu) { return obj }
@@ -895,7 +895,7 @@ fun growth (tree: ICons, buff: ReadBuf): ICons
 	{
 		return cons(wrap_readmacros(nil, rmacs), tree)
 	}
-	val inum = buf.toIntOrNull(10) 
+	val inum = buf.toLongOrNull(10) 
 	if (inum != null) { return cons(wrap_readmacros(inum, rmacs), tree) }
 	val fnum = buf.toDoubleOrNull() 
 	if (fnum != null) { return cons(wrap_readmacros(fnum, rmacs), tree) }
