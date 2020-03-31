@@ -225,10 +225,10 @@ check "``[1 2 ,3 ,(+ 2 2) @(if (> 3 1) '(5 6) nil) @(cons 7 ``(8 ,(* 3 3))) 10]"
 check "(load `"senva/matrix.snv`") (matrix::determinant '((3 1 1 2 1) (5 1 3 4 1) (2 0 1 0 3) (1 3 2 1 1) (2 1 5 10 1)))" -292;
 echeck "(load `"not/exist/path.ext`")" $erroid["FileNotFound"] "not found file: `"not/exist/path.ext`"";
 echeck "(load 33)" $erroid["Type"] "cannot apply load to 33";
-pcheck "((lambda (c) (list (list c c) (cons c c))) (list 1 2))" "$0 = (1 2)\n(($0 $0) ($0 . $0))";
-pcheck "((lambda (c v) [v c [[v c] (list v c)] (list (list c v) [c v])]) (list 1 2) [1 2])" "$0 = (1 2)\n$1 = [1 2]\n[$1 $0 [[$1 $0] ($1 $0)] (($0 $1) [$0 $1])]";
-pcheck "((lambda (rpc) (rplacd rpc rpc)) (list 1 2))" "$0 = (1 . $0)\n$0";
-pcheck "((lambda (rpv) (setat rpv 1 rpv)) [1 2])" "$0 = [1 2]\n$0";
+pcheck "((lambda (c) (list (list c c) (cons c c))) (list 1 2))" "`$0 = (1 2)`n((`$0 `$0) (`$0 . `$0))";
+pcheck "((lambda (c v) [v c [[v c] (list v c)] (list (list c v) [c v])]) (list 1 2) [1 2])" "`$0 = (1 2)`n`$1 = [1 2]`n[`$1 `$0 [[`$1 `$0] (`$1 `$0)] ((`$0 `$1) [`$0 `$1])]";
+pcheck "((lambda (rpc) (rplacd rpc rpc)) (list 1 2))" "`$0 = (1 . `$0)`n`$0";
+pcheck "((lambda (rpv) (setat rpv 1 rpv)) [1 2])" "`$0 = [1 2]`n`$0";
 check "(processor)" (new-object symb powershell);
 check "(environment)" $genv;
 check "(load `"senva/test.snv`")" $nil;

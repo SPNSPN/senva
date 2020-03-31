@@ -935,6 +935,17 @@ function mapeval ($objs, $env)
 	return $eobjs;
 }
 
+function findidx_eq ($o, $coll)
+{
+	$idx = 0;
+	for ($rest = $coll; -not (atom $rest); $rest = cdr $rest)
+	{
+		if (eq $o (car $rest)) { return $idx; }
+		++$idx;
+	}
+	return $nil;
+}
+
 $getc_buf = (cons "" $nil);
 function getc ()
 {	if (-not (car $getc_buf))
@@ -1490,69 +1501,185 @@ function leval ($expr, $env)
 	return $expr;
 }
 
-function lprint ($obj)
+function lprint ($expr)
 {
-	if ($obj -is [symb])
+	$dup = cdr (seek_dup $expr $nil $nil);
+	$s = "";
+	$idx = 0;
+	for ($rest = $dup; -not (atom $rest); $rest = cdr $rest)
 	{
-		return $obj.name;
+		$ss = lprint_rec (car $rest) $dup $False;
+		$s += "`$$idx = $ss`n";
+		++$idx;
 	}
-	if ($obj -is [cons])
-	{
-		return (printcons (car $obj) (cdr $obj));
-	}
-	if ($obj -is [subr])
-	{
-		return "<Subr: " + $obj.name + ">";
-	}
-	if ($obj -is [spfm])
-	{
-		return "<Spfm: " + $obj.name + ">";
-	}
-	if ($obj -is [func])
-	{
-		return "<Func: " + (lprint $obj.args_)  + " " + (lprint $obj.body) + ">";
-	}
-	if (isnil $obj)
-	{
-		return "NIL";
-	}
-	if ($obj -is [string])
-	{
-		return "`"" + $obj + "`"";
-	}
-	if (($obj -is [system.collections.arraylist]) -or ($obj -is [array]))
-	{
-		if ($obj.count -lt 1) { return "[]"; }
-		$str = "[";
-		foreach ($a in $obj) { $str += ("" + (lprint $a) + " "); }
-		return $str.substring(0, $str.length - 1) + "]";
-	}
-	if ($obj -is [vect])
-	{
-		return (lprint (toarray $obj));
-	}
-	if ($obj -is [queu])
-	{
-		return "/" + (lprint $obj.exit) + "/";
-	}
-
-	return [string]$obj;
+	$s += lprint_rec $expr $dup $True;
+	return $s;
 }
 
-function printcons ($a, $d)
+function seek_dup ($expr, $printed, $dup)
 {
-	$sa = lprint $a;
-	if (isnil $d) { return "($sa)"; }
-
-	$sd = lprint $d;
-
-	if ($d -is [cons])
+	if (-not (isnil (findidx_eq $expr $printed)))
 	{
-		return "($sa " + $sd.substring(1);
+		if (isnil (findidx_eq $expr $dup))
+		{
+			return (cons $printed (cons $expr $dup));
+		}
+		return (cons $printed $dup);
 	}
-
-	return "(" + $sa + " . " + $sd + ")";
+	if ($expr -is [cons])
+	{
+		$res = seek_dup (car $expr) (cons $expr $printed) $dup;
+		return seek_dup (cdr $expr) (car $res) (cdr $res);
+	}
+	if ($expr -is [queu])
+	{
+		return seek_dup $expr.exit (cons $expr $printed) $dup;
+	}
+	if ($expr -is [vect])
+	{
+		$acc = cons (cons $expr $printed) $dup;
+		for ($idx = 0; $idx -lt $expr.len; ++$idx)
+		{
+			$acc = seek_dup $expr.getat($idx) (car $acc) (cdr $acc);
+		}
+		return $acc;
+	}
+	if (($expr -is [array]) -or ($expr -is [system.collections.arraylist]))
+	{
+		$acc = cons (cons $expr $printed) $dup;
+		for ($idx = 0; $idx -lt $expr.length; ++$idx)
+		{
+			$acc = seek_dup $expr[$idx] (car $acc) (cdr $acc);
+		}
+		return $acc;
+	}
+	return (cons $printed $dup);
 }
+
+function lprint_rec ($expr, $dup, $rec)
+{
+	$idx = findidx_eq $expr $dup;
+	if ($rec -and (-not (isnil $idx))) { return "`$$idx"; }
+	if (isnil $expr) { return "NIL"; }
+	if ($expr -is [cons]) { return printcons_rec $expr $dup $True; }
+	if ($expr -is [symb]) { return $expr.name; }
+	if ($expr -is [string]) { return "`"$expr`""; }
+	if ($expr -is [vect])
+	{
+		$s = "";
+		for ($idx = 0; $idx -lt $expr.len; ++$idx)
+		{
+			$s += " " + (lprint_rec $expr.getat($idx) $dup $True);
+		}
+		$ss = $s.substring(1);
+		return "[$ss]";
+	}
+	if (($expr -is [array]) -or ($expr -is [system.collections.arraylist]))
+	{
+		$s = "";
+		for ($idx = 0; $idx -lt $expr.length; ++$idx)
+		{
+			$s += " " + (lprint_rec $expr[$idx] $dup $True);
+		}
+		$ss = $s.substring(1);
+		return "[$ss]";
+	}
+	if ($expr -is [queu])
+	{
+		$s = lprint_rec $expr.exit $dup $True;
+		return "/$s/";
+	}
+	if ($expr -is [func])
+	{
+		$as = lprint_rec $expr.args $dup $True;
+		$bs = lprint_rec $expr.body $dup $True;
+		return "<Func $as $bs>";
+	}
+	if ($expr -is [spfm]) { $s = $expr.name; return "<Spfm $s>"; }
+	if ($expr -is [subr]) { $s = $expr.name; return "<Subr $s>"; }
+	return $expr.ToString();
+}
+
+function printcons_rec ($coll, $dup, $rec)
+{
+	$a = car $coll;
+	$d = cdr $coll;
+	if (isnil $d)
+	{
+		$s = lprint_rec $a $dup $rec;
+		return "($s)";
+	}
+	$as = lprint_rec $a $dup $rec;
+	$ds = lprint_rec $d $dup $rec;
+	if (atom $d) { return "($as . $ds)"; }
+	if (-not (isnil (findidx_eq $d $dup))) { return "($as . $ds)"; }
+	$dss = $ds.substring(1);
+	return "($as $dss";
+}
+
+#function lprint ($obj)
+#{
+#	if ($obj -is [symb])
+#	{
+#		return $obj.name;
+#	}
+#	if ($obj -is [cons])
+#	{
+#		return (printcons (car $obj) (cdr $obj));
+#	}
+#	if ($obj -is [subr])
+#	{
+#		return "<Subr: " + $obj.name + ">";
+#	}
+#	if ($obj -is [spfm])
+#	{
+#		return "<Spfm: " + $obj.name + ">";
+#	}
+#	if ($obj -is [func])
+#	{
+#		return "<Func: " + (lprint $obj.args_)  + " " + (lprint $obj.body) + ">";
+#	}
+#	if (isnil $obj)
+#	{
+#		return "NIL";
+#	}
+#	if ($obj -is [string])
+#	{
+#		return "`"" + $obj + "`"";
+#	}
+#	if (($obj -is [system.collections.arraylist]) -or ($obj -is [array]))
+#	{
+#		if ($obj.count -lt 1) { return "[]"; }
+#		$str = "[";
+#		foreach ($a in $obj) { $str += ("" + (lprint $a) + " "); }
+#		return $str.substring(0, $str.length - 1) + "]";
+#	}
+#	if ($obj -is [vect])
+#	{
+#		return (lprint (toarray $obj));
+#	}
+#	if ($obj -is [queu])
+#	{
+#		return "/" + (lprint $obj.exit) + "/";
+#	}
+#
+#	return [string]$obj;
+#}
+#
+#function printcons ($a, $d)
+#{
+#	$sa = lprint $a;
+#	if (isnil $d) { return "($sa)"; }
+#
+#	$sd = lprint $d;
+#
+#	if ($d -is [cons])
+#	{
+#		return "($sa " + $sd.substring(1);
+#	}
+#
+#	return "(" + $sa + " . " + $sd + ")";
+#}
 
 function repl ()
 {
@@ -1567,9 +1694,17 @@ function repl ()
 		}
 		catch
 		{
-			$ex = $_.exception -split ",";
-			$eid = [int]($ex[1]);
-			write-host ("<Erro " + (lprint ($ex[2..($ex.length - 1)] -join ",")) + ">");
+			try
+			{
+				$oex = $_;
+				$ex = $_.exception -split ",";
+				$eid = [int]($ex[1]);
+				write-host ("<Erro " + (lprint ($ex[2..($ex.length - 1)] -join ",")) + ">");
+			}
+			catch
+			{
+				throw $oex;
+			}
 		}
 	}
 }

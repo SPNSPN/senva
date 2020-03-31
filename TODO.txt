@@ -1,6 +1,10 @@
 ;simple_ga.snv
 js senva canvas game
+cs call dllによるeval
 cs win app api voiceroid control
+kotlin load jarによるeval
+cpp call dllによるeval
+s式継続渡しによる複数プラットフォームの結合、python依存コードはpython上で処理し、java依存コードはjava上で実行する
 switchのプチコン4版senva
 pasoconmini mz-80c pc-8001 版
 web audio apiによる効果音生成器
