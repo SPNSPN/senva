@@ -1566,6 +1566,7 @@ function lprint_rec ($expr, $dup, $rec)
 	if ($expr -is [string]) { return "`"$expr`""; }
 	if ($expr -is [vect])
 	{
+		if ($expr.len -lt 1) { return "[]"; }
 		$s = "";
 		for ($idx = 0; $idx -lt $expr.len; ++$idx)
 		{
@@ -1576,6 +1577,7 @@ function lprint_rec ($expr, $dup, $rec)
 	}
 	if (($expr -is [array]) -or ($expr -is [system.collections.arraylist]))
 	{
+		if ($expr.length -lt 1) { return "[]"; }
 		$s = "";
 		for ($idx = 0; $idx -lt $expr.length; ++$idx)
 		{
@@ -1591,7 +1593,7 @@ function lprint_rec ($expr, $dup, $rec)
 	}
 	if ($expr -is [func])
 	{
-		$as = lprint_rec $expr.args $dup $True;
+		$as = lprint_rec $expr.args_ $dup $True;
 		$bs = lprint_rec $expr.body $dup $True;
 		return "<Func $as $bs>";
 	}
