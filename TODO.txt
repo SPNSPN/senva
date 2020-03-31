@@ -1,14 +1,15 @@
 ;simple_ga.snv
 js senva canvas game
-cs call dllによるeval
+;cs call dll
+cs type.invokemember getattr setattr
 cs win app api voiceroid control
-kotlin load jarによるeval
-cpp call dllによるeval
+kotlin classloader によるeval
+cpp call dll
 s式継続渡しによる複数プラットフォームの結合、python依存コードはpython上で処理し、java依存コードはjava上で実行する
 switchのプチコン4版senva
 pasoconmini mz-80c pc-8001 版
 web audio apiによる効果音生成器
-ps senvaのrecursive lprint
+;ps senvaのrecursive lprint
 is-definedにより、util.snvで、定義されていない場合のみappend、reverse、take、dropを最定義するようにする
 型チェックしている関数を専用型関数に分解してlispから呼べるようにする、コンパイル時に最適化できるようにする
 getlines EOFまでreadし結果のlistを返す

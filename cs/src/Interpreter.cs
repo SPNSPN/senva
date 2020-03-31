@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Reflection;
 
 namespace Senva
 {
@@ -270,6 +271,10 @@ class Interpreter
 		regist_subr1<object, object>(genv, "tee", tee);
 		regist(genv, "exit", new Subr(
 					(ICons args) => { Environment.Exit(0); return nil; }, "exit"));
+		regist_subr1<string, Assembly>(genv, "dll"
+				, (string path) => { return Assembly.LoadFrom(path); });
+		regist_subr0<Assembly[]>(genv, "asms"
+				, () => { return AppDomain.CurrentDomain.GetAssemblies(); });
 
 		regist(genv, "quote", new Spfm((ICons env, ICons args)
 					=> { return car(args); }, "quote"));
@@ -299,6 +304,11 @@ class Interpreter
 	static private void regist (Cons env, string name, object obj)
 	{
 		rplaca(env, cons(cons(new Symb(name), obj), car(env)));
+	}
+
+	static private void regist_subr0<R> (Cons env, string name, Func<R> proc)
+	{
+		regist(env, name, new Subr((ICons args) => { return proc(); }, name));
 	}
 
 	static private void regist_subr1<T, R> (Cons env, string name, Func<T, R> proc)
