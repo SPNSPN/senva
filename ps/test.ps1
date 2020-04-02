@@ -228,7 +228,7 @@ echeck "(load 33)" $erroid["Type"] "cannot apply load to 33";
 pcheck "((lambda (c) (list (list c c) (cons c c))) (list 1 2))" "`$0 = (1 2)`n((`$0 `$0) (`$0 . `$0))";
 pcheck "((lambda (c v) [v c [[v c] (list v c)] (list (list c v) [c v])]) (list 1 2) [1 2])" "`$0 = (1 2)`n`$1 = [1 2]`n[`$1 `$0 [[`$1 `$0] (`$1 `$0)] ((`$0 `$1) [`$0 `$1])]";
 pcheck "((lambda (rpc) (rplacd rpc rpc)) (list 1 2))" "`$0 = (1 . `$0)`n`$0";
-pcheck "((lambda (rpv) (setat rpv 1 rpv)) [1 2])" "`$0 = [1 2]`n`$0";
+pcheck "((lambda (rpv) (setat rpv 1 rpv)) [1 2])" "`$0 = [1 `$0]`n`$0";
 check "(processor)" (new-object symb powershell);
 check "(environment)" $genv;
 check "(load `"senva/test.snv`")" $nil;

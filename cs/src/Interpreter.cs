@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace Senva
 {
@@ -436,6 +437,10 @@ class Interpreter
 		{
 			cond = (Convert.ToDouble(a) == Convert.ToDouble(b));
 		}
+		else if (a is string && b is string)
+		{
+			cond = a.Equals(b);
+		}
 		else { cond = (a == b); }
 		return (cond) ? t as object : nil as object;
 	}
@@ -465,7 +470,8 @@ class Interpreter
 			else { throw new Erro(ErroId.Type
 					, string.Format("cannot add {0}", lprint(nums))); }
 		}
-		return (isint) ? iacc : iacc + facc;
+		if (isint) { return iacc; }
+		return iacc + facc;
 	}
 
 	static public object lsub (object head, ICons nums)
@@ -489,7 +495,8 @@ class Interpreter
 			else { throw new Erro(ErroId.Type
 					, string.Format("cannot sub {0}", lprint(cons(head, nums)))); }
 		}
-		return (isint) ? iacc : iacc + facc;
+		if (isint) { return iacc; }
+		return iacc + facc;
 	}
 
 	static public object lmul (ICons nums)
@@ -505,7 +512,8 @@ class Interpreter
 			else { throw new Erro(ErroId.Type
 					, string.Format("cannot mul {0}", lprint(nums))); }
 		}
-		return (isint) ? iacc : iacc * facc;
+		if (isint) { return iacc; }
+		return iacc * facc;
 	}
 
 	static public object ldiv (object head, ICons nums)
@@ -543,7 +551,8 @@ class Interpreter
 			else { throw new Erro(ErroId.Type
 					, string.Format("cannot div {0}", lprint(cons(head, nums)))); }
 		}
-		return (isint) ? iacc : iacc * facc;
+		if (isint) { return iacc; }
+		return iacc * facc;
 	}
 
 	static public long lmod (object a, object b)
@@ -1479,6 +1488,12 @@ class Interpreter
 		}
 		if (expr is Spfm) { return string.Format("<Spfm {0}>", (expr as Spfm).name); }
 		if (expr is Subr) { return string.Format("<Subr {0}>", (expr as Subr).name); }
+		if (is_fnum(expr))
+		{
+			string sn = expr.ToString();
+			if (Regex.IsMatch(sn, @"\.")) { return sn; }
+			return string.Format("{0}.0", sn);
+		}
 		return expr.ToString();
 	}
 
