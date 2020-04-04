@@ -1,11 +1,28 @@
 (load "senva/util.snv")
 
+; define contents
 (define canvas ((-> (js "document") "getElementById") "main-canvas"))
 (define context ((-> canvas "getContext") "2d"))
-((-> context "fillRect") 20 20 300 200)
+
+((-> canvas "addEventListener") "click" (lambda () (print 42)) nil)
+
+; load images
 (define img (new "Image"))
-(setat img "src" "perl.png")
-((-> context "drawImage") img 0 0)
+(setat img "src" "img.png")
+(define imgwid 200)
+(define imghig 247)
+(define frametick 5)
+
+; draw objects
+((-> context "beginPath"))
+
+((-> context "rect") 0 0 (+ imgwid (* 2 frametick)) (+ imghig (* 2 frametick)))
+((-> context "fill"))
+
+((-> context "drawImage") img frametick frametick imgwid imghig)
+
+((-> context "closePath"))
 
 ; TODO シーンクラス　レイアウト、イベント
 ; TODO オブジェクトクラス　アニメーション、クリックイベント
+

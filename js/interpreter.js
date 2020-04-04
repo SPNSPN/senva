@@ -74,11 +74,28 @@ function Spfm (proc, name)
 	this.name = name;
 }
 
-function Func (args, body, env)
+//function Func (args, body, env)
+//{
+//	this.args = args;
+//	this.body = body;
+//	this.env = env;
+//}
+
+class Func extends Function
 {
-	this.args = args;
-	this.body = body;
-	this.env = env;
+	constructor (args, body, env)
+	{
+		super();
+		this.args = args;
+		this.body = body;
+		this.env = env;
+		return new Proxy(this
+				, {apply: function(target, thisArg, argumentsList)
+				{
+					return leval(this.body, cons(bind_tree(this.args
+									, vect2cons(argumentsList)), this.env));
+				}});
+	}
 }
 
 class Erro extends Error
