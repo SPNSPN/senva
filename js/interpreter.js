@@ -92,8 +92,8 @@ class Func extends Function
 		return new Proxy(this
 				, {apply: function(target, thisArg, argumentsList)
 				{
-					return leval(this.body, cons(bind_tree(this.args
-									, vect2cons(argumentsList)), this.env));
+					return leval(target.body, cons(bind_tree(target.args
+									, vect2cons(argumentsList)), target.env));
 				}});
 	}
 }

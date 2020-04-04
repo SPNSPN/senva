@@ -4,7 +4,7 @@
 (define canvas ((-> (js "document") "getElementById") "main-canvas"))
 (define context ((-> canvas "getContext") "2d"))
 
-((-> canvas "addEventListener") "click" (lambda () (print 42)) nil)
+((-> canvas "addEventListener") "click" (lambda () (print 42)))
 
 ; load images
 (define img (new "Image"))
