@@ -621,3 +621,28 @@
 (define cddar (lambda (o) (cdr (cdr (car o)))))
 (define cdddr (lambda (o) (cdr (cdr (cdr o)))))
 
+; TODO
+(! let ((type-tree nil))
+   (define obj::def (lambda (sym members extends)
+					  (! push type-tree (list sym members extends))))
+
+   (define obj::parents (! letrec ((parents-rec
+									 (lambda (ty res)
+									   (aif (caddr (assocdr ty type-tree))
+											(reduce (! fn (parents-rec $1 $0)) it res)
+											res))))
+						   (lambda (typ) (parents-rec typ nil))))
+
+   ; TODO
+   (define obj::new (lambda (typ . args) ))
+
+   (define obj::get ())
+
+   (define obj::set ())
+
+   (define obj::isa (lambda (obj typ)
+					  (or (eq (obj::type obj) typ) (find typ (obj::parents obj)))))
+
+   (define obj::type (lambda (obj) (caar obj)))
+   )
+

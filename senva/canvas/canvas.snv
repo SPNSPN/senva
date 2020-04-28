@@ -4,7 +4,21 @@
 (define canvas ((-> (js "document") "getElementById") "main-canvas"))
 (define context ((-> canvas "getContext") "2d"))
 
-((-> canvas "addEventListener") "click" (lambda () (print 42)))
+(define canvas::new-image
+  (lambda (path wid hig frm-thick)
+	(! let ((img (new "Image")))
+	   (do (setat img "src" path)
+		   ))))
+
+(define scene-controller nil)
+;(! push scene-controller (image-object "img.png"))
+
+
+
+((-> canvas "addEventListener") "click"
+								(lambda (e)
+								  (print (sprint (-> e "clientX") ", "
+												 (-> e "clientY")))))
 
 ; load images
 (define img (new "Image"))
@@ -20,6 +34,8 @@
 ((-> context "fill"))
 
 ((-> context "drawImage") img frametick frametick imgwid imghig)
+
+((-> context "fillText") "hello, world!" 20 50)
 
 ((-> context "closePath"))
 
