@@ -545,13 +545,13 @@
 					(if (> n 0)
 					  (divide (cdr coll) (- n 1) (cons (car coll) divided))
 					  (cons divided coll))))
-			 (merge
+			 (merge-i
 			   (lambda (a b cmp acc)
 				 (if a
 				   (if b
 					 (if (cmp (car a) (car b))
-					   (merge (cdr a) b cmp (pushqueu acc (car a)))
-					   (merge a (cdr b) cmp (pushqueu acc (car b))))
+					   (merge-i (cdr a) b cmp (pushqueu acc (car a)))
+					   (merge-i a (cdr b) cmp (pushqueu acc (car b))))
 					 (to-list (concqueu acc (to-queu a))))
 				   (to-list (concqueu acc (to-queu b))))))
 			 (sort-rec
@@ -559,9 +559,9 @@
 				 (! let ((len (length coll)))
 					(! cond
 					   ((< len 2) coll
-						(= len 2) (merge (list (car coll)) (cdr coll) cmp (queu))
+						(= len 2) (merge-i (list (car coll)) (cdr coll) cmp (queu))
 						t (! let (((a . b) (divide coll (/ len 2) ())))
-							 (merge (sort-rec a cmp) (sort-rec b cmp) cmp (queu)))))))))
+							 (merge-i (sort-rec a cmp) (sort-rec b cmp) cmp (queu)))))))))
 	 (lambda (coll cmp)
 	   (sort-rec coll cmp))))
 
@@ -621,28 +621,58 @@
 (define cddar (lambda (o) (cdr (cdr (car o)))))
 (define cdddr (lambda (o) (cdr (cdr (cdr o)))))
 
-; TODO
+(define merge (lambda (colla collb)
+				(reduce (! fn (if (find $1 $0) $0 (cons $1 $0)))
+						(reverse colla) collb)))
+
 (! let ((type-tree nil))
-   (define obj::def (lambda (sym members extends)
-					  (! push type-tree (list sym members extends))))
+   (do (define obj::def- (lambda (sym- members- extends-)
+						   (! push type-tree (list sym- members- extends-))))
 
-   (define obj::parents (! letrec ((parents-rec
-									 (lambda (ty res)
-									   (aif (caddr (assocdr ty type-tree))
-											(reduce (! fn (parents-rec $1 $0)) it res)
-											res))))
-						   (lambda (typ) (parents-rec typ nil))))
+	 (define obj::def (lambda (sym members extends)
+						`(obj::def- ',sym (list @(map (lambda ((sym mem))
+														`(list ',sym ,mem))
+												(cut members 2)))
+									',extends)))
 
-   ; TODO
-   (define obj::new (lambda (typ . args) ))
+	 (define obj::parents (! letrec ((parents-rec
+									   (lambda (ty res)
+										 (! aif (cadr (assocdr type-tree ty))
+											  (reduce (! fn (parents-rec $1 $0))
+													  it (merge res it))
+											  res))))
+							 (lambda (typ) (parents-rec typ nil))))
 
-   (define obj::get ())
+	 (define obj::new (! letrec ((merge-member
+								   (lambda (ret mem)
+									 (if (find-if
+										   (! fn (eq (car mem)
+													 (car $0))) ret)
+									   ret
+									   (cons mem ret)))))
+						 (lambda (typ)
+						   (! let* (((mem ext) (assocdr type-tree typ))
+									(parmems (mapcat (! fn (car (assocdr type-tree $0)))
+													 (obj::parents typ)))
+									(mems (reduce merge-member
+													   (append mem parmems) ()))
+									(this (lambda args (! case (length args)
+													(0 (list typ mems)
+													 1 (cadr (assoc mems (car args)))
+													 t (rplacd (assoc mems (car args))
+															   (cdr args)))))))
+								 (do (map
+									   (! fn (! let ((lf (cadr $0)))
+												(if (eq '<func> (type lf))
+												  (rplaca (cdr $0)
+														  (lambda args
+															(apply lf (cons this args)))))))
+									   mems)
+								     this)))))
 
-   (define obj::set ())
+	 (define obj::isa (lambda (obj typ)
+						(or (eq (obj::type obj) typ)
+							(find typ (obj::parents (obj::type obj))))))
 
-   (define obj::isa (lambda (obj typ)
-					  (or (eq (obj::type obj) typ) (find typ (obj::parents obj)))))
-
-   (define obj::type (lambda (obj) (caar obj)))
-   )
+	 (define obj::type (lambda (obj) (car (obj))))))
 

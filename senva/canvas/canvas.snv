@@ -1,44 +1,172 @@
 (load "senva/util.snv")
 
+; define classes
+(! obj::def view (x 0 y 0 width 0 height 0 name ""
+				  click (lambda (this x y)
+						  (print (sprint "click: " (this 'name))))))
+(! obj::def rect (color "#000000"
+				  init (lambda (this x- y- w h c)
+						 (do (this 'x x-)
+						     (this 'y y-)
+						     (this 'width w)
+						     (this 'height h)
+							 (if c (this 'color c))
+							 (this 'name
+								   (sprint "<rect (" x- "," y- "," w "," h ")>"))))
+				  draw (lambda (this context)
+						 (do (setat context "fillStyle" (this 'color))
+							 ((-> context "fillRect") (this 'x) (this 'y)
+												  (this 'width) (this 'height)))))
+   (view))
+(! obj::def text (txt ""
+				  color "#000000"
+				  font "10px sans-serif"
+				  init (lambda (this txt- x- y- c f)
+							(do (this 'txt txt-)
+							    (this 'x x-)
+							    (this 'y y-)
+							    (if c (this 'color c))
+								(if f (this 'font f))
+							    (this 'name (sprint "<text \"" txt- "\">"))))
+				  draw (lambda (this context)
+						 (! let ((splited (split (this 'txt) "\n"))
+								 (fsize ((js "parseInt") (this 'font))))
+							(do (setat context "fillStyle" (this 'color))
+							  (map
+								(! fn ((-> context "fillText")
+									   (nth splited $0)
+									   (+ (this 'x) fsize)
+									   (+ (this 'y) (* fsize (+ $0 1)))))
+								(range 0 (length splited)))))))
+   (view))
+(! obj::def typing-text (rawtxt ""
+						 prev 0
+						 wait 0
+						 init (lambda (this txt- wait-ms x- y- c f)
+								(do (this 'rawtxt txt-)
+								    (this 'wait wait-ms)
+								    (this 'x x-)
+								    (this 'y y-)
+								    (if c (this 'color c))
+									(if f (this 'font f))
+									(this 'name
+										  (sprint "<typing-text \"" txt- "\">"))))
+						 anime (lambda (this ts)
+								 (if (and (< (length (this 'txt))
+											 (length (this 'rawtxt)))
+										  (< (this 'wait) (- ts (this 'prev))))
+								   (do (this 'prev ts)
+									   (this 'txt (sprint
+													(this 'txt)
+													(getat (this 'rawtxt)
+															(length (this 'txt)))))))))
+   (text))
+(! obj::def prompt (txts (queu)
+					term " ▼ "
+					ttxt nil
+					rect nil
+					init (lambda (this txts- wait-ms x- y- w h tc rc f)
+						   (do (this 'txts (to-queu
+											 (map (! fn (sprint $0 (this 'term)))
+												  (to-list txts-))))
+							   (this 'ttxt (obj::new 'typing-text))
+							   (this 'rect (obj::new 'rect))
+							   (this 'x x-)
+							   (this 'y y-)
+							   (this 'width w)
+							   (this 'height h)
+							   (((this 'ttxt) 'init) (popqueu (this 'txts))
+													 wait-ms x- y- tc f)
+							   (((this 'rect) 'init) x- y- w h rc)
+							   (this 'name
+									 (sprint "<prompt \"" (this 'rawtxt) "\">"))))
+					add-text (lambda (this txt-)
+							  (pushqueu (this 'txts) (sprint txt- (this 'term))))
+					draw (lambda (this context)
+						   (do (((this 'rect) 'draw) context)
+							   (((this 'ttxt) 'draw) context)
+							   ))
+					anime (lambda (this ts)
+							(((this 'ttxt) 'anime) ts))
+				    click (lambda (this x y)
+							(do (if (equal ((this 'ttxt) 'rawtxt)
+										   ((this 'ttxt) 'txt))
+								  (! aif (popqueu (this 'txts))
+									 (do ((this 'ttxt) 'rawtxt it)
+									   ((this 'ttxt) 'txt "")))
+								  ((this 'ttxt) 'txt ((this 'ttxt) 'rawtxt))
+								  ))))
+   (view))
+(! obj::def image (img nil
+				  init (lambda (this src x- y- w h)
+						 (do (this 'img (new "Image"))
+						     (setat (this 'img) "src" src)
+							 (this 'x x-)
+							 (this 'y y-)
+							 (this 'width w)
+							 (this 'height h)
+							 (this 'name (sprint "<image \"" src "\">"))))
+				  draw (lambda (this context)
+						  ((-> context "drawImage") (this 'img)
+													(this 'x)
+													(this 'y)
+													(this 'width)
+													(this 'height))))
+   (view))
+
+(define inside (lambda (view x y)
+				 (and (< (view 'x) x) (< x (+ (view 'x) (view 'width)))
+					  (< (view 'y) y) (< y (+ (view 'y) (view 'height))))))
+
+; set views
+(define scene-controller nil)
+(! let ((rct1 (obj::new 'rect))
+		(txt1 (obj::new 'text))
+		(chr1 (obj::new 'image))
+		(ttxt1 (obj::new 'typing-text))
+		(prop1 (obj::new 'prompt))
+		)
+	(do ((txt1 'init) "Hello, World!" 250 60 "#000000")
+		(! push scene-controller txt1)
+
+		((ttxt1 'init) "animated string." 100 250 160)
+		(! push scene-controller ttxt1)
+
+		((prop1 'init) ["first."] 50 80 220 100 24 "#FFFFFF" "#000000")
+		((prop1 'add-text) "message\nclick me.")
+		((prop1 'add-text) "あめんぼあかいな\nあいうえお.")
+		((prop1 'add-text) "endprop.")
+		(! push scene-controller prop1)
+
+		((chr1 'init) "img.png" 10 20 200 247)
+	    (! push scene-controller chr1)
+
+		((rct1 'init) 20 30 200 247 "#3333AA")
+		(! push scene-controller rct1)
+		))
+
 ; define contents
 (define canvas ((-> (js "document") "getElementById") "main-canvas"))
 (define context ((-> canvas "getContext") "2d"))
 
-(define canvas::new-image
-  (lambda (path wid hig frm-thick)
-	(! let ((img (new "Image")))
-	   (do (setat img "src" path)
-		   ))))
+; set click events
+((-> canvas "addEventListener")
+ "click" (lambda (e) (! let ((cx (+ (-> (js "window") "scrollX") (-> e "clientX")))
+							 (cy (+ (-> (js "window") "scrollY") (-> e "clientY"))))
+						(do (print (sprint "debug: " cx ", " cy))
+						  (map (! fn (if (inside $0 cx cy)
+									   (! aif ($0 'click) (it cx cy))))
+							   scene-controller)))))
 
-(define scene-controller nil)
-;(! push scene-controller (image-object "img.png"))
-
-
-
-((-> canvas "addEventListener") "click"
-								(lambda (e)
-								  (print (sprint (-> e "clientX") ", "
-												 (-> e "clientY")))))
-
-; load images
-(define img (new "Image"))
-(setat img "src" "img.png")
-(define imgwid 200)
-(define imghig 247)
-(define frametick 5)
-
-; draw objects
-((-> context "beginPath"))
-
-((-> context "rect") 0 0 (+ imgwid (* 2 frametick)) (+ imghig (* 2 frametick)))
-((-> context "fill"))
-
-((-> context "drawImage") img frametick frametick imgwid imghig)
-
-((-> context "fillText") "hello, world!" 20 50)
-
-((-> context "closePath"))
+; set loop events
+(! letrec ((loop (lambda (ts)
+				   (do ((-> context "clearRect")
+						0 0 (-> canvas "width") (-> canvas "height"))
+					   (map (! fn (do (! aif ($0 'anime) (it ts))
+									  (($0 'draw) context)))
+							scene-controller)
+					   ((-> (js "window") "requestAnimationFrame") loop)))))
+   ((-> (js "window") "requestAnimationFrame") loop))
 
 ; TODO シーンクラス　レイアウト、イベント
-; TODO オブジェクトクラス　アニメーション、クリックイベント
 
