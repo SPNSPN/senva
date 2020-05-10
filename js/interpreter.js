@@ -652,6 +652,38 @@ function lload (path)
 	throw new Erro(ErroId.FileNotFound, `not found file: ${lprint(path)}`);
 }
 
+function lload_async (path)
+{
+	if (! (path instanceof String) && (typeof path) != "string")
+	{
+		throw new Erro(ErroId.Type, `cannot apply load to ${lprint(path)}`);
+	}
+	let pms = new Promise((resolve, reject) =>
+			{
+				let req = new XMLHttpRequest();
+				req.open("GET", `${location.origin}/${path}`, true);
+				req.onload = function ()
+				{
+					if (req.status == 200)
+					{
+						resolve(leval(lreadtop(req.responseText), genv));
+					}
+					else
+					{
+						reject(new Erro(ErroId.FileNotFound
+									, `not found file: ${lprint(path)}`));
+					}
+				};
+				req.onerror = function ()
+				{
+					reject(new Error(req.statusText));
+				};
+				req.send(null);
+			});
+	let res = 0;//await pms; // TODO
+	return res;
+}
+
 
 function expand_quasiquote (expr, env)
 {

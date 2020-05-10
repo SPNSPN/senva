@@ -1,7 +1,20 @@
 (load "senva/util.snv")
 
+; define contents
+(define window (js "window"))
+(define document (js "document"))
+(define canvas ((-> document "getElementById") "main-canvas"))
+(define context ((-> canvas "getContext") "2d"))
+
+; define sound
+(define prop-sound ((-> document "createElement") "audio"))
+(setat prop-sound "id" "click-sound")
+(setat prop-sound "src" "prop.wav")
+(setat prop-sound "volume" 0.2)
+(setat prop-sound "preload" "auto")
+
 ; define classes
-(! obj::def view (x 0 y 0 width 0 height 0 name ""
+(! obj::def view (x 0 y 0 width 0 height 0 name "" dragable nil
 				  click (lambda (this x y)
 						  (print (sprint "click: " (this 'name))))))
 (! obj::def rect (color "#000000"
@@ -40,7 +53,7 @@
 								(range 0 (length splited)))))))
    (view))
 (! obj::def typing-text (rawtxt ""
-						 prev 0
+						 prev -1
 						 wait 0
 						 init (lambda (this txt- wait-ms x- y- c f)
 								(do (this 'rawtxt txt-)
@@ -52,14 +65,21 @@
 									(this 'name
 										  (sprint "<typing-text \"" txt- "\">"))))
 						 anime (lambda (this ts)
-								 (if (and (< (length (this 'txt))
-											 (length (this 'rawtxt)))
-										  (< (this 'wait) (- ts (this 'prev))))
+								 (if (equal (this 'prev) -1)
+								   (this 'prev ts)
+								   (! let ((tsiz (int (/ (- ts (this 'prev))
+													   (this 'wait))))
+										 (tlen (length (this 'txt)))
+										 (rtlen (length (this 'rawtxt))))
+									(if (and (< tlen rtlen)
+											 (< 0 tsiz))
 								   (do (this 'prev ts)
-									   (this 'txt (sprint
-													(this 'txt)
-													(getat (this 'rawtxt)
-															(length (this 'txt)))))))))
+									   (this 'txt
+											 (sprint (this 'txt)
+													 (substr (this 'rawtxt)
+															 tlen
+															 (min rtlen
+																  (+ tlen tsiz)))))))))))
    (text))
 (! obj::def prompt (txts (queu)
 					term " ▼ "
@@ -93,7 +113,10 @@
 										   ((this 'ttxt) 'txt))
 								  (! aif (popqueu (this 'txts))
 									 (do ((this 'ttxt) 'rawtxt it)
-									   ((this 'ttxt) 'txt "")))
+									     ((this 'ttxt) 'txt "")
+										 ((this 'ttxt) 'prev -1)
+										 ((-> prop-sound "play"))
+										 ))
 								  ((this 'ttxt) 'txt ((this 'ttxt) 'rawtxt))
 								  ))))
    (view))
@@ -129,10 +152,10 @@
 	(do ((txt1 'init) "Hello, World!" 250 60 "#000000")
 		(! push scene-controller txt1)
 
-		((ttxt1 'init) "animated string." 100 250 160)
+		((ttxt1 'init) "animated string." 1400 250 160)
 		(! push scene-controller ttxt1)
 
-		((prop1 'init) ["first."] 50 80 220 100 24 "#FFFFFF" "#000000")
+		((prop1 'init) ["first."] 120 60 240 100 24 "#FFFFFF" "#555555")
 		((prop1 'add-text) "message\nclick me.")
 		((prop1 'add-text) "あめんぼあかいな\nあいうえお.")
 		((prop1 'add-text) "endprop.")
@@ -145,18 +168,15 @@
 		(! push scene-controller rct1)
 		))
 
-; define contents
-(define canvas ((-> (js "document") "getElementById") "main-canvas"))
-(define context ((-> canvas "getContext") "2d"))
-
 ; set click events
 ((-> canvas "addEventListener")
- "click" (lambda (e) (! let ((cx (+ (-> (js "window") "scrollX") (-> e "clientX")))
-							 (cy (+ (-> (js "window") "scrollY") (-> e "clientY"))))
-						(do (print (sprint "debug: " cx ", " cy))
-						  (map (! fn (if (inside $0 cx cy)
-									   (! aif ($0 'click) (it cx cy))))
-							   scene-controller)))))
+ "click" (lambda (e) (! let* ((cx (+ (-> window "scrollX") (-> e "clientX")))
+							  (cy (+ (-> window "scrollY") (-> e "clientY")))
+							  (celm (find-if (! fn (inside $0 cx cy))
+											(reverse scene-controller))))
+						(if celm (! aif (celm 'click) (it cx cy))))))
+
+; set drag events TODO
 
 ; set loop events
 (! letrec ((loop (lambda (ts)
@@ -165,8 +185,6 @@
 					   (map (! fn (do (! aif ($0 'anime) (it ts))
 									  (($0 'draw) context)))
 							scene-controller)
-					   ((-> (js "window") "requestAnimationFrame") loop)))))
-   ((-> (js "window") "requestAnimationFrame") loop))
-
-; TODO シーンクラス　レイアウト、イベント
+					   ((-> window "requestAnimationFrame") loop)))))
+   ((-> window "requestAnimationFrame") loop))
 
