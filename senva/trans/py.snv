@@ -1,5 +1,5 @@
 (load "senva/interpreter.snv")
-(load "senva/file.snv")
+;(load "senva/file.snv")
 
 (define trans::py::translated-self '())
 

@@ -1,6 +1,6 @@
 (load "senva/trans/py.snv")
 
-(define pyexec (py exec))
+(define pyexec (py "exec"))
 
 (define check
   (lambda (code succ)

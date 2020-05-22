@@ -480,9 +480,12 @@
 	 (lambda ()
 	   (getline-rec (queu)))))
 
-(define purelistp
-  (lambda (obj)
-	(not (cdr (last obj)))))
+(define purelistp (lambda (obj) (or (eq obj nil)
+								(and (not (atom obj))
+									 (not (cdr (last obj)))))))
+
+(define flatlistp (lambda (obj) (and (purelistp obj)
+									 (not (find-if (! fn (not (atom $0))) obj)))))
 
 (define uppercase-p
   (! let ((A (- (car (to-list "A")) 1))
@@ -620,6 +623,23 @@
 (define cdadr (lambda (o) (cdr (car (cdr o)))))
 (define cddar (lambda (o) (cdr (cdr (car o)))))
 (define cdddr (lambda (o) (cdr (cdr (cdr o)))))
+
+(define caaaar (lambda (o) (car (car (car (car o))))))
+(define caaadr (lambda (o) (car (car (car (cdr o))))))
+(define caadar (lambda (o) (car (car (cdr (car o))))))
+(define caaddr (lambda (o) (car (car (cdr (cdr o))))))
+(define cadaar (lambda (o) (car (cdr (car (car o))))))
+(define cadadr (lambda (o) (car (cdr (car (cdr o))))))
+(define caddar (lambda (o) (car (cdr (cdr (car o))))))
+(define cadddr (lambda (o) (car (cdr (cdr (cdr o))))))
+(define cdaaar (lambda (o) (cdr (car (car (car o))))))
+(define cdaadr (lambda (o) (cdr (car (car (cdr o))))))
+(define cdadar (lambda (o) (cdr (car (cdr (car o))))))
+(define cdaddr (lambda (o) (cdr (car (cdr (cdr o))))))
+(define cddaar (lambda (o) (cdr (cdr (car (car o))))))
+(define cddadr (lambda (o) (cdr (cdr (car (cdr o))))))
+(define cdddar (lambda (o) (cdr (cdr (cdr (car o))))))
+(define cddddr (lambda (o) (cdr (cdr (cdr (cdr o))))))
 
 (define merge (lambda (colla collb)
 				(reduce (! fn (if (find $1 $0) $0 (cons $1 $0)))

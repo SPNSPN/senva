@@ -1,3 +1,5 @@
+"use strict"
+
 function Symb (name_)
 {
 	this.name = name_;
@@ -92,8 +94,9 @@ class Func extends Function
 		return new Proxy(this
 				, {apply: function(target, thisArg, argumentsList)
 				{
-					return leval(target.body, cons(bind_tree(target.args
-									, vect2cons(argumentsList)), target.env));
+					return leval(target.body
+							, cons(bind_tree(target.args, vect2cons(argumentsList))
+								, target.env));
 				}});
 	}
 }
@@ -834,7 +837,7 @@ function take_string (code)
 
 function cons2vect (c)
 {
-	arr = [];
+	let arr = [];
 	for (let rest = c; ! atom(rest); rest = cdr(rest))
 	{
 		arr.push(car(rest));
@@ -939,7 +942,7 @@ function lread (code)
 		{
 			let co = find_co_bracket(code.slice(idx + 1));
 			tree = growth(tree, buff);
-			invec = lread(code.slice(idx + 1, idx + co + 1));
+			let invec = lread(code.slice(idx + 1, idx + co + 1));
 			if (buff[1])
 			{
 				tree = cons(l(new Symb("to-vect")
@@ -1150,6 +1153,15 @@ function tee (obj)
 {
 	console.log(lprint(obj));
 	return obj;
+}
+
+function compile (func)
+{
+	let args = func.args;
+	let body = func.body;
+	let env = func.env;
+
+	trans_js_encodetop(); // TODO
 }
 
 function attr (obj)
@@ -1389,6 +1401,7 @@ regist("getat", lgetat);
 regist("setat", lsetat);
 regist("processor", function () { return new Symb("javascript"); });
 regist("tee", tee);
+regist("compile", compile);
 regist("js", eval);
 regist("->", attr);
 regist("new", lnew);
@@ -1406,4 +1419,33 @@ regist("environment", new Spfm(function (env, args) { return env; }, "environmen
 regist("!", new Spfm(lsyntax, "!"));
 regist("do", new Spfm(ldo, "do"));
 regist("catch", new Spfm(lcatch, "catch"));
+
+function repl ()
+{
+	const readline = require("readline");
+	const rl = readline.createInterface(
+			{input: process.stdin, output: process.stdout});
+	//const ait = rl[Symbol.asyncIterator]();
+	while (true)
+	{
+		rl.question("senva> ", function (input)
+				{
+					try
+					{
+						console.log(lprint(leval(lreadtop(input), genv)));
+					}
+					catch (erro)
+					{
+						console.log(lprint(erro));
+					}
+				});
+	}
+	rl.close();
+}
+
+if (typeof module != "undefined")
+{
+	
+	module.exports = {repl};
+}
 

@@ -1,11 +1,17 @@
 ;simple_ga.snv
 js senva canvas game
+secdマシン語によるsenva実装
+secdマシン処理系
 ;cs call dll
 cs type.invokemember getattr setattr
 cs win app api voiceroid control
 kotlin classloader によるeval
 cpp call dll
 s式継続渡しによる複数プラットフォームの結合、python依存コードはpython上で処理し、java依存コードはjava上で実行する
+compile to jvm
+compile to lua vm
+compile to llvm
+compile to arm asm
 switchのプチコン4版senva
 pasoconmini mz-80c pc-8001 版
 web audio apiによる効果音生成器

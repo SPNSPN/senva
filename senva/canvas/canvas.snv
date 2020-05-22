@@ -13,10 +13,22 @@
 (setat prop-sound "volume" 0.2)
 (setat prop-sound "preload" "auto")
 
+(define inside (lambda (obj x y)
+				 (and (< (obj 'x) x)
+					  (< x (+ (obj 'x) (obj 'width)))
+					  (< (obj 'y) y)
+					  (< y (+ (obj 'y) (obj 'height))))))
+
 ; define classes
-(! obj::def view (x 0 y 0 width 0 height 0 name "" dragable nil
-				  click (lambda (this x y)
-						  (print (sprint "click: " (this 'name))))))
+(! obj::def view (x 0 y 0 width 0 height 0 name ""))
+(! obj::def clickable (click (lambda (this x y)
+							   (print (sprint "click: " (this 'name)))))
+   (view))
+(! obj::def dragable (draging nil ofst-x 0 ofst-y 0
+					  drag (lambda (this x y)
+							 (do (this 'x (- x (this 'ofst-x)))
+							     (this 'y (- y (this 'ofst-y))))))
+   (view))
 (! obj::def rect (color "#000000"
 				  init (lambda (this x- y- w h c)
 						 (do (this 'x x-)
@@ -31,6 +43,7 @@
 							 ((-> context "fillRect") (this 'x) (this 'y)
 												  (this 'width) (this 'height)))))
    (view))
+(! obj::def drect () (dragable rect))
 (! obj::def text (txt ""
 				  color "#000000"
 				  font "10px sans-serif"
@@ -119,11 +132,12 @@
 										 ))
 								  ((this 'ttxt) 'txt ((this 'ttxt) 'rawtxt))
 								  ))))
-   (view))
+   (clickable))
 (! obj::def image (img nil
 				  init (lambda (this src x- y- w h)
 						 (do (this 'img (new "Image"))
 						     (setat (this 'img) "src" src)
+							 (setat (-> (this 'img) "style") "position" "absolute")
 							 (this 'x x-)
 							 (this 'y y-)
 							 (this 'width w)
@@ -137,13 +151,10 @@
 													(this 'height))))
    (view))
 
-(define inside (lambda (view x y)
-				 (and (< (view 'x) x) (< x (+ (view 'x) (view 'width)))
-					  (< (view 'y) y) (< y (+ (view 'y) (view 'height))))))
-
 ; set views
 (define scene-controller nil)
 (! let ((rct1 (obj::new 'rect))
+		(drct1 (obj::new 'drect))
 		(txt1 (obj::new 'text))
 		(chr1 (obj::new 'image))
 		(ttxt1 (obj::new 'typing-text))
@@ -164,27 +175,65 @@
 		((chr1 'init) "img.png" 10 20 200 247)
 	    (! push scene-controller chr1)
 
+		((drct1 'init) 200 100 200 80 "#AA3333")
+		(! push scene-controller drct1)
+
 		((rct1 'init) 20 30 200 247 "#3333AA")
 		(! push scene-controller rct1)
 		))
 
+(define canvas-ofst ((-> canvas "getBoundingClientRect")))
+
 ; set click events
 ((-> canvas "addEventListener")
- "click" (lambda (e) (! let* ((cx (+ (-> window "scrollX") (-> e "clientX")))
-							  (cy (+ (-> window "scrollY") (-> e "clientY")))
-							  (celm (find-if (! fn (inside $0 cx cy))
+ "click" (lambda (e) (! let* ((cx (- (+ (-> window "scrollX") (-> e "clientX"))
+									 (-> canvas-ofst "left")))
+							  (cy (- (+ (-> window "scrollY") (-> e "clientY"))
+									 (-> canvas-ofst "top")))
+							  (celm (find-if (! fn (and (obj::isa $0 'clickable)
+														(inside $0 cx cy)))
 											(reverse scene-controller))))
-						(if celm (! aif (celm 'click) (it cx cy))))))
+						(if celm ((celm 'click) cx cy)))))
 
-; set drag events TODO
+; set ondown events
+(! let ((ondown (lambda (e)
+				  (! let* ((cx (- (+ (-> window "scrollX") (-> e "clientX"))
+								  (-> canvas-ofst "left")))
+						   (cy (- (+ (-> window "scrollY") (-> e "clientY"))
+								  (-> canvas-ofst "top")))
+						   (celm (find-if (! fn (and (obj::isa $0 'dragable)
+													 (inside $0 cx cy)))
+											(reverse scene-controller))))
+						(if celm (do (celm 'draging t)
+								     (celm 'ofst-x (- cx (celm 'x)))
+									 (celm 'ofst-y (- cy (celm 'y))))))))
+		(onup (lambda (e) (map (! fn (if (obj::isa $0 'dragable) ($0 'draging nil)))
+							   scene-controller)))
+		(move (lambda (e)
+				(! let* ((cx (- (+ (-> window "scrollX") (-> e "clientX"))
+								(-> canvas-ofst "left")))
+						 (cy (- (+ (-> window "scrollY") (-> e "clientY"))
+								(-> canvas-ofst "top")))
+						 (celm (find-if (! fn (and (obj::isa $0 'dragable)
+												   ($0 'draging)))
+										scene-controller)))
+						(if celm ((celm 'drag) cx cy))))))
+   (do ((-> canvas "addEventListener") "mousedown" ondown)
+	   ((-> canvas "addEventListener") "touchstart" ondown)
+	   ((-> canvas "addEventListener") "mouseup" onup)
+	   ((-> canvas "addEventListener") "touchend" onup)
+	   ((-> canvas "addEventListener") "mousemove" move)
+	   ((-> canvas "addEventListener") "touchmove" move)))
 
 ; set loop events
 (! letrec ((loop (lambda (ts)
-				   (do ((-> context "clearRect")
-						0 0 (-> canvas "width") (-> canvas "height"))
+				   (do ((-> context "clearRect") 0 0 (-> canvas "width")
+												 (-> canvas "height"))
 					   (map (! fn (do (! aif ($0 'anime) (it ts))
-									  (($0 'draw) context)))
+									(($0 'draw) context)))
 							scene-controller)
+					   ((-> context "clearRect") 0 0 (-> canvas "width")
+												     (-> canvas "height"))
 					   ((-> window "requestAnimationFrame") loop)))))
    ((-> window "requestAnimationFrame") loop))
 

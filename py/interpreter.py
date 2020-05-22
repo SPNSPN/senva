@@ -1152,9 +1152,9 @@ def repl (read_dbg):
 		sys.stdout.write(prompt)
 		try:
 			if read_dbg:
-				print(lprint(cons(Symb("do"), lread(input()))))
+				print(lprint(lreadtop(input())))
 			else:
-				print(lprint(leval(cons(Symb("do"), lread(input())), genv)))
+				print(lprint(leval(lreadtop(input()), genv)))
 		except EOFError:
 			print("")
 			break
