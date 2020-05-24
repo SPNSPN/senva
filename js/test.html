@@ -15,7 +15,12 @@ const CHECK = function (code, succ)
 const ECHECK = function (code, ceid, succ)
 {
 	check_list.push(["echeck", code, ceid, succ]);
-}
+};
+
+const CMPCHECK = function (code, succ)
+{
+	check_list.push(["cmpcheck", code, succ]);
+};
 
 const do_check = function ()
 {
@@ -74,6 +79,31 @@ const do_check = function ()
 				continue;
 			}
 			throw new Erro(4444, "not got erro!");
+		}
+		else if ("cmpcheck" == check_list[idx][0])
+		{
+			let code = check_list[idx][1];
+			let succ = check_list[idx][2];
+			try
+			{
+				let s = lprint(leval(lreadtop(code), genv));
+				document.getElementById("senva-test").insertAdjacentHTML("beforeend"
+						, `<li>CHECK: "${code}" -> ${s}</li>`);
+				if (succ && s != succ)
+				{
+					document.getElementById(
+							"senva-test").insertAdjacentHTML("beforeend"
+								, `<li>Fail CHECK.</li>`);
+					break;
+				}
+			}
+			catch (erro)
+			{
+				console.error(erro);
+				document.getElementById("senva-test").insertAdjacentHTML("beforeend"
+						, `<li>CHECK: "${code}" -> ${lprint(erro)}</li><li>Fail CHECK.</li>`);
+				break;
+			}
 		}
 	}
 };

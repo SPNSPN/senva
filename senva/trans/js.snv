@@ -24,64 +24,185 @@
 						   (list (list acc tree))
 						   (append (seekform (car tree) (cons 'car acc))
 								   (if (cdr tree)
-									 (seekform (cdr tree) (cons 'cdr acc))))))))
+									 (seekform (cdr tree) (cons 'cdr acc)))))))
+			 (shiftargs (lambda (rargs cnt)
+						 (if rargs
+						   (if (atom rargs)
+							 (list (sprint "let " rargs
+										   " = vect2cons(__sys_args.slice(" cnt "))"))
+							 (append (map (lambda ((accessor sym))
+											(sprint "let " sym " = "
+													(join (map (! fn (sprint $0 "("))
+															   accessor) "")
+													"__sys_args[" cnt "]"
+													(join (times (length accessor) ")") "")))
+										  (seekform (car rargs)))
+									 (shiftargs (cdr rargs) (+ cnt 1))))))))
    (lambda (args)
 	 (if (atom args)
 	   (list (sprint "let " args " = vect2cons(Array.from(arguments))"))
 	   (cons "let __sys_args = Array.from(arguments)"
-				 (map (lambda (arg idx)
-						(map (lambda ((accessor sym))
-							   (sprint "let " sym " = "
-									   (join (map (! fn (sprint $0 "(")) accessor) "")
-									   "__sys_args[" idx "]"
-									   (join (times (length accessor) ")") "")))
-								 (seekform arg)))
-					  args (range 0 (length args)))))))) ; TODO
+			 (shiftargs args 0))))))
+
+(define trans::js::env ())
+(define trans::js::regist
+  (lambda (sym form)
+	`(! push trans::js::env (cons ',sym (lambda (args) ,form)))))
+
+(define trans::js::regist-func
+  (lambda (sym fsym)
+	`(! push trans::js::env
+		(cons ',sym (lambda (args)
+					  (sprint ',fsym "(" (trans::js::array args) ")"))))))
+
+(define trans::js::regist-op
+  (lambda (sym op)
+	`(! push trans::js::env
+	   (cons ',sym
+			  (lambda (args)
+				(sprint "(" (join (map trans::js::encode args) ,op) ")"))))))
+
+(! trans::js::regist if (sprint "(" (trans::js::encode (car args)) " !== nil)"
+						" ? " (trans::js::encode (cadr args))
+						" : " (trans::js::encode (caddr args))))
+
+(! trans::js::regist quote (trans::js::quote-put (car args)))
+
+(! trans::js::regist lambda (if (flatlistp (car args))
+					  (sprint "(function ("
+							  (trans::js::array (car args)) ") {"
+							  "return " (trans::js::encode (cadr args)) "})")
+					  (sprint "(function () {"
+							  (join (map (! fn (sprint $0 "; "))
+										 (trans::js::bind-args (car args))) "")
+							  "return " (trans::js::encode (cadr args)) "})")))
+
+(! trans::js::regist ! (trans::js::encode (senva::expand-syntax-proc
+									(car args) (cdr args) (environment))))
+
+(! trans::js::regist define (sprint "(function () {"
+							(car args) " = " (trans::js::encode (cadr args))
+							"; return " (trans::js::quote-put (car args)) "})()"))
+
+(! trans::js::regist setq (sprint "(function () {"
+						  (car args) " = " (trans::js::encode (cadr args))
+						  "; return " (car args) "})()"))
+
+(! trans::js::regist do (! let ((jscs (map trans::js::encode args)))
+						   (sprint "(function () {"
+								   (join (rcons (tail-drop jscs 1)
+												(sprint "return " (back jscs)))
+										 "; ") "})()")))
+
+;(! trans::js::regist and (sprint "(" (join (map trans::js::encode args) " && ") ")"))
+
+;(! trans::js::regist or (sprint "(" (join (map trans::js::encode args) " || ") ")"))
+
+(! trans::js::regist quasiquote (trans::js::quote-put
+						  (senva::expand-quasiquote-proc (car args) (environment))))
+
+(! trans::js::regist catch (sprint "(function () {try {return "
+						   (trans::js::encode (cadr args))
+						   "} catch (erro) {return "
+						   (trans::js::encode (car args))
+						   "(erro.eid, erro.estr)}})()"))
+
+(! trans::js::regist environment "genv") ; TODO
+
+(! trans::js::regist js (car args))
+
+(! trans::js::regist new (sprint "new " (car args)
+							   "(" (trans::js::array (cdr args)) ")"))
+
+(! trans::js::regist -> (sprint (join (cons (trans::js::encode (car args))
+											(cdr args)) ".")))
+
+(! trans::js::regist js "new Symb(\"javascript\")")
+
+(! trans::js::regist-func list l)
+(! trans::js::regist-func int lint)
+(! trans::js::regist-func float lfloat)
+(! trans::js::regist-func to-list to_list)
+(! trans::js::regist-func to-vect to_vect)
+(! trans::js::regist-func to-queu to_queu)
+(! trans::js::regist-func apply lapply)
+(! trans::js::regist-func throw lthrow)
+(! trans::js::regist-func empty lempty)
+(! trans::js::regist-func print llprint)
+(! trans::js::regist-func prin llprin)
+(! trans::js::regist-func type ltype)
+(! trans::js::regist-func load lload)
+(! trans::js::regist-func getat lgetat)
+(! trans::js::regist-func setat lsetat)
+
+(! trans::js::regist-op and " && ")
+(! trans::js::regist-op or " || ")
+(! trans::js::regist-op + " + ")
+(! trans::js::regist-op - " - ")
+(! trans::js::regist-op * " * ")
+(! trans::js::regist-op / " / ")
+(! trans::js::regist-op % " % ")
+
+(! trans::js::regist-func > gt)
+(! trans::js::regist-func < lt)
+(! trans::js::regist-func >= ge)
+(! trans::js::regist-func <= le)
 
 (define trans::js::encode
   (lambda (expr)
 	(if (atom expr)
 	  (trans::js::put expr)
 	  (if (eq '<symb> (type (car expr)))
-		(! case (car expr)
-		   ('if (sprint (trans::js::encode (cadr expr))
-						" ? " (trans::js::encode (caddr expr))
-						" : " (trans::js::encode (cadddr expr)))
-			'quote (trans::js::quote-put (cadr expr))
-			'lambda (if (flatlistp (cadr expr))
-					  (sprint "(function ("
-							  (trans::js::array (cadr expr)) ") {"
-							  "return " (trans::js::encode (caddr expr)) "})")
-					  (sprint "(function () {"
-							  (join (map (! fn (sprint $0 "; "))
-										 (trans::js::bind-args (cadr expr))) "")
-							  "return " (trans::js::encode (caddr expr)) "})"))
-			'! (trans::js::encode (senva::expand-syntax-proc
-									(cadr expr) (cddr expr) (environment)))
-			'define (sprint "(function () {"
-							(cadr expr) " = " (trans::js::encode (caddr expr))
-							"; return " (trans::js::quote-put (cadr expr)) "})()")
-			'setq (sprint "(function () {"
-						  (cadr expr) " = " (trans::js::encode (caddr expr))
-						  "; return " (cadr expr) "})()")
-			'do (! let ((jscs (map trans::js::encode (cdr expr))))
-				   (sprint "(function () {" (join (tail-drop jscs 1) "; ")
-						   "; return " (back jscs) "})()"))
-			'and (sprint "(" (join (map trans::js::encode (cdr expr)) " && ") ")")
-			'or (sprint "(" (join (map trans::js::encode (cdr expr)) " || ") ")")
-			'quasiquote (trans::js::quote-put
-						  (senva::expand-quasiquote-proc (cadr expr) (environment)))
-			'catch (sprint "(function () {try {return "
-						   (trans::js::encode (caddr expr))
-						   "} catch (erro) {return "
-						   (trans::js::encode (cadr expr)) "(erro.eid, erro.estr)}})()")
-			'environment "genv" ; TODO
-			'js (cadr expr)
-			'new (sprint "new " (cadr expr) "(" (trans::js::array (cdr expr)) ")")
-			'-> (sprint (join (cdr expr) "."))
-			t (sprint (car expr) "(" (trans::js::array (cdr expr)) ")")))
+		(! aif (assocdr trans::js::env (car expr))
+		   (it (cdr expr))
+		   (sprint (car expr) "(" (trans::js::array (cdr expr)) ")"))
 		(sprint "(" (trans::js::encode (car expr)) ")"
 				"(" (trans::js::array (cdr expr)) ")")))))
+
+;(define trans::js::encode
+;  (lambda (expr)
+;	(if (atom expr)
+;	  (trans::js::put expr)
+;	  (if (eq '<symb> (type (car expr)))
+;		(! case (car expr)
+;		   ('if (sprint (trans::js::encode (cadr expr))
+;						" ? " (trans::js::encode (caddr expr))
+;						" : " (trans::js::encode (cadddr expr)))
+;			'quote (trans::js::quote-put (cadr expr))
+;			'lambda (if (flatlistp (cadr expr))
+;					  (sprint "(function ("
+;							  (trans::js::array (cadr expr)) ") {"
+;							  "return " (trans::js::encode (caddr expr)) "})")
+;					  (sprint "(function () {"
+;							  (join (map (! fn (sprint $0 "; "))
+;										 (trans::js::bind-args (cadr expr))) "")
+;							  "return " (trans::js::encode (caddr expr)) "})"))
+;			'! (trans::js::encode (senva::expand-syntax-proc
+;									(cadr expr) (cddr expr) (environment)))
+;			'define (sprint "(function () {"
+;							(cadr expr) " = " (trans::js::encode (caddr expr))
+;							"; return " (trans::js::quote-put (cadr expr)) "})()")
+;			'setq (sprint "(function () {"
+;						  (cadr expr) " = " (trans::js::encode (caddr expr))
+;						  "; return " (cadr expr) "})()")
+;			'do (! let ((jscs (map trans::js::encode (cdr expr))))
+;				   (sprint "(function () {" (join (tail-drop jscs 1) "; ")
+;						   "; return " (back jscs) "})()"))
+;			'and (sprint "(" (join (map trans::js::encode (cdr expr)) " && ") ")")
+;			'or (sprint "(" (join (map trans::js::encode (cdr expr)) " || ") ")")
+;			'quasiquote (trans::js::quote-put
+;						  (senva::expand-quasiquote-proc (cadr expr) (environment)))
+;			'catch (sprint "(function () {try {return "
+;						   (trans::js::encode (caddr expr))
+;						   "} catch (erro) {return "
+;						   (trans::js::encode (cadr expr)) "(erro.eid, erro.estr)}})()")
+;			'environment "genv" ; TODO
+;			'js (cadr expr)
+;			'new (sprint "new " (cadr expr) "(" (trans::js::array (cdr expr)) ")")
+;			'-> (sprint (join (cdr expr) "."))
+;			t (sprint (car expr) "(" (trans::js::array (cdr expr)) ")")))
+;		(sprint "(" (trans::js::encode (car expr)) ")"
+;				"(" (trans::js::array (cdr expr)) ")")))))
 
 (define trans::js::seekdefine
   (lambda (expr)

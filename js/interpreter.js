@@ -7,7 +7,7 @@ function Symb (name_)
 
 const nil = false;
 const NIL = nil;
-const t = new Symb("T");
+const t = true;//new Symb("T");
 const T = t;
 
 function Cons (a, d)
@@ -645,8 +645,12 @@ function lload (path)
 	{
 		throw new Erro(ErroId.Type, `cannot apply load to ${lprint(path)}`);
 	}
+
 	let req = new XMLHttpRequest();	
 	req.open("GET", `${location.origin}/${path}`, false);
+	req.setRequestHeader("Pragma", "no-cache");
+	req.setRequestHeader("Cache-Control", "no-cache");
+	req.setRequestHeader("If-Modified-Since", "Thu, 01 Jun 1970 00:00:00 GMT");
 	req.send(null);
 	if (req.status == 200)
 	{
@@ -1161,7 +1165,11 @@ function compile (func)
 	let body = func.body;
 	let env = func.env;
 
-	trans_js_encodetop(); // TODO
+	lload("senva/trans/js.snv");
+	return leval(l(new Symb("trans::js::encode")
+			, l(new Symb("quote")
+				, l(new Symb("lambda"), func.args, func.body))), genv);
+	// TODO trans::js::encodeを事前コンパイルしておき、js上で実行するようにする
 }
 
 function attr (obj)
@@ -1309,6 +1317,7 @@ function lprint_rec (expr, dup, rec)
 	let idx = findidx_eq(expr, dup);
 	if (rec && idx !== nil) { return `\$${idx}`; }
 	if (expr === nil) { return "NIL"; }
+	if (expr === t) { return "T"; }
 	if (expr instanceof Cons) { return printcons_rec(expr, dup, true); }
 	if (expr instanceof Symb) { return expr.name; }
 	if (expr instanceof String
@@ -1420,32 +1429,21 @@ regist("!", new Spfm(lsyntax, "!"));
 regist("do", new Spfm(ldo, "do"));
 regist("catch", new Spfm(lcatch, "catch"));
 
-function repl ()
-{
-	const readline = require("readline");
-	const rl = readline.createInterface(
-			{input: process.stdin, output: process.stdout});
-	//const ait = rl[Symbol.asyncIterator]();
-	while (true)
-	{
-		rl.question("senva> ", function (input)
-				{
-					try
-					{
-						console.log(lprint(leval(lreadtop(input), genv)));
-					}
-					catch (erro)
-					{
-						console.log(lprint(erro));
-					}
-				});
-	}
-	rl.close();
-}
-
-if (typeof module != "undefined")
-{
-	
-	module.exports = {repl};
-}
+// node.js向けexport処理
+(function (exports)
+ {
+ 	"use strict";
+	exports.Symb = Symb;
+	exports.Erro = Erro;
+	exports.ErroId = ErroId;
+	exports.nil = nil;
+	exports.t = t;
+	exports.genv = genv;
+	exports.rplacd = rplacd;
+	exports.assoc = assoc;
+	exports.car = car;
+	exports.lreadtop = lreadtop;
+	exports.leval = leval;
+	exports.lprint = lprint;
+ })(typeof exports == "undefined" ? this.share = {} : exports);
 

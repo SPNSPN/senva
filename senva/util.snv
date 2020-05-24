@@ -641,6 +641,8 @@
 (define cdddar (lambda (o) (cdr (cdr (cdr (car o))))))
 (define cddddr (lambda (o) (cdr (cdr (cdr (cdr o))))))
 
+(define rcons (lambda (coll e) (append coll (list e))))
+
 (define merge (lambda (colla collb)
 				(reduce (! fn (if (find $1 $0) $0 (cons $1 $0)))
 						(reverse colla) collb)))
