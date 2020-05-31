@@ -5,12 +5,24 @@ using System.Linq;
 using System.Text;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Runtime.InteropServices;
 
 namespace Senva
 {
 
 class Interpreter
 {
+	[DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
+	internal static extern IntPtr LoadLibrary (string lpFileName);
+
+	[DllImport("kernel32", SetLastError = true)]
+	internal static extern bool FreeLibrary (IntPtr hModule);
+
+	[DllImport("kernel32", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = false)]
+	internal static extern IntPtr GetProcAddress (IntPtr hModule, string  lpProcName);
+
+	public T dynamic_cast<T> (object obj, T ct) { return (T)obj; }
+
 	public interface ICons
 	{
 		object car ();
@@ -107,7 +119,11 @@ class Interpreter
 				entr = queu.entr;
 				exit = queu.exit;
 			}
-			else { rplacd(entr as Cons, queu.exit); }
+			else if (! (queu.exit is Nil))
+			{
+				rplacd(entr as Cons, queu.exit);
+				entr = queu.entr;
+			}
 			return this;
 		}
 	}
@@ -182,6 +198,7 @@ class Interpreter
 
 	static public Nil nil;
 	static public Symb t;
+
 	static private Dictionary<char, char> escape_char_table;
 
 	public Cons genv;
@@ -204,6 +221,8 @@ class Interpreter
 			, {'0', '\0'}
 		};
 	}
+
+	public delegate object debug_del (object arg);
 
 	public Interpreter ()
 	{
@@ -272,10 +291,32 @@ class Interpreter
 		regist_subr1<object, object>(genv, "tee", tee);
 		regist(genv, "exit", new Subr(
 					(ICons args) => { Environment.Exit(0); return nil; }, "exit"));
-		regist_subr1<string, Assembly>(genv, "dll"
-				, (string path) => { return Assembly.LoadFrom(path); });
-		regist_subr0<Assembly[]>(genv, "asms"
-				, () => { return AppDomain.CurrentDomain.GetAssemblies(); });
+		regist_subr1<string, IntPtr>(genv, "loaddll"
+				, (string path) => { return LoadLibrary(path); });
+		regist_subr1<IntPtr, object>(genv, "freedll"
+				, (IntPtr dll) => { return FreeLibrary(dll); });
+		regist_subr1<string, object>(genv, "gettype"
+				, (string typename) =>
+				{
+					Type typ = Type.GetType(typename);
+					if (typ == null) { return nil; }
+					return typ;
+				});
+		Func <int, int> testfn = (int a) => { return a + 1; }; // debug
+		Console.WriteLine("debug: {0}", testfn.GetType());
+		regist_subr3<IntPtr, string, Type, object>(genv, "getproc"
+				, (IntPtr dll, string procname, Type proctype) =>
+				{
+					return dynamic_cast(
+							Marshal.GetDelegateForFunctionPointer(
+								GetProcAddress(dll, procname), proctype)
+							, proctype);
+				});
+		regist_subr2<object, string, object>(genv, "->", lattr);
+		regist_subr1<Type, object>(genv, "new"
+				, (Type typ) => { return System.Activator.CreateInstance(typ); });
+//		regist_subr0<Assembly[]>(genv, "asms"
+//				, () => { return AppDomain.CurrentDomain.GetAssemblies(); });
 
 		regist(genv, "quote", new Spfm((ICons env, ICons args)
 					=> { return car(args); }, "quote"));
@@ -846,6 +887,38 @@ class Interpreter
 		return obj;
 	}
 
+	static public object lattr (object obj, string name)
+	{
+		MemberInfo[] mis = obj.GetType().GetMember(name);
+		return mis.Select<MemberInfo, object>((mi) =>
+				{
+					Console.WriteLine(string.Format("debug: typ: {0}", mi.MemberType));
+					if (mi.MemberType == MemberTypes.Event)
+				   	{
+						return obj.GetType().GetEvent(name);
+					}
+					if (mi.MemberType == MemberTypes.Field)
+					{
+						return obj.GetType().GetField(name);
+					}
+					if (mi.MemberType == MemberTypes.Method)
+					{
+						// TODO 関数型により同名メソッド呼び分ける
+						return new Subr((sargs) => { return obj.GetType().Getmethod(name); }, name);
+						return obj.GetType().GetMethod(name);
+					}
+					if (mi.MemberType == MemberTypes.NestedType)
+					{
+						return obj.GetType().GetNestedType(name);
+					}
+					if (mi.MemberType == MemberTypes.Property)
+					{
+						return obj.GetType().GetProperty(name).GetValue(obj);
+					}
+					return nil;
+				}).ToArray();
+	}
+
 	static public object nth (ICons c, long n)
 	{
 		object rest = c;
@@ -1313,6 +1386,9 @@ class Interpreter
 						, (proc as LFunc).env));
 		}
 		if (proc is Subr) { return (proc as Subr).proc(args); }
+		// TODO c# invoke()
+		if (proc is Delegate) { return (proc as Delegate).DynamicInvoke(cons2vect(args)); }
+		if (proc is MethodInfo) { return (proc as MethodInfo).Invoke(null, cons2vect(args)); }
 		throw new Erro(ErroId.UnCallable
 				, string.Format("{0} is not callable.", lprint(proc)));
 	}
