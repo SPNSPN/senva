@@ -1342,6 +1342,8 @@ int main (int argc, char **argv)
 	ITP_CHECK("(concqueu (queu 2 5 8) (queu 3 6 9))", "/(2 5 8 3 6 9)/");
 	ITP_CHECK("(concqueu (queu 1 4 7) (queu))", "/(1 4 7)/");
 	ITP_CHECK("(concqueu (queu) (queu 42))", "/(42)/");
+	ITP_CHECK("(pushqueu (concqueu (queu 1) (queu)) 2)", "/(1 2)/");
+	ITP_CHECK("(pushqueu (concqueu (queu) (queu 1)) 2)", "/(1 2)/");
 	ITP_CHECK("(last (queu 1 2 3))", "(3)");
 	ITP_CHECK("(to-list \"hello\")", "(104 101 108 108 111)");
 	ITP_CHECK("(to-list 'hello)", "(104 101 108 108 111)");

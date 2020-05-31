@@ -65,8 +65,9 @@ class Queu:
 	def concat (self, queu):
 		if self.entr is nil:
 			self = queu
-		elif isinstance(queu, Queu):
+		elif isinstance(queu, Queu) and (not queu.exit is nil):
 			rplacd(self.entr, queu.exit)
+			self.entr = queu.entr
 		return self
 	
 	def __eq__ (self, a):

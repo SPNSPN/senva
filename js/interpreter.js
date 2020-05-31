@@ -61,9 +61,10 @@ function Queu ()
 			this.entr = queu.entr;
 			this.exit = queu.exit;
 		}
-		else if (queu instanceof Queu)
+		else if ((queu instanceof Queu) && queu.exit !== nil)
 		{
 			rplacd(this.entr, queu.exit);
+			this.entr = queu.entr;
 		}
 		return this;
 	};
@@ -556,6 +557,20 @@ function ltype (o)
 	if (Array.isArray(o)) { return new Symb("<vect>"); }
 	if (o instanceof Queu) { return new Symb("<queu>"); }
 	return new Symb(`<js ${typeof o}>`);
+}
+
+function safecar (o)
+{
+	if (o instanceof Cons) { return o.car; }
+	if (o === nil) { return nil; }
+	throw new Erro(ErroId.Type, `cannot apply car to ${lprint(o)}`);
+}
+
+function safecdr (o)
+{
+	if (o instanceof Cons) { return o.cdr; }
+	if (o === nil) { return nil; }
+	throw new Erro(ErroId.Type, `cannot apply cdr to ${lprint(o)}`);
 }
 
 
@@ -1114,7 +1129,7 @@ function lcatch (env, args)
 		{
 			return lapply(excep, l(erro.eid, leval(erro.estr, env)));
 		}
-		throw erro;
+		return lapply(excep, l(erro.name, erro.message));
 	}
 }
 

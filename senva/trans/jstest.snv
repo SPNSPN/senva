@@ -14,10 +14,10 @@
 	(do (prin (sprint "ECHECK: \"" code "\" -> "))
 	  (catch (lambda (eid estr)
 				 (do (print "<Erro \"" estr "\">")
-				   (if (and (equal ceid eid) (equal estr succ))
+				   (if (and (equal ceid eid) (equal succ estr))
 					 nil
-					 (throw 444 (sprint "expect code: " ceid
-										", but got code: " eid)))))
+					 (throw 444 (sprint "expect code: id:" ceid ", mess:" succ
+										", but got code: id:" eid ", mess:" estr)))))
 		   (! let* ((jsc (trans::js::encodetop (senva::readtop code))))
 			  (do (print jsc)
 				(print (js jsc))
@@ -143,18 +143,19 @@
 (check "(or nil 'a '(4))" 'a)
 (check "(or nil 1 (throw 1 \"E\"))" 1)
 (check "(or)" nil)
-(echeck "ffoo" senva::error::symbol "ffoo is not defined.")
+(echeck "ffoo" "ReferenceError" "ffoo is not defined")
 (echeck "(" senva::error::syntax "not found close parenthesis.")
 (echeck ")" senva::error::syntax "found excess close parenthesis.")
 (echeck "(to-list 3)" senva::error::type "cannot cast 3 to ConsT.")
 (echeck "(to-vect 33)" senva::error::type "cannot cast 33 to VectT.")
 (echeck "(symbol 33)" senva::error::type "cannot cast 33 to SymbT.")
 (echeck "(to-queu 33)" senva::error::type "cannot cast 33 to QueuT.")
-(echeck "(setq ffoo 33)" senva::error::symbol "ffoo is not defined.")
+; on js compiler, setval to undefined symbol is not error.
+;(echeck "(setq ffoo 33)" senva::error::symbol "ffoo is not defined.")
 (echeck "\"" senva::error::syntax "not found close double quote.")
 (echeck "((lambda ((a . b)) a) 1)"
 		senva::error::type "cannot bind: ((a . b)) and (1)")
-(echeck "(3 1)" senva::error::un-callable "3 is not callable.")
+(echeck "(3 1)" "TypeError" "3 is not a function") ; TODO
 (echeck "(+ 3 'a)" senva::error::type "cannot add (3 a)")
 (echeck "(- () 2)" senva::error::type "cannot sub (NIL 2)")
 (echeck "(* [] 2)" senva::error::type "cannot mul ([] 2)")

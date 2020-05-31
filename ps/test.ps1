@@ -123,6 +123,8 @@ check "(popqueu (pushqueu (pushqueu (pushqueu (queu) 5) 1) 0))" 5;
 check "(concqueu (queu 2 5 8) (queu 3 6 9))" (queu 2 5 8 3 6 9);
 check "(concqueu (queu 1 4 7) (queu))" (queu 1 4 7);
 check "(concqueu (queu) (queu 42))" (queu 42);
+check "(pushqueu (concqueu (queu 1) (queu)) 2)" (queu 1 2);
+check "(pushqueu (concqueu (queu) (queu 1)) 2)" (queu 1 2);
 check "(last (queu 1 2 3))" (list 3);
 check "(to-list `"hello`")" (list 104 101 108 108 111);
 check "(to-list 'hello)" (list 104 101 108 108 111);

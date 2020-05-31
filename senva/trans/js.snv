@@ -1,9 +1,17 @@
 (load "senva/interpreter.snv")
 
+(define trans::js::escape
+  (! let ((dqt (car (to-list "\"")))
+		  (esc (car (to-list "\\"))))
+	 (lambda (str) (string (reduce (! fn (if (or (equal dqt $1) (equal esc $1))
+										   (cons esc (cons $1 $0))
+										   (cons $1 $0)))
+								   (nreverse (to-list str)) ())))))
+
 (define trans::js::put
   (lambda (obj)
 	(if (eq '<strn> (type obj))
-	  (sprint "\"" obj "\"")
+	  (sprint "\"" (trans::js::escape obj) "\"")
 	  (sprint obj))))
 
 (define trans::js::quote-put
@@ -22,9 +30,9 @@
   (! letrec ((seekform (lambda (tree acc)
 						 (if (atom tree)
 						   (list (list acc tree))
-						   (append (seekform (car tree) (cons 'car acc))
+						   (append (seekform (car tree) (cons 'safecar acc))
 								   (if (cdr tree)
-									 (seekform (cdr tree) (cons 'cdr acc)))))))
+									 (seekform (cdr tree) (cons 'safecdr acc)))))))
 			 (shiftargs (lambda (rargs cnt)
 						 (if rargs
 						   (if (atom rargs)
@@ -35,7 +43,8 @@
 													(join (map (! fn (sprint $0 "("))
 															   accessor) "")
 													"__sys_args[" cnt "]"
-													(join (times (length accessor) ")") "")))
+													(join (times (length accessor)
+																 ")") "")))
 										  (seekform (car rargs)))
 									 (shiftargs (cdr rargs) (+ cnt 1))))))))
    (lambda (args)
@@ -56,11 +65,13 @@
 					  (sprint ',fsym "(" (trans::js::array args) ")"))))))
 
 (define trans::js::regist-op
-  (lambda (sym op)
+  (lambda (sym op default)
 	`(! push trans::js::env
 	   (cons ',sym
 			  (lambda (args)
-				(sprint "(" (join (map trans::js::encode args) ,op) ")"))))))
+				(if (> 1 (length args))
+				  (sprint ,default)
+				  (sprint "(" (join (map trans::js::encode args) ,op) ")")))))))
 
 (! trans::js::regist if (sprint "(" (trans::js::encode (car args)) " !== nil)"
 						" ? " (trans::js::encode (cadr args))
@@ -72,10 +83,10 @@
 					  (sprint "(function ("
 							  (trans::js::array (car args)) ") {"
 							  "return " (trans::js::encode (cadr args)) "})")
-					  (sprint "(function () {"
+					  (sprint "(function () { try {"
 							  (join (map (! fn (sprint $0 "; "))
 										 (trans::js::bind-args (car args))) "")
-							  "return " (trans::js::encode (cadr args)) "})")))
+							  "return " (trans::js::encode (cadr args)) "} catch (__sys_erro) {throw new Erro(ErroId.Type, `cannot bind: " (car args) " and ${lprint(vect2cons(Array.from(arguments)))}`)}})")))
 
 (! trans::js::regist ! (trans::js::encode (senva::expand-syntax-proc
 									(car args) (cdr args) (environment))))
@@ -94,18 +105,14 @@
 												(sprint "return " (back jscs)))
 										 "; ") "})()")))
 
-;(! trans::js::regist and (sprint "(" (join (map trans::js::encode args) " && ") ")"))
-
-;(! trans::js::regist or (sprint "(" (join (map trans::js::encode args) " || ") ")"))
-
 (! trans::js::regist quasiquote (trans::js::quote-put
 						  (senva::expand-quasiquote-proc (car args) (environment))))
 
 (! trans::js::regist catch (sprint "(function () {try {return "
 						   (trans::js::encode (cadr args))
-						   "} catch (erro) {return "
+						   "} catch (__sys_erro) {return "
 						   (trans::js::encode (car args))
-						   "(erro.eid, erro.estr)}})()"))
+						   "(__sys_erro.eid, __sys_erro.estr)}})()"))
 
 (! trans::js::regist environment "genv") ; TODO
 
@@ -135,13 +142,13 @@
 (! trans::js::regist-func getat lgetat)
 (! trans::js::regist-func setat lsetat)
 
-(! trans::js::regist-op and " && ")
-(! trans::js::regist-op or " || ")
-(! trans::js::regist-op + " + ")
-(! trans::js::regist-op - " - ")
-(! trans::js::regist-op * " * ")
-(! trans::js::regist-op / " / ")
-(! trans::js::regist-op % " % ")
+(! trans::js::regist-op and " && " t)
+(! trans::js::regist-op or " || " nil)
+(! trans::js::regist-op + " + " 0)
+(! trans::js::regist-op - " - " 0)
+(! trans::js::regist-op * " * " 1)
+(! trans::js::regist-op / " / " 1)
+(! trans::js::regist-op % " % " 0)
 
 (! trans::js::regist-func > gt)
 (! trans::js::regist-func < lt)
