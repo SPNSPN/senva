@@ -117,9 +117,10 @@ class queu
 			[void]($this.entr = $queu.entr);
 			[void]($this.exit = $queu.exit);
 		}
-		elseif (-not (isnil $queu.entr))
+		elseif (-not (isnil $queu.exit))
 		{
 			[void](rplacd $this.entr $queu.exit);
+			[void]($this.entr = $queu.entr);
 		}
 		return $this;
 	}

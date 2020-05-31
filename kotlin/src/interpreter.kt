@@ -98,7 +98,11 @@ class Queu ()
 			entr = queu.entr
 			exit = queu.exit
 		}
-		else { rplacd(entr as Cons, queu.exit) }
+		else if (! (queu.exit is Nil))
+		{
+			rplacd(entr as Cons, queu.exit)
+			entr = queu.entr
+		}
 		return this
 	}
 }
