@@ -60,7 +60,7 @@ defmodule Interpreter do
 			{from, :pop} -> a = car(exi)
 							send from, a
 							proc_queu(ent, cdr(exi))
-			{from, :concat, q} -> rplacd(ent, getexit_from_queu(q))
+			{from, :concat, q} -> rplacd(ent, getexit_from_queu(q)) # TODO concqueu
 								  proc_queu(ent, exi)
 			{from, :getexit} -> exi
 								proc_queu(ent, exi)

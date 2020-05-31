@@ -684,9 +684,10 @@ void Pool::concqueu (Addr qa, Addr qb)
 		setentr(qa, getentr(qb));
 		setexit(qa, getexit(qb));
 	}
-	else if (not isnil(getentr(qb)))
+	else if (not isnil(getexit(qb)))
 	{
 		setcdr(getentr(qa), getexit(qb));
+		setentr(qa, getentr(qb));
 	}
 }
 
