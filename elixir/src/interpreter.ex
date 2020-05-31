@@ -14,6 +14,15 @@ defmodule Interpreter do
 		end
 	end
 
+	def get_entr_from_queu(q) do
+		send q, {self(), :getentr}
+		receive do
+			{^q, qent} -> qent
+		after
+			@timeout_sec -> raise {:timeout, "cannot receive getent, from #{q}"}
+		end
+	end
+
 	def get_exit_from_queu(q) do
 		send q, {self(), :getexit}
 		receive do
@@ -29,7 +38,10 @@ defmodule Interpreter do
 								proc_queu(c, c)
 			{from, :pop} -> send from, nil
 							proc_queu(nil, nil)
-			{from, :concat, q} -> proc_queu()
+			{from, :concat, q} -> proc_queu(getentr_from_queu(q)
+											, getexit_from_queu(q))
+			{from, :getentr} -> nil
+								proc_queu(nil, nil)
 			{from, :getexit} -> nil
 								proc_queu(nil, nil)
 			{from, :typ} -> :queu
@@ -44,8 +56,15 @@ defmodule Interpreter do
 			{from, :pop} -> a = car(exi)
 							send from, a
 							proc_queu(nil, nil)
-			{from, :concat, q} -> rplacd(exi, getexit_from_queu(q))
-								  proc_queu(ent, exi)
+			{from, :concat, q} -> qexi = getexit_from_queu(q)
+								  if not is_nil(qexi) do
+									rplacd(exi, qexi)
+									proc_queu(getentr_from_queu(q), exi)
+								  else
+								    proc_queu(exi, exi)
+								  end
+			{from, :getentr} -> exi
+								proc_queu(exi, exi)
 			{from, :getexit} -> exi
 								proc_queu(exi, exi)
 			{from, :typ} -> :queu
@@ -60,8 +79,15 @@ defmodule Interpreter do
 			{from, :pop} -> a = car(exi)
 							send from, a
 							proc_queu(ent, cdr(exi))
-			{from, :concat, q} -> rplacd(ent, getexit_from_queu(q)) # TODO concqueu
-								  proc_queu(ent, exi)
+			{from, :concat, q} -> qexi = getexit_from_queu(q)
+								  if not is_nil(qexi) do
+									rplacd(ent, qexi)
+									proc_queu(getentr_from_queu(q), exi)
+								  else
+								    proc_queu(ent, exi)
+								  end
+			{from, :getentr} -> ent
+								proc_queu(ent, exi)
 			{from, :getexit} -> exi
 								proc_queu(ent, exi)
 			{from, :typ} -> :queu
@@ -126,6 +152,12 @@ defmodule Interpreter do
 	def ltype(subr) when is_function(subr) do
 		:subr
 	end
+	def ltype({:spfm, proc, name}) do
+		:spfm
+	end
+	def ltype({:func, args, body, env}) do
+		:func
+	end
 	def ltype(pid) when is_pid(pid) do
 		send pid, {self(), :typ}
 		receive do
@@ -140,6 +172,9 @@ defmodule Interpreter do
 	end
 	def eq(_, _) do
 		nil
+	end
+
+	def equal() do # TODO
 	end
 
 	def lread(code) do
