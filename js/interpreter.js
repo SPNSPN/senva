@@ -826,7 +826,7 @@ function find_co_bracket (code)
 }
 
 const escape_char_table = {
-	"a": "\a"
+	"a": "\x07"
 	, "b": "\b"
 	, "f": "\f"
 	, "n": "\n"
