@@ -904,7 +904,8 @@ class Interpreter
 					if (mi.MemberType == MemberTypes.Method)
 					{
 						// TODO 関数型により同名メソッド呼び分ける
-						return new Subr((sargs) => { return obj.GetType().Getmethod(name); }, name);
+						// return new Subr((sargs) => { return obj.GetType().Getmethod(name); }, name);
+						
 						return obj.GetType().GetMethod(name);
 					}
 					if (mi.MemberType == MemberTypes.NestedType)
