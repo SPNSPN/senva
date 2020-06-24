@@ -223,6 +223,7 @@ echeck "(getat 5 2)" $erroid["Type"] "cannot apply getat to 5";
 echeck "(setat (list 1 2 3) 2 44)" $erroid["Type"] "cannot apply setat to (1 2 3)";
 echeck "(setat `"ABC`" 1 '(1 . 2))" $erroid["Type"] "cannot setat (1 . 2) to `"ABC`"";
 check "(to-list `"a\nb\tc\0`")" (list 97 10 98 9 99 0);
+check "(to-list `"\a\b\f\n\r\t\v\0`")" (list 7 8 12 10 13 9 11 0);
 check "``[1 2 ,3 ,(+ 2 2) @(if (> 3 1) '(5 6) nil) @(cons 7 ``(8 ,(* 3 3))) 10]" (vect 1 2 3 4 5 6 7 8 9 10);
 check "(load `"senva/matrix.snv`") (matrix::determinant '((3 1 1 2 1) (5 1 3 4 1) (2 0 1 0 3) (1 3 2 1 1) (2 1 5 10 1)))" -292;
 echeck "(load `"not/exist/path.ext`")" $erroid["FileNotFound"] "not found file: `"not/exist/path.ext`"";
