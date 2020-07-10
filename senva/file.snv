@@ -1,0 +1,24 @@
+(load "senva/util.snv")
+
+(! case (processor)
+   ('cpp ()
+	'cs ()
+	'python ()
+	'javascript (define file::read
+		  (lambda (path)
+			(! let ((req (new "XMLHttpRequest")))
+			   (do ((-> req "open") "GET"
+									(sprint (-> (js "location") "origin") "/" path)
+									nil)
+;				   ((-> req "overrideMimeType") "text/plain; charset=UTF-8")
+				   ((-> req "setRequestHeader") "Pragma" "no-cache")
+				   ((-> req "setRequestHeader") "Cache-Control" "no-cache")
+				   ((-> req "setRequestHeader") "If-Modified-Since" "Thu, 01 Jun 1970 00:00:00 GMT")
+				   ((-> req "send") (js "null"))
+				   (if (equal 200 (-> req "status"))
+					 (-> req "responseText")
+					 (throw senva::error::file-not-found
+							(sprint "not found file: " path)))))))
+	'kotlin ()
+	'powershell ()
+	t (throw 'undefined (sprint (processor) " don't support file-IO."))))

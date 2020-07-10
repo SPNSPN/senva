@@ -1,4 +1,5 @@
 (load "senva/interpreter.snv")
+(load "senva/file.snv")
 
 (define trans::js::encode
   (lambda (expr)
@@ -13,10 +14,12 @@
 
 ;(! let ((esc-seqs (zip (to-list "\\\"\a\b\f\n\r\t\v\0") (to-list "\\\"abfnrtv0")))
 (define trans::js::escape
-  (! let ((esc-seqs (zip (to-list "\\\"\a\b\f\n\r\t\v\0") (to-list "\\\"abfnrtv0")))
+  (! let ((esc-seqs (zip (to-list "\\\"\a\b\f\n\r\t\v\0")
+						 (map to-list '("\\\\" "\\\"" "\\x07" "\\b" "\\f"
+										"\\n" "\\r" "\\t" "\\v" "\\0"))))
 		  (esc (car (to-list "\\"))))
 	 (lambda (str) (string (reduce (! fn (! aif (assoc esc-seqs $1)
-											(cons esc (cons (cadr it) $0))
+											(append (cadr it) $0)
 											(cons $1 $0)))
 								   (nreverse (to-list str)) ())))))
 
@@ -33,6 +36,24 @@
 		'<cons> (sprint "new Cons("
 						(trans::js::quote-put (car obj)) ", "
 						(trans::js::quote-put (cdr obj)) ")")
+		t (trans::js::put obj)))))
+
+(define trans::js::quasiquote-put
+  (lambda (obj)
+	(! case (type obj)
+	   ('<symb> (sprint "new Symb(\"" obj "\")")
+		'<cons> (if (eq 'unquote (car obj))
+				  (trans::js::encode (cadr obj))
+				  (sprint "append(l(" (reduce (lambda (acm e)
+						 (if (eq splicing (car e))
+						   (sprint "), l(" (trans::js::encode e) "), l(")
+						   (trans::js::quasiquote-put e)))
+					   (reverse obj)) "))")
+				  (if (eq 'splicing ())
+					()
+					(sprint "new Cons("
+						(trans::js::quasiquote-put (car obj)) ", "
+						(trans::js::quasiquote-put (cdr obj)) ")")))
 		t (trans::js::put obj)))))
 
 (define trans::js::array
@@ -126,8 +147,8 @@
 										 "; ") "})()"))
    "seekenv(genv, new Symb(\"do\"))")
 
-(! trans::js::regist quasiquote (trans::js::quote-put
-						  (senva::expand-quasiquote-proc (car args) (environment)))
+(! trans::js::regist quasiquote
+   (trans::js::quasiquote-put (car args))
    "seekenv(genv, new Symb(\"quasiquote\"))")
 
 (! trans::js::regist catch (sprint "(function () {try {return "
@@ -150,6 +171,9 @@
 (! trans::js::regist processor "new Symb(\"javascript\")"
    (trans::js::encode ''javascript))
 
+(! trans::js::regist load (trans::js::encode
+							(senva::readtop (file::read (car args)))))
+
 (! trans::js::regist-func list l)
 (! trans::js::regist-func int lint)
 (! trans::js::regist-func float lfloat)
@@ -162,7 +186,6 @@
 (! trans::js::regist-func print llprint)
 (! trans::js::regist-func prin llprin)
 (! trans::js::regist-func type ltype)
-(! trans::js::regist-func load lload)
 (! trans::js::regist-func getat lgetat)
 (! trans::js::regist-func setat lsetat)
 
