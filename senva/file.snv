@@ -3,8 +3,19 @@
 (! case (processor)
    ('cpp ()
 	'cs ()
-	'python ()
-	'javascript (define file::read
+	'python (do
+			  (define file::read
+				(lambda (path)
+				  (! let* ((fin ((py "open") path "r"))
+						   (str ((-> fin "read"))))
+					 (do ((-> fin "close"))
+					     str))))
+			  (define file::write
+				(lambda (path str)
+				  (! let ((fout ((py "open") path "w")))
+					 (do ((-> fout "write") str)
+					     ((-> fout "close")))))))
+	'javascript (do (define file::read
 		  (lambda (path)
 			(! let ((req (new "XMLHttpRequest")))
 			   (do ((-> req "open") "GET"
@@ -18,7 +29,7 @@
 				   (if (equal 200 (-> req "status"))
 					 (-> req "responseText")
 					 (throw senva::error::file-not-found
-							(sprint "not found file: " path)))))))
+							(sprint "not found file: " path))))))))
 	'kotlin ()
 	'powershell ()
 	t (throw 'undefined (sprint (processor) " don't support file-IO."))))

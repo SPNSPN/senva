@@ -1,0 +1,40 @@
+(load "senva/file.snv")
+
+(define scad::target-path "")
+(define scad::objects nil)
+
+
+(define scad::encode
+  (lambda (objs) 
+	(map (lambda (obj)
+				 (! case (car obj)
+					('cube (sprint "cube([" (join (cdr obj) ", ") "]);\n")
+					 'cylinder (sprint "cylinder(h = " (cadr obj)
+									   ", d = " (caddr obj) ");\n")
+					 'translate (sprint "translate([" (join (cadr obj) ", ")
+										"]){\n" (join (scad::encode
+														(cddr obj)) "")
+										"}\n")
+					 'rotate (sprint "rotate([" (join (cadr obj) ", ")
+									 "]){\n" (join (scad::encode
+													 (cddr obj)) "") "}\n")
+					 t (throw 'unknown-object
+							  (sprint obj " is not defined.")))))
+			   objs)))
+
+(define scad::draw
+  (lambda ()
+	(file::write scad::target-path (join (scad::encode scad::objects) ""))))
+
+(define scad::clear
+  (lambda () (do (setq scad::objects nil) (scad::draw))))
+
+(define scad::attach
+  (lambda (path)
+	(setq scad::target-path path)))
+
+(define scad::regist
+  (lambda (obj)
+	(do (! push scad::objects obj)
+	    (scad::draw))))
+
