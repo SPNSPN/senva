@@ -53,6 +53,7 @@
 (check "(rplacd (cons 44 55) (cons 3 nil))" '(44 3))
 (check "(last (list 3 4 5 6))" '(6))
 (check "(last nil)" nil)
+(check "(last (cons 1 2))" '(1 . 2))
 (check "(last (queu 1 2 3))" '(3))
 (check "(last 'abc)" 'c)
 (check "(last \"abc\")" "c")

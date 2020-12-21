@@ -73,6 +73,7 @@ check "(rplaca (cons nil 44) 34)" (cons 34 44);
 check "(rplacd (cons 44 55) (cons 3 nil))" (list 44 3);
 check "(last (list 1 2 3 4))" (list 4);
 check "(last nil)" $nil;
+check "(last (cons 1 2))" (cons 1 2);
 check "(last (queu 1 2 3))" (list 3);
 check "(last 'abc)" (new-object symb "c");
 check "(last `"abc`")" "c";

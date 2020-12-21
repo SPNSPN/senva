@@ -861,7 +861,7 @@ def rplacd (c, o):
 def last (o):
 	if isinstance(o, Cons):
 		rest = o
-		while not cdr(rest) is nil:
+		while not atom(cdr(rest)):
 			rest = cdr(rest)
 		return rest
 	if isinstance(o, Nil):

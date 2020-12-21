@@ -140,6 +140,7 @@ CHECK("(rplaca (cons nil 44) 34)", "(34 . 44)");
 CHECK("(rplacd (cons 44 55) (cons 3 nil))", "(44 3)");
 CHECK("(last (list 1 2 3 4))", "(4)");
 CHECK("(last nil)", "NIL");
+CHECK("(last (cons 1 2))", "(1 . 2)");
 CHECK("(last (queu 1 2 3))", "(3)");
 CHECK("(last 'abc)", "c");
 CHECK("(last \"abc\")", "\"c\"");

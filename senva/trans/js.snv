@@ -38,22 +38,18 @@
 						(trans::js::quote-put (cdr obj)) ")")
 		t (trans::js::put obj)))))
 
-(define trans::js::quasiquote-put
+(define trans::js::quasiquote-put ;; TODO
   (lambda (obj)
 	(! case (type obj)
 	   ('<symb> (sprint "new Symb(\"" obj "\")")
 		'<cons> (if (eq 'unquote (car obj))
 				  (trans::js::encode (cadr obj))
-				  (sprint "append(l(" (reduce (lambda (acm e)
-						 (if (eq splicing (car e))
-						   (sprint "), l(" (trans::js::encode e) "), l(")
-						   (trans::js::quasiquote-put e)))
-					   (reverse obj)) "))")
-				  (if (eq 'splicing ())
-					()
-					(sprint "new Cons("
-						(trans::js::quasiquote-put (car obj)) ", "
-						(trans::js::quasiquote-put (cdr obj)) ")")))
+				  (reduce
+					(lambda (acm e)
+					  (if (eq 'splicing (car e))
+						(sprint "nconc(" (trans::js::encode (cadr e)) ", " acm ")")
+						(sprint "nconc(l(" (trans::js::quasiquote-put e) "), " acm ")")))
+					(reverse obj) "nil"))
 		t (trans::js::put obj)))))
 
 (define trans::js::array
@@ -123,7 +119,10 @@
 					  (sprint "(function () { try {"
 							  (join (map (! fn (sprint $0 "; "))
 										 (trans::js::bind-args (car args))) "")
-							  "return " (trans::js::encode (cadr args)) "} catch (__sys_erro) {throw new Erro(ErroId.Type, `cannot bind: " (car args) " and ${lprint(vect2cons(Array.from(arguments)))}`)}})"))
+							  "return " (trans::js::encode (cadr args))
+							  "} catch (__sys_erro) {throw new Erro(ErroId.Type, `cannot bind: "
+							  (car args)
+							  " and ${lprint(vect2cons(Array.from(arguments)))}`)}})"))
    "seekenv(genv, new Symb(\"lambda\"))")
 
 (! trans::js::regist ! (trans::js::encode (senva::expand-syntax-proc
@@ -171,7 +170,7 @@
 (! trans::js::regist processor "new Symb(\"javascript\")"
    (trans::js::encode ''javascript))
 
-(! trans::js::regist load (trans::js::encode
+(! trans::js::regist load (trans::js::encodetop
 							(senva::readtop (file::read (car args)))))
 
 (! trans::js::regist-func list l)
@@ -202,6 +201,15 @@
 (! trans::js::regist-func >= ge)
 (! trans::js::regist-func <= le)
 
+(define trans::js::rename-symb
+  (! let ((bads (to-list " !\"#%&'(),.:;=?@[\\]^`{|}~"))
+		  (bbads (to-list " !\"#%&'(),.:;=?@[\\]^`{|}~*+-/<>"))
+		  (underbar (car (to-list "_"))))
+	 (lambda (sym)
+	   (if (equal 1 (length sym))
+		 (if (find (car (to-list sym)) bads) '_ sym)
+		 (symbol (map (! fn (if (find $0 bbads) underbar $0)) (to-list sym)))))))
+
 (define trans::js::seekdefine
   (lambda (expr)
 	(if (not (atom expr))
@@ -211,8 +219,10 @@
 				(trans::js::seekdefine (cdr expr)))))))
 
 (define trans::js::encodetop
-  (lambda (expr)
-	(! let ((globals (trans::js::seekdefine expr)))
+  (lambda (expr_)
+	(! let* ((expr (maptree (! fn (if (eq '<symb> (type $0))
+									(trans::js::rename-symb $0) $0)) expr_))
+			 (globals (trans::js::seekdefine expr)))
 	   (join (append (map (! fn (sprint "let " (cadr $0) " = nil")) globals)
 					 (list (trans::js::encode expr))) "; "))))
 

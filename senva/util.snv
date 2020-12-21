@@ -141,6 +141,12 @@
 	 (lambda (func . colls)
 	(map-rec func colls ()))))
 
+(define maptree ; TODO
+  (lambda (func tree)
+	(if (atom tree)
+	  (if tree (func tree))
+	  (cons (maptree func (car tree)) (maptree func (cdr tree))))))
+
 (define zipc
   (lambda (colla collb)
 	(if (and colla collb)
@@ -482,7 +488,7 @@
 
 (define purelistp (lambda (obj) (or (eq obj nil)
 								(and (not (atom obj))
-									 (not (cdr (last obj)))))))
+									 (not (cdr ^(last obj)))))))
 
 (define flatlistp (lambda (obj) (and (purelistp obj)
 									 (not (find-if (! fn (not (atom $0))) obj)))))
