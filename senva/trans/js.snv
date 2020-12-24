@@ -38,7 +38,7 @@
 						(trans::js::quote-put (cdr obj)) ")")
 		t (trans::js::put obj)))))
 
-(define trans::js::quasiquote-put ;; TODO
+(define trans::js::quasiquote-put
   (lambda (obj)
 	(! case (type obj)
 	   ('<symb> (sprint "new Symb(\"" obj "\")")
@@ -170,8 +170,11 @@
 (! trans::js::regist processor "new Symb(\"javascript\")"
    (trans::js::encode ''javascript))
 
-(! trans::js::regist load (trans::js::encodetop
-							(senva::readtop (file::read (car args)))))
+; TODO re-replace ascii code to bads(original symbol)
+; ex util__3A3A__sort -> util::sort
+(! trans::js::regist load (do (load (car args))
+							(trans::js::encodetop (senva::readtop
+													(file::read (car args))))))
 
 (! trans::js::regist-func list l)
 (! trans::js::regist-func int lint)
@@ -201,9 +204,13 @@
 (! trans::js::regist-func >= ge)
 (! trans::js::regist-func <= le)
 
+; TODO replace bads to ascii code in 16n
+; ex push! -> push__21__
+;    util::sort -> util__3A3A__sort
+;    map->hash -> map__2D3E__hash
 (define trans::js::rename-symb
-  (! let ((bads (to-list " !\"#%&'(),.:;=?@[\\]^`{|}~"))
-		  (bbads (to-list " !\"#%&'(),.:;=?@[\\]^`{|}~*+-/<>"))
+  (! let ((bads (to-list " \"#%&'(),.:;=?@[\\]^`{|}~"))
+		  (bbads (to-list " \"#%&'(),.:;=?@[\\]^`{|}~!*+-/<>"))
 		  (underbar (car (to-list "_"))))
 	 (lambda (sym)
 	   (if (equal 1 (length sym))

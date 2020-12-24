@@ -488,7 +488,7 @@
 
 (define purelistp (lambda (obj) (or (eq obj nil)
 								(and (not (atom obj))
-									 (not (cdr ^(last obj)))))))
+									 (not (cdr (last obj)))))))
 
 (define flatlistp (lambda (obj) (and (purelistp obj)
 									 (not (find-if (! fn (not (atom $0))) obj)))))
@@ -615,6 +615,18 @@
 	 (lambda (coll size) (cut-rec coll (length coll) size nil) )))
 
 (define vsplit (lambda (coll n) (apply zip (cut coll n))))
+
+(define dec->n-base (! let ((N-code "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
+					(! letrec ((n-base-rec
+							  (lambda (nr b ss)
+								(if (> nr 0)
+								  (n-base-rec (int (/ nr b)) b
+												(sprint (getat N-code (% nr b)) ss))
+								  ss))))
+					(lambda (n base) (if (equal 0 n) "0"
+									   (n-base-rec n base ""))))))
+
+(define n-base->dec (lambda (s base))) ; TODO
 
 (define caar (lambda (o) (car (car o))))
 (define cadr (lambda (o) (car (cdr o))))
