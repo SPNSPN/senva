@@ -962,15 +962,9 @@ function lread (code)
 			let co = find_co_bracket(code.slice(idx + 1));
 			tree = growth(tree, buff);
 			let invec = lread(code.slice(idx + 1, idx + co + 1));
-			if (buff[1])
-			{
-				tree = cons(l(new Symb("to-vect")
-							, wrap_readmacros(invec, buff[1])), tree);
-			}
-			else
-			{
-				tree = cons(cons(new Symb("vect"), invec), tree);
-			}
+			tree = cons(buff[1]
+					? l(new Symb("to-vect"), wrap_readmacros(invec, buff[1]))
+					: cons(new Symb("vect"), invec), tree);
 			buff = ["", nil];
 			idx += co + 1;
 		}

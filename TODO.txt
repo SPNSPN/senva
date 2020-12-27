@@ -1,6 +1,7 @@
 ;simple_ga.snv
 senva/trans/pytest.snvテスト項目が古い、共通化したい
 js senva canvas game
+kotlin getc
 secdマシン語によるsenva実装
 secdマシン処理系
 ;cs call dll

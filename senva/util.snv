@@ -626,7 +626,8 @@
 					(lambda (n base) (if (equal 0 n) "0"
 									   (n-base-rec n base ""))))))
 
-(define n-base->dec (lambda (s base))) ; TODO
+(define n-base->dec (lambda (s base)
+					  ))
 
 (define caar (lambda (o) (car (car o))))
 (define cadr (lambda (o) (car (cdr o))))
