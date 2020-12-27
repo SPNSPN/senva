@@ -1606,17 +1606,9 @@ Addr Interpreter::read (std::istream &in)
 					return pool.make_erro(Syntax
 							, pool.make_strn("not found close brackets."));
 				}
-				if (pool.isnil(rmacs))
-				{
-					pool.pushqueu(tree, pool.make_cons(pool.make_symb("vect")
-								, read(pbuf)));
-				}
-				else
-				{
-					pool.pushqueu(tree
-							, pool.make_list(pool.make_symb("to-vect")
-								,wrap_readmacros(read(pbuf), rmacs)));
-				}
+				pool.pushqueu(tree, pool.isnil(rmacs)
+						? pool.make_cons(pool.make_symb("vect"), read(pbuf))
+						: pool.make_list(pool.make_symb("to-vect"), wrap_readmacros(read(pbuf), rmacs)));
 				break;
 			case ']':
 				return pool.make_erro(Syntax

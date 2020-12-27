@@ -383,11 +383,8 @@ def lread (code):
 			tree = growth(tree, buff)
 			co = find_co_bracket(code[idx + 1:])
 			invec = lread(code[idx + 1: idx + co + 1])
-			if buff[1]:
-				tree = cons(l(Symb("to-vect"), wrap_readmacros(invec, buff[1]))
-						, tree)
-			else:
-				tree = cons(cons(Symb("vect"), invec), tree)
+			tree = cons(l(Symb("to-vect"), wrap_readmacros(invec, buff[1]))\
+					if buff[1] else cons(Symb("vect"), invec), tree)
 			buff = ["", nil]
 			idx += co + 1
 		elif "]" == c:
