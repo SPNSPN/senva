@@ -1,14 +1,26 @@
-let typeid_nil = 6
-let typeid_symb = 7
-let typeid_cons = 8
-let typeid_queu = 9
-let typeid_func = 10
-let typeid_spfm = 11
-let typeid_erro = 12
+let typeid = {}
+let typeid.nil = 6
+let typeid.symb = 7
+let typeid.cons = 8
+let typeid.queu = 9
+let typeid.func = 10
+let typeid.spfm = 11
+let typeid.erro = 12
+
+let erroid = {}
+let erroid.FullMemory = 0
+let erroid.OutOfEnvironment = 2
+let erroid.Type = 3
+let erroid.Symbol = 4
+let erroid.Syntax = 5
+let erroid.UnCallable = 6
+let erroid.ArgsUnmatch = 7
+let erroid.UnEvaluatable = 8
+let erroid.FileNotFound = 9
 
 function! Nil () abort
 	let self = {}
-	let self.type = g:typeid_nil
+	let self.type = g:typeid.nil
 	let self.a = self
 	let self.d = self
 	return self
@@ -16,14 +28,14 @@ endfunction
 
 function! Symb (name) abort
 	let self = {}
-	let self.type = g:typeid_symb
+	let self.type = g:typeid.symb
 	let self.name = a:name
 	return self
 endfunction
 
 function! Cons (a, d) abort
 	let self = {}
-	let self.type = g:typeid_cons
+	let self.type = g:typeid.cons
 	let self.a = a:a
 	let self.d = a:d
 	return self
@@ -39,13 +51,13 @@ let typetable[type(function("tr"))] = Symb("<Subr>")
 let typetable[type([])] = Symb("<Vect>")
 let typetable[type({})] = Symb("<vim dict>")
 let typetable[type(0.0)] = Symb("<Fnum>")
-let typetable[typeid_nil] = Symb("<Nil>")
-let typetable[typeid_symb] = Symb("<Symb>")
-let typetable[typeid_cons] = Symb("<Cons>")
-let typetable[typeid_queu] = Symb("<Queu>")
-let typetable[typeid_func] = Symb("<Func>")
-let typetable[typeid_spfm] = Symb("<Spfm>")
-let typetable[typeid_erro] = Symb("<Erro>")
+let typetable[typeid.nil] = Symb("<Nil>")
+let typetable[typeid.symb] = Symb("<Symb>")
+let typetable[typeid.cons] = Symb("<Cons>")
+let typetable[typeid.queu] = Symb("<Queu>")
+let typetable[typeid.func] = Symb("<Func>")
+let typetable[typeid.spfm] = Symb("<Spfm>")
+let typetable[typeid.erro] = Symb("<Erro>")
 
 function! Ltype (o) abort
 	let typ = type(a:o)
@@ -72,29 +84,90 @@ function! Eq (a, b) abort
 	return (a:a == a:b) ? g:t : g:nil
 endfunction
 
+function! Lthrow (eid, emess) abort
+	throw "," . a:eid . "," . a:emess
+endfunction
+
+function! Growth (tree, buff) abort
+	let buf = a:buff[0]
+	let rmacs = a:buff[1]
+	if buf
+		let a:buff[0] = ""
+		let a:buff[1] = g:nil
+		if "nil" == buf || "NIL" == buf
+			return Cons(WrapReadmacros(g:nil, rmacs), a:tree)
+		endif
+		if Inumable(buf)
+			return Cons(WrapReadmacros(str2nr(buf, 10), rmacs), a:tree)
+		endif
+		if Fnumable(buf)
+			return Cons(WrapReadmacros(str2(), rmacs), a:tree)
+		endif
+	endif	
+endfunction
+
 function! Lread (code) abort
-	let tree = g:nil;
-	let buff = ["", nil];
-	for idx in range(len(code))
-		let c = code[idx]
+	let tree = g:nil
+	let buff = ["", g:nil]
+	for idx in range(len(a:code))
+		let c = a:code[idx]
 		if "(" == c
-			let co = find_co_paren(strpart(code, idx + 1))
-			let tree = growth(tree, buff)
-			let tree = cons(wrap_readmacros(lread(strpart(code, idx + 1, co)), buff[1]), tree)
+			let co = FindCoParen(strpart(a:code, idx + 1))
+			let tree = Growth(tree, buff)
+			let tree = Cons(WrapReadmacros(Lread(strpart(a:code, idx + 1, co)), buff[1]), tree)
 			let buff = ["", g:nil]
 			let idx += co + 1
 		elseif ")" == c
-			throw Erro(erroid.syntax, "found excess close parenthesis.")
+			Lthrow(g:erroid.Syntax, "found excess close parenthesis.")
 		elseif "[" == c
-			let co = find_co_bracket(strpart(code, idx + 1))
-			let tree = growth(tree, buff)
-			let invec = lread(strpart(code, idx + 1, co))
-			let tree = cons(buff[1] ? l(Symb("to-vect"), wrap_readmacros(invec, buff[1])) : cons(Symb("vect"), invec), tree)
+			let co = FindCoBracket(strpart(a:code, idx + 1))
+			let tree = Growth(tree, buff)
+			let invec = Lread(strpart(a:code, idx + 1, co))
+			let tree = Cons(buff[1] ? l(Symb("to-vect"), WrapReadmacros(invec, buff[1])) : Cons(Symb("vect"), invec), tree)
 			let buff = ["", g:nil]
-			letidx += co + 1
-			" TODO
+			let idx += co + 1
+		elseif "]" == c
+			Lthrow(g:erroid.Syntax, "found excess close brackets.")
+		elseif " " == c || "\t" == c || "\n" == c
+			let tree = Growth(tree, buff)
+		elseif ";" == c
+			let tree = Growth(tree, buff)
+			while idx < len(a:code) && "\n" != a:code[idx]
+				let idx += 1
+			endwhile
+		elseif '"' == c
+			let tree = Growth(tree, buff)
+			let res = TakeString(strpart(a:code, idx + 1))
+			let idx += res.inc
+			let tree = Cons(res.strn, tree)
+			let buff = ["", g:nil]
+		elseif "'" == c
+			let tree = Growth(tree, buff)
+			let buff[1] = Cons(Symb("quote"), buff[1])
+		elseif "`" == c
+			let tree = growth(tree, buff)
+			let buff[1] = Cons(Symb("quasiquote"), buff[1])
+		elseif "," == c
+			let tree = growth(tree, buff)
+			let buff[1] = Cons(Symb("unquote"), buff[1])
+		elseif "@" == c
+			let tree = growth(tree, buff)
+			let buff[1] = Cons(Symb("splicing"), buff[1])
+		elseif "^" == c
+			let tree = growth(tree, buff)
+			let buff[1] = Cons(Symb("tee"), buff[1])
+		elseif "." == c
+			if buff[0]
+				let buff[0] += "."
+			else
+				return Nconc(Reverse(Cdr(tree)), Cons(Car(tree), Car(Lread(strpart(a:code, idx + 1)))))
+			endif
+		else
+			let buff[0] += c
 		endif
 	endfor
+	let tree = Growth(tree, buff)
+	return Nreaverse(tree)
 endfunction
 
 function! Lprint (expr) abort

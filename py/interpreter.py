@@ -420,14 +420,14 @@ def lread (code):
 			if buff[0]:
 				buff[0] += "."
 			else:
-				return append1(reverse(cdr(tree))
+				return nconc(nreverse(cdr(tree))
 						, cons(car(tree), car(lread(code[idx + 1:]))))
 		else:
 			buff[0] += c
 		idx += 1
 
 	tree = growth(tree, buff)
-	return reverse(tree)
+	return nreverse(tree)
 
 def lreadtop (code):
 	return cons(Symb("do"), lread(code))
@@ -774,7 +774,7 @@ def vect2cons (l):
 	c = nil
 	for e in l:
 		c = cons(e, c)
-	return reverse(c)
+	return nreverse(c)
 
 def bind_tree (treea, treeb):
 	if treea:
@@ -784,7 +784,7 @@ def bind_tree (treea, treeb):
 			raise Erro(ErroId.Syntax, "cannot bind: {0} and {1}".format(
 						lprint(treea), lprint(treeb)))
 		try:
-			return append1(bind_tree(car(treea), car(treeb))
+			return nconc(bind_tree(car(treea), car(treeb))
 					, bind_tree(cdr(treea), cdr(treeb)))
 		except Erro as erro:
 			raise Erro(ErroId.Syntax, "cannot bind: {0} and {1}".format(
@@ -801,7 +801,7 @@ def bind (syms, vals):
 		ret = cons(cons(s, v), ret)
 		rests = cdr(rests)
 		restv = cdr(restv)
-	return reverse(ret)
+	return nreverse(ret)
 
 def mapeval (args, env):
 	eargs = nil
@@ -810,11 +810,11 @@ def mapeval (args, env):
 		e = car(rest)
 		eargs = cons(leval(e, env), eargs)
 		rest = cdr(rest)
-	return reverse(eargs)
+	return nreverse(eargs)
 
 def append1 (colla, collb):
 	app = collb
-	rest = reverse(colla)
+	rest = nreverse(colla)
 	while not rest is nil:
 		app = cons(car(rest), app)
 		rest = cdr(rest)
@@ -997,7 +997,7 @@ def take (coll, n):
 	for i in range(0, n):
 		head = cons(car(rest), head)
 		rest = cdr(rest)
-	return reverse(head)
+	return nreverse(head)
 
 def drop (coll, n):
 	rest = coll
