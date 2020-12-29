@@ -33,6 +33,16 @@ function! Symb (name) abort
 	return self
 endfunction
 
+let symb_identifiers = {}
+function! Intern (name) abort
+	if has_key(g:symb_identifiers, a:name)
+		return g:symb_identifiers[a:name]
+	endif
+	let newsym = Symb(a:name)
+	let g:symb_identifiers[a:name] = newsym
+	return newsym
+endfunction
+
 function! Cons (a, d) abort
 	let self = {}
 	let self.type = g:typeid.cons
@@ -42,22 +52,22 @@ function! Cons (a, d) abort
 endfunction
 
 let nil = Nil()
-let t = Symb("T")
+let t = Intern("T")
 
 let typetable = {}
-let typetable[type(0)] = Symb("<Inum>")
-let typetable[type("")] = Symb("<Strn>")
-let typetable[type(function("tr"))] = Symb("<Subr>")
-let typetable[type([])] = Symb("<Vect>")
-let typetable[type({})] = Symb("<vim dict>")
-let typetable[type(0.0)] = Symb("<Fnum>")
-let typetable[typeid.nil] = Symb("<Nil>")
-let typetable[typeid.symb] = Symb("<Symb>")
-let typetable[typeid.cons] = Symb("<Cons>")
-let typetable[typeid.queu] = Symb("<Queu>")
-let typetable[typeid.func] = Symb("<Func>")
-let typetable[typeid.spfm] = Symb("<Spfm>")
-let typetable[typeid.erro] = Symb("<Erro>")
+let typetable[type(0)] = Intern("<Inum>")
+let typetable[type("")] = Intern("<Strn>")
+let typetable[type(function("tr"))] = Intern("<Subr>")
+let typetable[type([])] = Intern("<Vect>")
+let typetable[type({})] = Intern("<vim dict>")
+let typetable[type(0.0)] = Intern("<Fnum>")
+let typetable[typeid.nil] = Intern("<Nil>")
+let typetable[typeid.symb] = Intern("<Symb>")
+let typetable[typeid.cons] = Intern("<Cons>")
+let typetable[typeid.queu] = Intern("<Queu>")
+let typetable[typeid.func] = Intern("<Func>")
+let typetable[typeid.spfm] = Intern("<Spfm>")
+let typetable[typeid.erro] = Intern("<Erro>")
 
 function! Ltype (o) abort
 	let typ = type(a:o)
@@ -113,7 +123,7 @@ function! Growth (tree, buff) abort
 		if Fnumable(buf)
 			return Cons(WrapReadmacros(str2float(buf), rmacs), a:tree)
 		endif
-		return Cons(WrapReadmacros(Symb(buf), rmacs), a:tree)
+		return Cons(WrapReadmacros(Intern(buf), rmacs), a:tree)
 	endif
 	return a:tree
 endfunction
@@ -147,7 +157,7 @@ function! Lread (code) abort
 			let co = FindCoBracket(strpart(a:code, idx + 1))
 			let tree = Growth(tree, buff)
 			let invec = Lread(strpart(a:code, idx + 1, co))
-			let tree = Cons(buff[1] ? l(Symb("to-vect"), WrapReadmacros(invec, buff[1])) : Cons(Symb("vect"), invec), tree)
+			let tree = Cons(buff[1] ? l(Intern("to-vect"), WrapReadmacros(invec, buff[1])) : Cons(Intern("vect"), invec), tree)
 			let buff = ["", g:nil]
 			let idx += co + 1
 		elseif "]" == c
@@ -167,19 +177,19 @@ function! Lread (code) abort
 			let buff = ["", g:nil]
 		elseif "'" == c
 			let tree = Growth(tree, buff)
-			let buff[1] = Cons(Symb("quote"), buff[1])
+			let buff[1] = Cons(Intern("quote"), buff[1])
 		elseif "`" == c
 			let tree = growth(tree, buff)
-			let buff[1] = Cons(Symb("quasiquote"), buff[1])
+			let buff[1] = Cons(Intern("quasiquote"), buff[1])
 		elseif "," == c
 			let tree = growth(tree, buff)
-			let buff[1] = Cons(Symb("unquote"), buff[1])
+			let buff[1] = Cons(Intern("unquote"), buff[1])
 		elseif "@" == c
 			let tree = growth(tree, buff)
-			let buff[1] = Cons(Symb("splicing"), buff[1])
+			let buff[1] = Cons(Intern("splicing"), buff[1])
 		elseif "^" == c
 			let tree = growth(tree, buff)
-			let buff[1] = Cons(Symb("tee"), buff[1])
+			let buff[1] = Cons(Intern("tee"), buff[1])
 		elseif "." == c
 			if buff[0]
 				let buff[0] += "."
