@@ -50,10 +50,11 @@ class Interpreter
 
 		public static Symb intern (string name)
 		{
-			if (Symb.identifiers.containsKey(name)) { return Symb.identifiers[name]; }
-			var newsym = new Symb(name);
-			Symb.identifiers[name] = newsym;
-			return newsym;
+			Symb sym;
+			if (Symb.identifiers.TryGetValue(name, out sym)) { return sym; }
+			sym = new Symb(name);
+			Symb.identifiers[name] = sym;
+			return sym;
 		}
 
 	}
@@ -1156,7 +1157,8 @@ class Interpreter
 			var c = code[idx];
 			if (eflg)
 			{
-				if (escape_char_table.ContainsKey(c)) { c = escape_char_table[c]; }
+				char esc;
+				if (escape_char_table.TryGetValue(c, out esc)) { c = esc; }
 				eflg = false;
 			}
 			else if ('\\' == c)
