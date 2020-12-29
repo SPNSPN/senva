@@ -88,6 +88,14 @@ function! Lthrow (eid, emess) abort
 	throw "," . a:eid . "," . a:emess
 endfunction
 
+
+" TODO
+function! Inumable (str)
+endfunction
+
+function! Fnumable (str)
+endfunction
+
 function! Growth (tree, buff) abort
 	let buf = a:buff[0]
 	let rmacs = a:buff[1]
@@ -101,10 +109,24 @@ function! Growth (tree, buff) abort
 			return Cons(WrapReadmacros(str2nr(buf, 10), rmacs), a:tree)
 		endif
 		if Fnumable(buf)
-			return Cons(WrapReadmacros(str2(), rmacs), a:tree)
+			return Cons(WrapReadmacros(str2float(buf), rmacs), a:tree)
 		endif
-	endif	
+		return Cons(WrapReadmacros(Symb(buf), rmacs), a:tree)
+	endif
+	return a:tree
 endfunction
+
+function! FindCoParen (code)
+endfunction
+
+function! FindCoBracket (code)
+endfunction
+
+let escape_char_table = {}
+
+function! TakeString (code)
+endfunction
+
 
 function! Lread (code) abort
 	let tree = g:nil

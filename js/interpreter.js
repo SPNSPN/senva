@@ -1019,7 +1019,7 @@ function lread (code)
 			if (buff[0]) { buff[0] += "."; }
 			else
 			{
-				return nconc(reverse(cdr(tree)), cons(car(tree)
+				return nconc(nreverse(cdr(tree)), cons(car(tree)
 							, car(lread(code.slice(idx + 1)))));
 			}
 		}
