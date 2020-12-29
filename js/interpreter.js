@@ -5,6 +5,15 @@ function Symb (name_)
 	this.name = name_;
 }
 
+let symb_identifiers = {};
+function intern (name)
+{
+	if (name in symb_identifiers) { return symb_identifiers[name]; }
+	let newsym = new Symb(name);
+	symb_identifiers[name] = newsym;
+	return newsym;
+}
+
 const nil = false;
 const NIL = nil;
 const t = true;//new Symb("T");
@@ -150,9 +159,7 @@ function atom (o)
 
 function eq (a, b)
 {
-	if (a === b) { return t; }
-	if ((a instanceof Symb) && (b instanceof Symb) && (a.name == b.name)) { return t; }
-	return nil;
+	return (a === b) ? t : nil;
 }
 
 function equal (a, b)
@@ -228,7 +235,7 @@ function last (o)
 	}
 	if (o === nil) { return nil; }
 	if (o instanceof Queu) { return o.entr; }
-	if (o instanceof Symb) { return new Symb(o.name.slice(-1)); }
+	if (o instanceof Symb) { return intern(o.name.slice(-1)); }
 	if (o instanceof String
 			|| (typeof o) == "string") { return o.slice(-1); }
 	if (Array.isArray(o)) { return [o[o.length - 1]]; }
@@ -330,14 +337,14 @@ function to_queu (obj)
 function symbol (obj)
 {
 	if (obj instanceof Cons) {
-		return new Symb(String.fromCharCode.apply(null, cons2vect(obj))); }
+		return intern(String.fromCharCode.apply(null, cons2vect(obj))); }
 	if (obj instanceof Queu) {
-		return new Symb(String.fromCharCode.apply(null, cons2vect(obj.exit))); }
+		return intern(String.fromCharCode.apply(null, cons2vect(obj.exit))); }
 	if (Array.isArray(obj)) {
-		return new Symb(String.fromCharCode.apply(null, obj)); }
-	if (obj instanceof String || (typeof obj) == "string") { return new Symb(obj); }
+		return intern(String.fromCharCode.apply(null, obj)); }
+	if (obj instanceof String || (typeof obj) == "string") { return intern(obj); }
 	if (obj instanceof Symb) { return obj; }
-	if (obj === nil) { return new Symb(""); }
+	if (obj === nil) { return intern(""); }
 	throw new Erro(ErroId.Type, `cannot cast ${lprint(obj)} to SymbT.`);
 }
 
@@ -541,22 +548,22 @@ function lfloat (n)
 
 function ltype (o)
 {
-	if (o instanceof Cons) { return new Symb("<cons>"); }
-	if (o instanceof Func) { return new Symb("<func>"); }
-	if (o instanceof Spfm) { return new Symb("<spfm>"); }
+	if (o instanceof Cons) { return intern("<cons>"); }
+	if (o instanceof Func) { return intern("<func>"); }
+	if (o instanceof Spfm) { return intern("<spfm>"); }
 	if (o instanceof Function || (typeof o) == "function") {
-		return new Symb("<subr>"); }
-	if (o instanceof Symb) { return new Symb("<symb>"); }
-	if (o instanceof String || (typeof o) == "string") { return new Symb("<strn>"); }
+		return intern("<subr>"); }
+	if (o instanceof Symb) { return intern("<symb>"); }
+	if (o instanceof String || (typeof o) == "string") { return intern("<strn>"); }
 	if (Number.isFinite(o))
 	{
-		if (Number.isInteger(o)) { return new Symb("<inum>"); }
-		return new Symb("<fnum>");
+		if (Number.isInteger(o)) { return intern("<inum>"); }
+		return intern("<fnum>");
 	}
-	if (o === nil) { return new Symb("<nil>"); }
-	if (Array.isArray(o)) { return new Symb("<vect>"); }
-	if (o instanceof Queu) { return new Symb("<queu>"); }
-	return new Symb(`<js ${typeof o}>`);
+	if (o === nil) { return intern("<nil>"); }
+	if (Array.isArray(o)) { return intern("<vect>"); }
+	if (o instanceof Queu) { return intern("<queu>"); }
+	return intern(`<js ${typeof o}>`);
 }
 
 function safecar (o)
@@ -762,7 +769,7 @@ function growth (tree, buff)
 		{
 			return cons(wrap_readmacros(parseFloat(buf), rmacs), tree);
 		}
-		return cons(wrap_readmacros(new Symb(buf), rmacs), tree);
+		return cons(wrap_readmacros(intern(buf), rmacs), tree);
 	}
 	return tree;
 }
@@ -963,8 +970,8 @@ function lread (code)
 			tree = growth(tree, buff);
 			let invec = lread(code.slice(idx + 1, idx + co + 1));
 			tree = cons(buff[1]
-					? l(new Symb("to-vect"), wrap_readmacros(invec, buff[1]))
-					: cons(new Symb("vect"), invec), tree);
+					? l(intern("to-vect"), wrap_readmacros(invec, buff[1]))
+					: cons(intern("vect"), invec), tree);
 			buff = ["", nil];
 			idx += co + 1;
 		}
@@ -992,27 +999,27 @@ function lread (code)
 		else if ("'" == c)
 		{
 			tree = growth(tree, buff);
-			buff[1] = cons(new Symb("quote"), buff[1]);
+			buff[1] = cons(intern("quote"), buff[1]);
 		}
 		else if ("`" == c)
 		{
 			tree = growth(tree, buff);
-			buff[1] = cons(new Symb("quasiquote"), buff[1]);
+			buff[1] = cons(intern("quasiquote"), buff[1]);
 		}
 		else if ("," == c)
 		{
 			tree = growth(tree, buff);
-			buff[1] = cons(new Symb("unquote"), buff[1]);
+			buff[1] = cons(intern("unquote"), buff[1]);
 		}
 		else if ("@" == c)
 		{
 			tree = growth(tree, buff);
-			buff[1] = cons(new Symb("splicing"), buff[1]);
+			buff[1] = cons(intern("splicing"), buff[1]);
 		}
 		else if ("^" == c)
 		{
 			tree = growth(tree, buff);
-			buff[1] = cons(new Symb("tee"), buff[1]);
+			buff[1] = cons(intern("tee"), buff[1]);
 		}
 		else if ("." == c)
 		{
@@ -1031,7 +1038,7 @@ function lread (code)
 
 function lreadtop (code)
 {
-	return cons(new Symb("do"), lread(code));
+	return cons(intern("do"), lread(code));
 }
 
 function leval (expr, env)
@@ -1175,9 +1182,9 @@ function compile (func)
 	let env = func.env;
 
 	lload("senva/trans/js.snv");
-	return leval(l(new Symb("trans::js::encode")
-			, l(new Symb("quote")
-				, l(new Symb("lambda"), func.args, func.body))), genv);
+	return leval(l(intern("trans::js::encode")
+			, l(intern("quote")
+				, l(intern("lambda"), func.args, func.body))), genv);
 	// TODO trans::js::encodeを事前コンパイルしておき、js上で実行するようにする
 }
 
@@ -1213,7 +1220,7 @@ function lgetat (vect, idx)
 	}
 	if (vect instanceof Symb)
 	{
-		return new Symb(vect.name[idx]);
+		return intern(vect.name[idx]);
 	}
 	throw new Erro(ErroId.Type, `cannot apply getat to ${lprint(vect)}`);
 }
@@ -1246,24 +1253,20 @@ function lsetat (vect, idx, val)
 	{
 		if (Number.isInteger(val))
 		{
-			vect.name = vect.name.slice(0, idx) + String.fromCharCode(val)
-				+ vect.name.slice(idx + 1);
+			return intern(vect.name.slice(0, idx) + String.fromCharCode(val)
+				+ vect.name.slice(idx + 1));
 		}
 		else if (val instanceof String || (typeof val) == "string")
 		{
-			vect.name = vect.name.slice(0, idx) + val[0] + vect.name.slice(idx + 1);
+			return intern(
+					vect.name.slice(0, idx) + val[0] + vect.name.slice(idx + 1));
 		}
 		else if (val instanceof Symb)
 		{
-			vect.name = vect.name.slice(0, idx) + val.name[0]
-				+ vect.name.slice(idx + 1);
+			return intern(vect.name.slice(0, idx)
+					+ val.name[0] + vect.name.slice(idx + 1));
 		}
-		else
-		{
-			throw new Erro(ErroId.Type
-					, `cannot setat ${lprint(val)} to ${lprint(vect)}`);
-		}
-		return vect;
+		throw new Erro(ErroId.Type, `cannot setat ${lprint(val)} to ${lprint(vect)}`);
 	}
 	try
 	{
@@ -1369,7 +1372,7 @@ function printcons_rec (coll, dup, rec)
 
 function regist (name, obj)
 {
-	rplaca(genv, cons(cons(new Symb(name), obj), car(genv)));
+	rplaca(genv, cons(cons(intern(name), obj), car(genv)));
 }
 
 regist("nil", nil);
@@ -1417,7 +1420,7 @@ regist("type", ltype);
 regist("load", lload);
 regist("getat", lgetat);
 regist("setat", lsetat);
-regist("processor", function () { return new Symb("javascript"); });
+regist("processor", function () { return intern("javascript"); });
 regist("tee", tee);
 regist("compile", compile);
 regist("js", eval);

@@ -42,9 +42,20 @@ class Interpreter
 
 	public class Symb
 	{
+		private static Dictionary<string, Symb> identifiers;
 		public string name;
 
+		static Symb () { Symb.identifiers = new Dictionary<string, Symb>(); }
 		public Symb (string name_) { this.name = name_; }
+
+		public static Symb intern (string name)
+		{
+			if (name.containsKey(name)) { return Symb.identifiers[name]; }
+			var newsym = new Symb(name);
+			Symb.identifiers[name] = newsym;
+			return newsym;
+		}
+
 	}
 
 	public class Cons : ICons
@@ -207,7 +218,7 @@ class Interpreter
 	static Interpreter ()
 	{
 		nil = new Nil();
-		t = new Symb("T");
+		t = Symb.intern("T");
 	
 		escape_char_table = new Dictionary<char, char>
 		{
@@ -287,7 +298,7 @@ class Interpreter
 		regist_subr2<object, long, object>(genv, "getat", lgetat);
 		regist_subr3<object, long, object, object>(genv, "setat", lsetat);
 		regist(genv, "processor", new Subr(
-					(ICons args) => { return new Symb("cs"); }, "processor"));
+					(ICons args) => { return Symb.intern("cs"); }, "processor"));
 		regist_subr1<object, object>(genv, "tee", tee);
 		regist(genv, "exit", new Subr(
 					(ICons args) => { Environment.Exit(0); return nil; }, "exit"));
@@ -345,7 +356,7 @@ class Interpreter
 
 	static private void regist (Cons env, string name, object obj)
 	{
-		rplaca(env, cons(cons(new Symb(name), obj), car(env)));
+		rplaca(env, cons(cons(Symb.intern(name), obj), car(env)));
 	}
 
 	static private void regist_subr0<R> (Cons env, string name, Func<R> proc)
@@ -425,10 +436,11 @@ class Interpreter
 	static public object atom (object o) { return (o is Cons) ? nil as object : t as object; }
 	static public object eq (object a, object b)
 	{
-		return (ReferenceEquals(a, b)
-				|| (a is Symb && b is Symb
-					&& ((a as Symb).name == (b as Symb).name)))
-			? t as object : nil as object;
+		return ReferenceEquals(a, b) ? t as object : nil as object;
+//		return (ReferenceEquals(a, b)
+//				|| (a is Symb && b is Symb
+//					&& ((a as Symb).name == (b as Symb).name)))
+//			? t as object : nil as object;
 	}
 
 	static public object equal (object a, object b)
@@ -719,18 +731,18 @@ class Interpreter
 
 	static public Symb ltype (object o)
 	{
-		if (o is Cons) { return new Symb("<cons>"); }
-		if (o is LFunc) { return new Symb("<func>"); }
-		if (o is Spfm) { return new Symb("<spfm>"); }
-		if (o is Subr) { return new Symb("<subr>"); }
-		if (o is Symb) { return new Symb("<symb>"); }
-		if (o is string) { return new Symb("<strn>"); }
-		if (is_inum(o)) { return new Symb("<inum>"); }
-		if (is_fnum(o)) { return new Symb("<fnum>"); }
-		if (o is Nil) { return new Symb("<nil>"); }
-		if (o.GetType().IsArray) { return new Symb("<vect>"); }
-		if (o is Queu) { return new Symb("<queu>"); }
-		return new Symb(string.Format("<cs {0}>", o.GetType()));
+		if (o is Cons) { return Symb.intern("<cons>"); }
+		if (o is LFunc) { return Symb.intern("<func>"); }
+		if (o is Spfm) { return Symb.intern("<spfm>"); }
+		if (o is Subr) { return Symb.intern("<subr>"); }
+		if (o is Symb) { return Symb.intern("<symb>"); }
+		if (o is string) { return Symb.intern("<strn>"); }
+		if (is_inum(o)) { return Symb.intern("<inum>"); }
+		if (is_fnum(o)) { return Symb.intern("<fnum>"); }
+		if (o is Nil) { return Symb.intern("<nil>"); }
+		if (o.GetType().IsArray) { return Symb.intern("<vect>"); }
+		if (o is Queu) { return Symb.intern("<queu>"); }
+		return Symb.intern(string.Format("<cs {0}>", o.GetType()));
 	}
 
 
@@ -744,7 +756,7 @@ class Interpreter
 		}
 		if (o is Nil) { return nil; }
 		if (o is Queu) { return (o as Queu).entr; }
-		if (o is Symb) { return new Symb((o as Symb).name[(o as Symb).name.Length - 1].ToString()); }
+		if (o is Symb) { return Symb.intern((o as Symb).name[(o as Symb).name.Length - 1].ToString()); }
 		if (o is string) { return (o as string)[(o as string).Length - 1].ToString(); }
 		if (o.GetType().IsArray) { return new object[]{(o as object[])[(o as object[]).Length - 1]}; }
 		throw new Erro(ErroId.Type, string.Format("cannot apply last to {0}", lprint(o)));
@@ -851,20 +863,20 @@ class Interpreter
 			{
 				strn += Convert.ToChar(car(rest as Cons));
 			}
-			return new Symb(strn);
+			return Symb.intern(strn);
 		}
 		if (obj is Queu)
 		{
-			return new Symb(cons2vect((obj as Queu).exit).Aggregate(""
+			return Symb.intern(cons2vect((obj as Queu).exit).Aggregate(""
 						, (string acc, object e) => { return acc + Convert.ToChar(e).ToString(); } ));
 		}
 		if (obj.GetType().IsArray)
 		{
-			return new Symb((obj as object[]).Aggregate(""
+			return Symb.intern((obj as object[]).Aggregate(""
 							,(string acc, object e)
 							=> { return acc + Convert.ToChar(e).ToString(); }));
 		}
-		if (obj is string) { return new Symb(obj as string); }
+		if (obj is string) { return Symb.intern(obj as string); }
 		if (obj is Symb) { return obj as Symb; }
 		throw new Erro(ErroId.Type
 				, string.Format("cannot cast {0} to SymbT.", lprint(obj)));
@@ -1087,7 +1099,7 @@ class Interpreter
 		if ("nil" == tok || "NIL" == tok) { o = nil; }
 		else if (Int64.TryParse(tok, out inum)) { o = inum; }
 		else if (Double.TryParse(tok, out fnum)) { o = fnum; }
-		else { o = new Symb(tok); }
+		else { o = Symb.intern(tok); }
 
 		var res = cons(wrap_readmacros(o, rmacs), tree);
 
@@ -1256,8 +1268,8 @@ class Interpreter
 				tree = growth(tree, ref tok, ref rmacs);
 				ICons invec = lread(code.Substring(idx + 1, co));
 				tree = (rmacs is Nil)
-					? cons(cons(new Symb("vect"), invec), tree)
-					: cons(l(new Symb("to-vect"), wrap_readmacros(invec, rmacs)), tree);
+					? cons(cons(Symb.intern("vect"), invec), tree)
+					: cons(l(Symb.intern("to-vect"), wrap_readmacros(invec, rmacs)), tree);
 				tok = "";
 				rmacs = nil;
 				idx += co + 1;
@@ -1287,27 +1299,27 @@ class Interpreter
 			else if ('\'' == c)
 			{
 				tree = growth(tree, ref tok, ref rmacs);
-				rmacs = cons(new Symb("quote"), rmacs);
+				rmacs = cons(Symb.intern("quote"), rmacs);
 			}
 			else if ('`' == c)
 			{
 				tree = growth(tree, ref tok, ref rmacs);
-				rmacs = cons(new Symb("quasiquote"), rmacs);
+				rmacs = cons(Symb.intern("quasiquote"), rmacs);
 			}
 			else if (',' == c)
 			{
 				tree = growth(tree, ref tok, ref rmacs);
-				rmacs = cons(new Symb("unquote"), rmacs);
+				rmacs = cons(Symb.intern("unquote"), rmacs);
 			}
 			else if ('@' == c)
 			{
 				tree = growth(tree, ref tok, ref rmacs);
-				rmacs = cons(new Symb("splicing"), rmacs);
+				rmacs = cons(Symb.intern("splicing"), rmacs);
 			}
 			else if ('^' == c)
 			{
 				tree = growth(tree, ref tok, ref rmacs);
-				rmacs = cons(new Symb("tee"), rmacs);
+				rmacs = cons(Symb.intern("tee"), rmacs);
 			}
 			else if ('.' == c)
 			{
@@ -1326,7 +1338,7 @@ class Interpreter
 
 	static public ICons lreadtop (string code)
 	{
-		return cons(new Symb("do"), lread(code));
+		return cons(Symb.intern("do"), lread(code));
 	}
 
 	public object leval (object expr_, ICons env_)
@@ -1456,7 +1468,7 @@ class Interpreter
 	{
 		if (vect.GetType().IsArray) { return (vect as object[])[Convert.ToInt32(idx)]; }
 		if (vect is string) { return (vect as string)[Convert.ToInt32(idx)].ToString(); }
-		if (vect is Symb) { return new Symb((vect as Symb).name[Convert.ToInt32(idx)].ToString()); }
+		if (vect is Symb) { return Symb.intern((vect as Symb).name[Convert.ToInt32(idx)].ToString()); }
 		throw new Erro(ErroId.Type
 				, string.Format("cannot apply getat to {0}", lprint(vect)));
 	}
@@ -1490,10 +1502,9 @@ class Interpreter
 			else { throw new Erro(ErroId.Type
 					, string.Format("cannot setat {0} to {1}"
 						, lprint(valu), lprint(vect))); }
-			(vect as Symb).name = (vect as Symb).name.Substring(0, (Convert.ToInt32(idx)))
+			return Symb.intern((vect as Symb).name.Substring(0, (Convert.ToInt32(idx)))
 				+ c.ToString()
-				+ (vect as Symb).name.Substring(Convert.ToInt32(idx) + 1);
-			return vect;
+				+ (vect as Symb).name.Substring(Convert.ToInt32(idx) + 1));
 		}
 		throw new Erro(ErroId.Type, string.Format("cannot apply setat to {0}", lprint(vect)));
 	}

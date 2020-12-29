@@ -20,10 +20,30 @@ class Cons (var a: Any, var d: Any): ICons
 	override fun cdr () = this.d
 }
 
-class Symb (var name: String) { }
+class Symb ()
+{
+	var name: String
+	init { this.name = "" }
+
+	constructor (name: String) : this() { this.name = name }
+
+	companion object
+	{
+		var identifiers = mutableMapOf<String, Symb>()
+		fun intern (name: String): Symb
+		{
+			return identifiers.getOrElse(name)
+			{
+				val newsym = Symb(name)
+				identifiers[name] = newsym
+				newsym
+			}
+		}
+	}
+}
 
 val nil = Nil()
-val t = Symb("T")
+val t = Symb.intern("T")
 
 enum class ErroId (val value: Int)
 {
@@ -117,7 +137,8 @@ fun cons (a: Any, d: Any): Cons = Cons(a, d)
 fun car (o: ICons): Any = o.car()
 fun cdr (o: ICons): Any = o.cdr()
 fun atom (o: Any): Any = if (o is Cons) nil else t
-fun eq (a: Any, b: Any): Any = if ((a === b) || (a is Symb && b is Symb && a.name == b.name)) t else nil
+//fun eq (a: Any, b: Any): Any = if ((a === b) || (a is Symb && b is Symb && a.name == b.name)) t else nil
+fun eq (a: Any, b: Any): Any = if (a === b) t else nil
 
 fun equal (a: Any, b: Any): Any
 {
@@ -555,18 +576,18 @@ fun lfloat (o: Any): Double
 
 fun ltype (o: Any): Symb
 {
-	if (o is Cons) { return Symb("<cons>") }
-	if (o is Func) { return Symb("<func>") }
-	if (o is Spfm) { return Symb("<spfm>") }
-	if (o is Subr) { return Symb("<subr>") }
-	if (o is Symb) { return Symb("<symb>") }
-	if (o is String) { return Symb("<strn>") }
-	if (o is Int || o is Long || o is Byte || o is Short) { return Symb("<inum>") }
-	if (o is Double || o is Float) { return Symb("<fnum>") }
-	if (o is Nil) { return Symb("<nil>") }
-	if (o is MutableList<*>) { return Symb("<vect>") }
-	if (o is Queu) { return Symb("<queu>") }
-	return Symb("<kotlin ${o.javaClass.kotlin.simpleName}>")
+	if (o is Cons) { return Symb.intern("<cons>") }
+	if (o is Func) { return Symb.intern("<func>") }
+	if (o is Spfm) { return Symb.intern("<spfm>") }
+	if (o is Subr) { return Symb.intern("<subr>") }
+	if (o is Symb) { return Symb.intern("<symb>") }
+	if (o is String) { return Symb.intern("<strn>") }
+	if (o is Int || o is Long || o is Byte || o is Short) { return Symb.intern("<inum>") }
+	if (o is Double || o is Float) { return Symb.intern("<fnum>") }
+	if (o is Nil) { return Symb.intern("<nil>") }
+	if (o is MutableList<*>) { return Symb.intern("<vect>") }
+	if (o is Queu) { return Symb.intern("<queu>") }
+	return Symb.intern("<kotlin ${o.javaClass.kotlin.simpleName}>")
 }
 
 fun last (o: Any): Any
@@ -579,7 +600,7 @@ fun last (o: Any): Any
 	}
 	if (o is Nil) { return nil }
 	if (o is Queu) { return o.entr }
-	if (o is Symb) { return Symb(o.name[o.name.length - 1].toString()) }
+	if (o is Symb) { return Symb.intern(o.name[o.name.length - 1].toString()) }
 	if (o is String) { return o[o.length - 1].toString() }
 	if (o is MutableList<*>) { return mutableListOf(o[o.size - 1]) }
 	throw Erro(ErroId.Type, "cannot apply last to ${lprint(o)}")
@@ -677,18 +698,18 @@ fun symbol (obj: Any): Symb
 			strn += (car(rest) as Number).toChar()
 			rest = cdr(rest)
 		}
-		return Symb(strn)
+		return Symb.intern(strn)
 	}
 	if (obj is Queu)
 	{
-		return Symb(cons2vect(obj.exit).map(
+		return Symb.intern(cons2vect(obj.exit).map(
 					{e -> (e as Number).toChar()}).joinToString(""))
 	}
 	if (obj is MutableList<*>)
 	{
-		return Symb(obj.map({e -> (e as Number).toChar()}).joinToString(""))
+		return Symb.intern(obj.map({e -> (e as Number).toChar()}).joinToString(""))
 	}
-	if (obj is String) { return Symb(obj) }
+	if (obj is String) { return Symb.intern(obj) }
 	if (obj is Symb) { return obj }
 	throw Erro(ErroId.Type, "cannot cast ${lprint(obj)} to SymbT.")
 }
@@ -908,7 +929,7 @@ fun growth (tree: ICons, buff: ReadBuf): ICons
 	val fnum = buf.toDoubleOrNull() 
 	if (fnum != null) { return cons(wrap_readmacros(fnum, rmacs), tree) }
 
-	return cons(wrap_readmacros(Symb(buf), rmacs), tree)
+	return cons(wrap_readmacros(Symb.intern(buf), rmacs), tree)
 }
 
 fun find_co_paren (code: String): Int
@@ -1098,11 +1119,11 @@ fun lread (code: String): ICons
 			val invec = lread(code.substring((idx + 1)..(idx + co)))
 			tree = if (buff.rmacs is Nil)
 			{
-				cons(cons(Symb("vect"), invec), tree)
+				cons(cons(Symb.intern("vect"), invec), tree)
 			}
 			else
 			{
-				cons(l(Symb("to-vect"), wrap_readmacros(invec, buff.rmacs)), tree)
+				cons(l(Symb.intern("to-vect"), wrap_readmacros(invec, buff.rmacs)), tree)
 			}
 			buff = ReadBuf("", nil)
 			idx += co + 1
@@ -1131,27 +1152,27 @@ fun lread (code: String): ICons
 		else if ('\'' == c)
 		{
 			tree = growth(tree, buff)
-			buff.rmacs = cons(Symb("quote"), buff.rmacs)
+			buff.rmacs = cons(Symb.intern("quote"), buff.rmacs)
 		}
 		else if ('`' == c)
 		{
 			tree = growth(tree, buff)
-			buff.rmacs = cons(Symb("quasiquote"), buff.rmacs)
+			buff.rmacs = cons(Symb.intern("quasiquote"), buff.rmacs)
 		}
 		else if (',' == c)
 		{
 			tree = growth(tree, buff)
-			buff.rmacs = cons(Symb("unquote"), buff.rmacs)
+			buff.rmacs = cons(Symb.intern("unquote"), buff.rmacs)
 		}
 		else if ('@' == c)
 		{
 			tree = growth(tree, buff)
-			buff.rmacs = cons(Symb("splicing"), buff.rmacs)
+			buff.rmacs = cons(Symb.intern("splicing"), buff.rmacs)
 		}
 		else if ('^' == c)
 		{
 			tree = growth(tree, buff)
-			buff.rmacs = cons(Symb("tee"), buff.rmacs)
+			buff.rmacs = cons(Symb.intern("tee"), buff.rmacs)
 		}
 		else if ('.' == c)
 		{
@@ -1173,7 +1194,7 @@ fun lread (code: String): ICons
 
 fun lreadtop (code: String): ICons
 {
-	return cons(Symb("do"), lread(code))
+	return cons(Symb.intern("do"), lread(code))
 }
 
 fun leval (expr_: Any, env_: ICons): Any
@@ -1285,7 +1306,7 @@ fun lgetat (vect: Any, idx: Number): Any
 {
 	if (vect is MutableList<*>) { return vect[idx.toInt()] ?: mutableListOf<Any>() }
 	if (vect is String) { return Character.toString(vect[idx.toInt()]) ?: "" }
-	if (vect is Symb) { return Symb(Character.toString(vect.name[idx.toInt()]) ?: "") }
+	if (vect is Symb) { return Symb.intern(Character.toString(vect.name[idx.toInt()]) ?: "") }
 	throw Erro(ErroId.Type, "cannot apply getat to ${lprint(vect)}")
 }
 
@@ -1312,7 +1333,7 @@ fun lsetat (vect: Any, idx: Number, valu: Any): Any
 	}
 	if (vect is Symb)
 	{
-		vect.name = vect.name.substring(0..(idx.toInt() - 1)) + when (valu)
+		return Symb.intern(vect.name.substring(0..(idx.toInt() - 1)) + when (valu)
 			{
 				is Int   -> valu.toChar()
 				is Long  -> valu.toChar()
@@ -1322,8 +1343,7 @@ fun lsetat (vect: Any, idx: Number, valu: Any): Any
 				is Symb -> valu.name[0]
 				else -> throw Erro(ErroId.Type
 						, "cannot setat ${lprint(valu)} to ${lprint(vect)}")
-			} + vect.name.substring((idx.toInt() + 1)..(vect.name.length - 1))
-		return vect
+			} + vect.name.substring((idx.toInt() + 1)..(vect.name.length - 1)))
 	}
 	throw Erro(ErroId.Type, "cannot apply setat to ${lprint(vect)}")
 }
@@ -1409,7 +1429,7 @@ fun printcons_rec (coll: Cons, dup: ICons, rec: Boolean): String
 
 fun regist (env: Cons, name: String, obj: Any)
 {
-	rplaca(env, cons(cons(Symb(name), obj), car(env)))
+	rplaca(env, cons(cons(Symb.intern(name), obj), car(env)))
 }
 
 fun<T, R> regist_subr1 (env: Cons, name: String, proc: (T) -> R)
@@ -1510,7 +1530,7 @@ fun make_genv (): Cons
 	regist_subr1(genv, "load", ::lload)
 	regist_subr2(genv, "getat", ::lgetat)
 	regist_subr3(genv, "setat", ::lsetat)
-	regist(genv, "processor", Subr({Symb("kotlin")}, "processor"))
+	regist(genv, "processor", Subr({Symb.intern("kotlin")}, "processor"))
 	regist_subr1(genv, "tee", ::tee)
 	regist(genv, "exit", Subr({args: ICons -> exitProcess(0)}, "exit"))
 

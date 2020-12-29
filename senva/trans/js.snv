@@ -32,7 +32,7 @@
 (define trans::js::quote-put
   (lambda (obj)
 	(! case (type obj)
-	   ('<symb> (sprint "new Symb(\"" obj "\")")
+	   ('<symb> (sprint "intern(\"" obj "\")")
 		'<cons> (sprint "new Cons("
 						(trans::js::quote-put (car obj)) ", "
 						(trans::js::quote-put (cdr obj)) ")")
@@ -41,7 +41,7 @@
 (define trans::js::quasiquote-put
   (lambda (obj)
 	(! case (type obj)
-	   ('<symb> (sprint "new Symb(\"" obj "\")")
+	   ('<symb> (sprint "intern(\"" obj "\")")
 		'<cons> (if (eq 'unquote (car obj))
 				  (trans::js::encode (cadr obj))
 				  (reduce
@@ -107,10 +107,10 @@
 (! trans::js::regist if (sprint "(" (trans::js::encode (car args)) " !== nil)"
 						" ? " (trans::js::encode (cadr args))
 						" : " (trans::js::encode (caddr args)))
-   "seekenv(genv, new Symb(\"if\"))")
+   "seekenv(genv, intern(\"if\"))")
 
 (! trans::js::regist quote (trans::js::quote-put (car args))
-   "seekenv(genv, new Symb(\"quote\"))")
+   "seekenv(genv, intern(\"quote\"))")
 
 (! trans::js::regist lambda (if (flatlistp (car args))
 					  (sprint "(function ("
@@ -123,41 +123,41 @@
 							  "} catch (__sys_erro) {throw new Erro(ErroId.Type, `cannot bind: "
 							  (car args)
 							  " and ${lprint(vect2cons(Array.from(arguments)))}`)}})"))
-   "seekenv(genv, new Symb(\"lambda\"))")
+   "seekenv(genv, intern(\"lambda\"))")
 
 (! trans::js::regist ! (trans::js::encode (senva::expand-syntax-proc
 									(car args) (cdr args) (environment)))
-   "seekenv(genv, new Symb(\"!\"))")
+   "seekenv(genv, intern(\"!\"))")
 
 (! trans::js::regist define (sprint "(function () {"
 							(car args) " = " (trans::js::encode (cadr args))
 							"; return " (trans::js::quote-put (car args)) "})()")
-   "seekenv(genv, new Symb(\"define\"))")
+   "seekenv(genv, intern(\"define\"))")
 
 (! trans::js::regist setq (sprint "(function () {"
 						  (car args) " = " (trans::js::encode (cadr args))
 						  "; return " (car args) "})()")
-   "seekenv(genv, new Symb(\"setq\"))")
+   "seekenv(genv, intern(\"setq\"))")
 
 (! trans::js::regist do (! let ((jscs (map trans::js::encode args)))
 						   (sprint "(function () {"
 								   (join (rcons (tail-drop jscs 1)
 												(sprint "return " (back jscs)))
 										 "; ") "})()"))
-   "seekenv(genv, new Symb(\"do\"))")
+   "seekenv(genv, intern(\"do\"))")
 
 (! trans::js::regist quasiquote
    (trans::js::quasiquote-put (car args))
-   "seekenv(genv, new Symb(\"quasiquote\"))")
+   "seekenv(genv, intern(\"quasiquote\"))")
 
 (! trans::js::regist catch (sprint "(function () {try {return "
 						   (trans::js::encode (cadr args))
 						   "} catch (__sys_erro) {return "
 						   (trans::js::encode (car args))
 						   "(__sys_erro.eid, __sys_erro.estr)}})()")
-   "seekenv(genv, new Symb(\"catch\"))")
+   "seekenv(genv, intern(\"catch\"))")
 
-(! trans::js::regist environment "genv" "seekenv(genv, new Symb(\"environment\"))"); TODO
+(! trans::js::regist environment "genv" "seekenv(genv, intern(\"environment\"))"); TODO
 
 (! trans::js::regist js (car args) 'eval)
 
@@ -167,7 +167,7 @@
 (! trans::js::regist -> (sprint (join (cons (trans::js::encode (car args))
 											(cdr args)) ".")) 'attr)
 
-(! trans::js::regist processor "new Symb(\"javascript\")"
+(! trans::js::regist processor "intern(\"javascript\")"
    (trans::js::encode ''javascript))
 
 ; TODO re-replace ascii code to bads(original symbol)

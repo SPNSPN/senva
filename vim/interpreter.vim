@@ -81,8 +81,10 @@ function! Atom (o) abort
 endfunction
 
 function! Eq (a, b) abort
-	return (a:a == a:b) ? g:t : g:nil
+	return (a:a is a:b) ? g:t : g:nil
 endfunction
+
+
 
 function! Lthrow (eid, emess) abort
 	throw "," . a:eid . "," . a:emess
@@ -182,7 +184,7 @@ function! Lread (code) abort
 			if buff[0]
 				let buff[0] += "."
 			else
-				return Nconc(Reverse(Cdr(tree)), Cons(Car(tree), Car(Lread(strpart(a:code, idx + 1)))))
+				return Nconc(Nreverse(Cdr(tree)), Cons(Car(tree), Car(Lread(strpart(a:code, idx + 1)))))
 			endif
 		else
 			let buff[0] += c

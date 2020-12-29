@@ -15,6 +15,16 @@ class Nil:
 		return "NIL"
 
 class Symb:
+	identifiers = {}
+
+	@classmethod
+	def intern (cls, name):
+		if name in Symb.identifiers:
+			return Symb.identifiers[name]
+		newsym = Symb(name)
+		Symb.identifiers[name] = newsym
+		return newsym
+
 	def __init__ (self, name):
 		self.name = name
 
@@ -23,6 +33,9 @@ class Symb:
 
 	def __str__ (self):
 		return self.name
+
+	def __hash__ (self):
+		return hash(self.name)
 
 class Cons:
 	def __init__ (self, a, d):
@@ -131,7 +144,7 @@ ErroId.__dict__["FileNotFound"]     = 9
 
 nil = Nil()
 NIL = nil
-t = Symb("T")
+t = Symb.intern("T")
 T = t
 
 def cons (a, d):
@@ -148,12 +161,7 @@ def cdr (c):
 	return c.cdr
 
 def eq (a, b):
-	if a is b:
-		return t
-	else:
-		if isinstance(a, Symb) and isinstance(b, Symb) and a.name == b.name:
-			return t
-		return nil
+	return t if a is b else nil
 
 def equal (a, b):
 	if a == b:
@@ -263,28 +271,28 @@ def lfloat (n):
 
 def ltype (o):
 	if isinstance(o, Cons):
-		return Symb("<cons>")
+		return Symb.intern("<cons>")
 	if isinstance(o, Func):
-		return Symb("<func>")
+		return Symb.intern("<func>")
 	if isinstance(o, Spfm):
-		return Symb("<spfm>")
+		return Symb.intern("<spfm>")
 	if callable(o):
-		return Symb("<subr>")
+		return Symb.intern("<subr>")
 	if isinstance(o, Symb):
-		return Symb("<symb>")
+		return Symb.intern("<symb>")
 	if isinstance(o, str):
-		return Symb("<strn>")
+		return Symb.intern("<strn>")
 	if isinstance(o, int):
-		return Symb("<inum>")
+		return Symb.intern("<inum>")
 	if isinstance(o, float):
-		return Symb("<fnum>")
+		return Symb.intern("<fnum>")
 	if isinstance(o, Nil):
-		return Symb("<nil>")
+		return Symb.intern("<nil>")
 	if isinstance(o, list):
-		return Symb("<vect>")
+		return Symb.intern("<vect>")
 	if isinstance(o, Queu):
-		return Symb("<queu>")
-	return Symb("<py {0}>".format(type(o)))
+		return Symb.intern("<queu>")
+	return Symb.intern("<py {0}>".format(type(o)))
 
 
 genv = cons(nil, nil)
@@ -334,13 +342,13 @@ def lor (env, args):
 def expand_quasiquote (expr, env):
 	if atom(expr):
 		return expr
-	if Symb("unquote") == car(expr):
+	if isinstance(car(expr), Symb) and car(expr).name == "unquote":
 		return leval(car(cdr(expr)), env)
 
 	eexpr = nil
 	rest = expr
 	while not rest is nil:
-		if not atom(car(rest)) and Symb("splicing") == car(car(rest)):
+		if not atom(car(rest)) and isinstance(car(car(rest)), Symb) and car(car(rest)).name == "splicing":
 			sexpr = leval(car(cdr(car(rest))), env)
 			while not sexpr is nil:
 				eexpr = cons(car(sexpr), eexpr)
@@ -383,8 +391,8 @@ def lread (code):
 			tree = growth(tree, buff)
 			co = find_co_bracket(code[idx + 1:])
 			invec = lread(code[idx + 1: idx + co + 1])
-			tree = cons(l(Symb("to-vect"), wrap_readmacros(invec, buff[1]))\
-					if buff[1] else cons(Symb("vect"), invec), tree)
+			tree = cons(l(Symb.intern("to-vect"), wrap_readmacros(invec, buff[1]))\
+					if buff[1] else cons(Symb.intern("vect"), invec), tree)
 			buff = ["", nil]
 			idx += co + 1
 		elif "]" == c:
@@ -403,19 +411,19 @@ def lread (code):
 			buff = ["", nil]
 		elif "'" == c:
 			tree = growth(tree, buff)
-			buff[1] = cons(Symb("quote"), buff[1])
+			buff[1] = cons(Symb.intern("quote"), buff[1])
 		elif "`" == c:
 			tree = growth(tree, buff)
-			buff[1] = cons(Symb("quasiquote"), buff[1])
+			buff[1] = cons(Symb.intern("quasiquote"), buff[1])
 		elif "," == c:
 			tree = growth(tree, buff)
-			buff[1] = cons(Symb("unquote"), buff[1])
+			buff[1] = cons(Symb.intern("unquote"), buff[1])
 		elif "@" == c:
 			tree = growth(tree, buff)
-			buff[1] = cons(Symb("splicing"), buff[1])
+			buff[1] = cons(Symb.intern("splicing"), buff[1])
 		elif "^" == c:
 			tree = growth(tree, buff)
-			buff[1] = cons(Symb("tee"), buff[1])
+			buff[1] = cons(Symb.intern("tee"), buff[1])
 		elif "." == c:
 			if buff[0]:
 				buff[0] += "."
@@ -430,7 +438,7 @@ def lread (code):
 	return nreverse(tree)
 
 def lreadtop (code):
-	return cons(Symb("do"), lread(code))
+	return cons(Symb.intern("do"), lread(code))
 
 def leval (expr, env):
 	try:
@@ -530,7 +538,7 @@ def lgetat (vect, idx):
 		return vect[idx]
 	
 	if isinstance(vect, Symb):
-		return Symb(vect.name[idx])
+		return Symb.intern(vect.name[idx])
 
 	raise Erro(ErroId.Type, "cannot apply getat to {0}".format(lprint(vect)))
 
@@ -548,18 +556,16 @@ def lsetat (vect, idx, val):
 		raise Erro(ErroId.Type, "cannot setat {0} to {1}".format(lprint(val), lprint(vect)))
 	if isinstance(vect, Symb):
 		if isinstance(val, int):
-			vect.name = vect.name[:idx] + chr(val) + vect.name[idx + 1:]
+			return Symb.intern(vect.name[:idx] + chr(val) + vect.name[idx + 1:])
 		elif isinstance(val, str):
-			vect.name = vect.name[:idx] + val[0] + vect.name[idx + 1:]
+			return Symb.intern(vect.name[:idx] + val[0] + vect.name[idx + 1:])
 		elif isinstance(val, Symb):
-			vect.name = vect.name[:idx] + val.name[0] + vect.name[idx + 1:]
-		else:
-			raise Erro(ErroId.Type, "cannot setat {0} to {1}".format(lprint(val), lprint(vect)))
-		return vect
+			return Symb.intern(vect.name[:idx] + val.name[0] + vect.name[idx + 1:])
+		raise Erro(ErroId.Type, "cannot setat {0} to {1}".format(lprint(val), lprint(vect)))
 	raise Erro(ErroId.Type, "cannot apply setat to {0}".format(lprint(vect)))
 
 def processor ():
-	return Symb("python")
+	return Symb.intern("python")
 
 def lprint (expr):
 	printed, dup = seek_dup(expr, nil, nil)
@@ -681,7 +687,7 @@ def growth (tree, buff):
 			return cons(wrap_readmacros(int(buf), rmacs), tree)
 		if fnumable(buf):
 			return cons(wrap_readmacros(float(buf), rmacs), tree)
-		return cons(wrap_readmacros(Symb(buf), rmacs), tree)
+		return cons(wrap_readmacros(Symb.intern(buf), rmacs), tree)
 	return tree
 
 def wrap_readmacros (o, rmacs):
@@ -866,7 +872,7 @@ def last (o):
 	if isinstance(o, Queu):
 		return o.entr
 	if isinstance(o, Symb):
-		return Symb(o.name[-1])
+		return Symb.intern(o.name[-1])
 	if isinstance(o, str):
 		return o[-1]
 	if isinstance(o, list):
@@ -967,17 +973,17 @@ def symbol (obj):
 		while not rest is nil:
 			strn += chr(car(rest))
 			rest = cdr(rest)
-		return Symb(strn)
+		return Symb.intern(strn)
 	if isinstance(obj, Queu):
-		return Symb("".join([chr(e) for e in cons2vect(obj.exit)]))
+		return Symb.intern("".join([chr(e) for e in cons2vect(obj.exit)]))
 	if isinstance(obj, list):
-		return Symb("".join([chr(e) for e in obj]))
+		return Symb.intern("".join([chr(e) for e in obj]))
 	if isinstance(obj, str):
-		return Symb(obj)
+		return Symb.intern(obj)
 	if isinstance(obj, Symb):
 		return obj
 	if obj is nil:
-		return Symb("")
+		return Symb.intern("")
 	raise Erro(ErroId.Type, "cannot cast {0} to SymbT.".format(lprint(obj)))
 
 def sprint (*args):
@@ -1048,84 +1054,84 @@ def l (*args):
 
 def initenv ():
 	ienv = nil
-	ienv = cons(cons(Symb("nil"), nil), ienv)
-	ienv = cons(cons(Symb("t"), t), ienv)
-	ienv = cons(cons(Symb("T"), t), ienv)
-	ienv = cons(cons(Symb("cons"), cons), ienv)
-	ienv = cons(cons(Symb("car"), car), ienv)
-	ienv = cons(cons(Symb("cdr"), cdr), ienv)
-	ienv = cons(cons(Symb("eq"), eq), ienv)
-	ienv = cons(cons(Symb("equal"), equal), ienv)
-	ienv = cons(cons(Symb("atom"), atom), ienv)
-	ienv = cons(cons(Symb("list"), l), ienv)
-	ienv = cons(cons(Symb("+"), add), ienv)
-	ienv = cons(cons(Symb("-"), sub), ienv)
-	ienv = cons(cons(Symb("*"), mul), ienv)
-	ienv = cons(cons(Symb("/"), div), ienv)
-	ienv = cons(cons(Symb("%"), mod), ienv)
-	ienv = cons(cons(Symb(">"), gt), ienv)
-	ienv = cons(cons(Symb(">="), ge), ienv)
-	ienv = cons(cons(Symb("<"), lt), ienv)
-	ienv = cons(cons(Symb("<="), le), ienv)
-	ienv = cons(cons(Symb("int"), lint), ienv)
-	ienv = cons(cons(Symb("float"), lfloat), ienv)
-#	ienv = cons(cons(Symb("reverse"), reverse), ienv)
-#	ienv = cons(cons(Symb("append1"), append1), ienv)
-#	ienv = cons(cons(Symb("take"), take), ienv)
-#	ienv = cons(cons(Symb("drop"), drop), ienv)
-	ienv = cons(cons(Symb("rplaca"), rplaca), ienv)
-	ienv = cons(cons(Symb("rplacd"), rplacd), ienv)
-	ienv = cons(cons(Symb("last"), last), ienv)
-	ienv = cons(cons(Symb("nconc"), nconc), ienv)
-	ienv = cons(cons(Symb("nreverse"), nreverse), ienv)
-	ienv = cons(cons(Symb("load"), lload), ienv)
-	ienv = cons(cons(Symb("vect"), vect), ienv)
-	ienv = cons(cons(Symb("queu"), queu), ienv)
-	ienv = cons(cons(Symb("pushqueu"), (lambda queu, val: queu.push(val))), ienv)
-	ienv = cons(cons(Symb("popqueu"), (lambda queu: queu.pop())), ienv)
-	ienv = cons(cons(Symb("concqueu"), (lambda qa, qb: qa.concat(qb))), ienv)
-	ienv = cons(cons(Symb("to-list"), to_list), ienv)
-	ienv = cons(cons(Symb("to-vect"), to_vect), ienv)
-	ienv = cons(cons(Symb("to-queu"), to_queu), ienv)
-	ienv = cons(cons(Symb("symbol"), symbol), ienv)
-	ienv = cons(cons(Symb("sprint"), sprint), ienv)
-	ienv = cons(cons(Symb("apply"), lapply), ienv)
-	ienv = cons(cons(Symb("throw"), lthrow), ienv)
-	ienv = cons(cons(Symb("empty"), lempty), ienv)
-	ienv = cons(cons(Symb("print"), llprint), ienv)
-	ienv = cons(cons(Symb("prin"), llprin), ienv)
-	ienv = cons(cons(Symb("getc"), lgetc), ienv)
-	ienv = cons(cons(Symb("type"), ltype), ienv)
-	ienv = cons(cons(Symb("getat"), lgetat), ienv)
-	ienv = cons(cons(Symb("setat"), lsetat), ienv)
-	ienv = cons(cons(Symb("processor"), processor), ienv)
-	ienv = cons(cons(Symb("tee"), tee), ienv)
-	ienv = cons(cons(Symb("exit"), (lambda: exit())), ienv)
-	ienv = cons(cons(Symb("py"), (lambda expr: eval(expr))), ienv)
-	ienv = cons(cons(Symb("import"), (lambda mname:
+	ienv = cons(cons(Symb.intern("nil"), nil), ienv)
+	ienv = cons(cons(Symb.intern("t"), t), ienv)
+	ienv = cons(cons(Symb.intern("T"), t), ienv)
+	ienv = cons(cons(Symb.intern("cons"), cons), ienv)
+	ienv = cons(cons(Symb.intern("car"), car), ienv)
+	ienv = cons(cons(Symb.intern("cdr"), cdr), ienv)
+	ienv = cons(cons(Symb.intern("eq"), eq), ienv)
+	ienv = cons(cons(Symb.intern("equal"), equal), ienv)
+	ienv = cons(cons(Symb.intern("atom"), atom), ienv)
+	ienv = cons(cons(Symb.intern("list"), l), ienv)
+	ienv = cons(cons(Symb.intern("+"), add), ienv)
+	ienv = cons(cons(Symb.intern("-"), sub), ienv)
+	ienv = cons(cons(Symb.intern("*"), mul), ienv)
+	ienv = cons(cons(Symb.intern("/"), div), ienv)
+	ienv = cons(cons(Symb.intern("%"), mod), ienv)
+	ienv = cons(cons(Symb.intern(">"), gt), ienv)
+	ienv = cons(cons(Symb.intern(">="), ge), ienv)
+	ienv = cons(cons(Symb.intern("<"), lt), ienv)
+	ienv = cons(cons(Symb.intern("<="), le), ienv)
+	ienv = cons(cons(Symb.intern("int"), lint), ienv)
+	ienv = cons(cons(Symb.intern("float"), lfloat), ienv)
+#	ienv = cons(cons(Symb.intern("reverse"), reverse), ienv)
+#	ienv = cons(cons(Symb.intern("append1"), append1), ienv)
+#	ienv = cons(cons(Symb.intern("take"), take), ienv)
+#	ienv = cons(cons(Symb.intern("drop"), drop), ienv)
+	ienv = cons(cons(Symb.intern("rplaca"), rplaca), ienv)
+	ienv = cons(cons(Symb.intern("rplacd"), rplacd), ienv)
+	ienv = cons(cons(Symb.intern("last"), last), ienv)
+	ienv = cons(cons(Symb.intern("nconc"), nconc), ienv)
+	ienv = cons(cons(Symb.intern("nreverse"), nreverse), ienv)
+	ienv = cons(cons(Symb.intern("load"), lload), ienv)
+	ienv = cons(cons(Symb.intern("vect"), vect), ienv)
+	ienv = cons(cons(Symb.intern("queu"), queu), ienv)
+	ienv = cons(cons(Symb.intern("pushqueu"), (lambda queu, val: queu.push(val))), ienv)
+	ienv = cons(cons(Symb.intern("popqueu"), (lambda queu: queu.pop())), ienv)
+	ienv = cons(cons(Symb.intern("concqueu"), (lambda qa, qb: qa.concat(qb))), ienv)
+	ienv = cons(cons(Symb.intern("to-list"), to_list), ienv)
+	ienv = cons(cons(Symb.intern("to-vect"), to_vect), ienv)
+	ienv = cons(cons(Symb.intern("to-queu"), to_queu), ienv)
+	ienv = cons(cons(Symb.intern("symbol"), symbol), ienv)
+	ienv = cons(cons(Symb.intern("sprint"), sprint), ienv)
+	ienv = cons(cons(Symb.intern("apply"), lapply), ienv)
+	ienv = cons(cons(Symb.intern("throw"), lthrow), ienv)
+	ienv = cons(cons(Symb.intern("empty"), lempty), ienv)
+	ienv = cons(cons(Symb.intern("print"), llprint), ienv)
+	ienv = cons(cons(Symb.intern("prin"), llprin), ienv)
+	ienv = cons(cons(Symb.intern("getc"), lgetc), ienv)
+	ienv = cons(cons(Symb.intern("type"), ltype), ienv)
+	ienv = cons(cons(Symb.intern("getat"), lgetat), ienv)
+	ienv = cons(cons(Symb.intern("setat"), lsetat), ienv)
+	ienv = cons(cons(Symb.intern("processor"), processor), ienv)
+	ienv = cons(cons(Symb.intern("tee"), tee), ienv)
+	ienv = cons(cons(Symb.intern("exit"), (lambda: exit())), ienv)
+	ienv = cons(cons(Symb.intern("py"), (lambda expr: eval(expr))), ienv)
+	ienv = cons(cons(Symb.intern("import"), (lambda mname:
 						importlib.import_module(mname))), ienv)
-	ienv = cons(cons(Symb("->"), attr), ienv)
-	ienv = cons(cons(Symb("if"), Spfm(lif, "if")), ienv)
-	ienv = cons(cons(Symb("lambda")
+	ienv = cons(cons(Symb.intern("->"), attr), ienv)
+	ienv = cons(cons(Symb.intern("if"), Spfm(lif, "if")), ienv)
+	ienv = cons(cons(Symb.intern("lambda")
 				, Spfm((lambda env, args: Func(car(args), car(cdr(args)), env))
 					, "lambda")), ienv)
-	ienv = cons(cons(Symb("define"), Spfm(ldefine, "define")), ienv)
-	ienv = cons(cons(Symb("setq"), Spfm(lsetq, "setq")), ienv)
-	ienv = cons(cons(Symb("quote")
+	ienv = cons(cons(Symb.intern("define"), Spfm(ldefine, "define")), ienv)
+	ienv = cons(cons(Symb.intern("setq"), Spfm(lsetq, "setq")), ienv)
+	ienv = cons(cons(Symb.intern("quote")
 				, Spfm((lambda env, args: car(args)), "quote")), ienv)
-	ienv = cons(cons(Symb("and"), Spfm(land, "and")), ienv)
-	ienv = cons(cons(Symb("or"), Spfm(lor, "or")), ienv)
-	ienv = cons(cons(Symb("quasiquote")
+	ienv = cons(cons(Symb.intern("and"), Spfm(land, "and")), ienv)
+	ienv = cons(cons(Symb.intern("or"), Spfm(lor, "or")), ienv)
+	ienv = cons(cons(Symb.intern("quasiquote")
 				, Spfm((lambda env, args: expand_quasiquote(car(args), env))
 					, "quasiquote")), ienv)
-	ienv = cons(cons(Symb("environment")
+	ienv = cons(cons(Symb.intern("environment")
 			, Spfm((lambda env, args: env), "environment")) , ienv)
-	ienv = cons(cons(Symb("!")
+	ienv = cons(cons(Symb.intern("!")
 				, Spfm((lambda env, args:
 						leval(lapply(leval(car(args), env), cdr(args)), env))
 					, "!")), ienv)
-	ienv = cons(cons(Symb("do"), Spfm(ldo, "do")), ienv)
-	ienv = cons(cons(Symb("catch"), Spfm(lcatch, "catch")), ienv)
+	ienv = cons(cons(Symb.intern("do"), Spfm(ldo, "do")), ienv)
+	ienv = cons(cons(Symb.intern("catch"), Spfm(lcatch, "catch")), ienv)
 	return ienv
 
 rplaca(genv, initenv())
@@ -1135,9 +1141,9 @@ def rep_file (script, read_dbg):
 	with open (script) as f:
 		try:
 			if read_dbg:
-				print(lprint(cons(Symb("do"), lread(f.read()))))
+				print(lprint(cons(Symb.intern("do"), lread(f.read()))))
 			else:
-				print(lprint(leval(cons(Symb("do"), lread(f.read())), genv)))
+				print(lprint(leval(cons(Symb.intern("do"), lread(f.read())), genv)))
 		except EOFError:
 			print("")
 		except Exception as e:
