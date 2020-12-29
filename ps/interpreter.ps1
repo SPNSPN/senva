@@ -557,11 +557,11 @@ function nreverse ($coll)
 function append1 ($a, $b)
 {
 	$ret = $b;
-	for ($rest = reverse $a; -not (atom $rest); $rest = cdr $rest)
+	for ($rest = $a; -not (atom $rest); $rest = cdr $rest)
 	{
 		$ret = cons (car $rest) $ret;
 	}
-	return $ret;
+	return (nreverse $ret);
 }
 
 function append
@@ -929,11 +929,11 @@ function take_string ($src)
 function mapeval ($objs, $env)
 {
 	$eobjs = $nil;
-	for ($rest = reverse $objs; -not (atom $rest); $rest = cdr $rest)
+	for ($rest = $objs; -not (atom $rest); $rest = cdr $rest)
 	{
 		$eobjs = cons (leval (car $rest) $env) $eobjs;
 	}
-	return $eobjs;
+	return (nreverse $eobjs);
 }
 
 function findidx_eq ($o, $coll)
@@ -1090,11 +1090,11 @@ regist_subr $genv { param($args_);`
 	return (nreverse (car $args_)); } "nreverse";
 regist_subr $genv { param($args_);`
 	$ret = $nil;
-	for ($rest = reverse (car $args_); -not (atom $rest); $rest = cdr $rest)
+	for ($rest = car $args_; -not (atom $rest); $rest = cdr $rest)
 	{
 		$ret = append1 (car $rest) $ret;
 	};
-	return $ret; } "append";
+	return (nreverse $ret); } "append";
 regist_subr $genv { param($args_);`
 	return (apply (car $args_) (car (cdr $args_))); } "apply";
 regist_subr $genv { param($args_);`
