@@ -1,15 +1,25 @@
-$nil = $False;
-$t = new-object symb "T";
-
 class symb
 {
+	static [Hashtable] $identifiers = @{};
 	[string] $name;
 
 	symb ([string] $name_)
 	{
 		$this.name = $name_;
 	}
+
+	static [symb] intern ([string] $name)
+	{
+		if ([symb]::identifiers.ContainsKey($name)) { return [symb]::identifiers[$name]; }
+		[void]($newsym = new-object symb($name));
+		[symb]::identifiers[$name] = $newsym;
+		return $newsym;
+	}
 }
+
+$nil = $False;
+$t = [symb]::intern("T");
+
 
 class cons
 {
@@ -223,12 +233,6 @@ function cdr ($c)
 
 function eq ($a, $b)
 {
-	if ($a -is [symb] -and $b -is [symb])
-	{
-		if ($a.name -eq $b.name) { return $t; }
-		return $nil;
-	}
-
 	if (($a.gettype() -eq $b.gettype()) -and ($a -eq $b)) { return $t; }
 	return $nil;
 }
@@ -331,7 +335,7 @@ function last ($c)
 	}
 	if ($c -is [symb])
 	{
-		return new-object symb $c.name[$c.name.length - 1].ToString();
+		return [symb]::intern($c.name[$c.name.length - 1].ToString());
 	}
 	if ($c -is [string])
 	{
@@ -379,19 +383,19 @@ function empty ($coll)
 
 function ltype ($o)
 {
-	if ($o -is [cons]) { return (new-object symb "<cons>"); }
-	if ($o -is [func]) { return (new-object symb "<func>"); }
-	if ($o -is [spfm]) { return (new-object symb "<spfm>"); }
-	if ($o -is [subr]) { return (new-object symb "<subr>"); }
-	if ($o -is [symb]) { return (new-object symb "<symb>"); }
-	if ($o -is [string]) { return (new-object symb "<strn>"); }
-	if (($o -is [int]) -or ($o -is [decimal])) { return (new-object symb "<inum>"); }
-	if (($o -is [float]) -or ($o -is [double])) { return (new-object symb "<fnum>"); }
-	if (isnil $o) { return (new-object symb "<nil>"); }
-	if ($o -is [vect]) { return (new-object symb "<vect>"); }
-	if (($o -is [array]) -or ($o -is [system.collections.arraylist])) { return (new-object symb "<array>"); }
-	if ($o -is [queu]) { return (new-object symb "<queu>"); }
-	return new-object symb ("<ps " + $o.GetType() + ">");
+	if ($o -is [cons]) { return ([symb]::intern("<cons>")); }
+	if ($o -is [func]) { return ([symb]::intern("<func>")); }
+	if ($o -is [spfm]) { return ([symb]::intern("<spfm>")); }
+	if ($o -is [subr]) { return ([symb]::intern("<subr>")); }
+	if ($o -is [symb]) { return ([symb]::intern("<symb>")); }
+	if ($o -is [string]) { return ([symb]::intern("<strn>")); }
+	if (($o -is [int]) -or ($o -is [decimal])) { return ([symb]::intern("<inum>")); }
+	if (($o -is [float]) -or ($o -is [double])) { return ([symb]::intern("<fnum>")); }
+	if (isnil $o) { return ([symb]::intern("<nil>")); }
+	if ($o -is [vect]) { return ([symb]::intern("<vect>")); }
+	if (($o -is [array]) -or ($o -is [system.collections.arraylist])) { return ([symb]::intern("<ps array>")); }
+	if ($o -is [queu]) { return ([symb]::intern("<queu>")); }
+	return [symb]::intern("<ps " + $o.GetType() + ">");
 }
 
 function getat ($vect, $idx)
@@ -408,7 +412,7 @@ function getat ($vect, $idx)
 
 	if ($vect -is [symb])
 	{
-		return (new-object symb $vect.name[$idx]);
+		return ([symb]::intern($vect.name[$idx]));
 	}
 
 	lthrow $erroid["Type"] ("cannot apply getat to " + (lprint $vect));
@@ -453,21 +457,17 @@ function setat ($vect, $idx, $val)
 	{
 		if (($val -is [int]) -or ($val -is [decimal]))
 		{
-			$vect.name = $vect.name.substring(0, $idx) + [char]$val + $vect.name.substring($idx + 1);
+			return [symb]::intern($vect.name.substring(0, $idx) + [char]$val + $vect.name.substring($idx + 1));
 		}
-		elseif ($val -is [string])
+		if ($val -is [string])
 		{
-			$vect.name = $vect.name.substring(0, $idx) + $val[0] + $vect.name.substring($idx + 1);
+			return [symb]::intern($vect.name.substring(0, $idx) + $val[0] + $vect.name.substring($idx + 1));
 		}
-		elseif ($val -is [symb])
+		if ($val -is [symb])
 		{
-			$vect.name = $vect.name.substring(0, $idx) + $val.name[0] + $vect.name.substring($idx + 1);
+			return [symb]::intern($vect.name.substring(0, $idx) + $val.name[0] + $vect.name.substring($idx + 1));
 		}
-		else
-		{
-			lthrow $erroid["Type"] ("cannot setat " + (lprint $val) + " to " + (lprint $vect));
-		}
-		return $vect;
+		lthrow $erroid["Type"] ("cannot setat " + (lprint $val) + " to " + (lprint $vect));
 	}
 
 	lthrow $erroid["Type"] ("cannot apply setat to " + (lprint $vect));
@@ -475,7 +475,7 @@ function setat ($vect, $idx, $val)
 
 function processor ()
 {
-	return new-object symb "powershell";
+	return [symb]::intern("powershell");
 }
 
 function seekenv ($env, $key)
@@ -735,7 +735,7 @@ function symbol ($coll)
 		{
 			$str += [char](car $rest)
 		}
-		return new-object symb $str;
+		return [symb]::intern($str);
 	}
 
 	if (($coll -is [array]) -or ($coll -is [system.collections.arraylist]))
@@ -746,14 +746,14 @@ function symbol ($coll)
 		{
 			$str += [char]($coll[$idx]);
 		}
-		return new-object symb $str;
+		return [symb]::intern($str);
 	}
 
-	if ($coll -is [string]) { return new-object symb $coll; }
+	if ($coll -is [string]) { return [symb]::intern($coll); }
 	if ($coll -is [symb]) { return $coll; }
 	if ($coll -is [vect]) { return (symbol (toarray $coll)); }
 	if ($coll -is [queu]) { return (symbol $coll.exit); }
-	if ($coll -eq $nil) { return new-object symb ""; }
+	if ($coll -eq $nil) { return [symb]::intern(""); }
 
 	lthrow $erroid["Type"] ("cannot cast " + (lprint $coll) + " to SymbT.");
 }
@@ -848,7 +848,7 @@ function growth ([system.collections.arraylist]$tree, $buff)
 		}
 		else
 		{
-			$tree.add((wrap_readmacros (new-object symb $buf) $rmacs));
+			$tree.add((wrap_readmacros ([symb]::intern($buf)) $rmacs));
 		}
 	}
 	return;
@@ -1052,21 +1052,21 @@ function expand_quasiquote ($expr, $env)
 
 function regist_subr ($env, $script, $name)
 {
-	[void](rplaca $env (cons (cons (new-object symb $name)`
+	[void](rplaca $env (cons (cons ([symb]::intern($name))`
 				(new-object subr($script, $name))) (car $env)));
 }
 
 function regist_spfm ($env, $script, $name)
 {
-	[void](rplaca $env (cons (cons (new-object symb $name)`
+	[void](rplaca $env (cons (cons ([symb]::intern($name))`
 				(new-object spfm($script, $name))) (car $env)));
 }
 
 [void]($genv = (cons $nil $nil));
-[void](rplaca $genv (cons (cons (new-object symb "nil") $nil) (car $genv)));
-[void](rplaca $genv (cons (cons (new-object symb "NIL") $nil) (car $genv)));
-[void](rplaca $genv (cons (cons (new-object symb "t") $t) (car $genv)));
-[void](rplaca $genv (cons (cons (new-object symb "T") $t) (car $genv)));
+[void](rplaca $genv (cons (cons ([symb]::intern("nil")) $nil) (car $genv)));
+[void](rplaca $genv (cons (cons ([symb]::intern("NIL")) $nil) (car $genv)));
+[void](rplaca $genv (cons (cons ([symb]::intern("t")) $t) (car $genv)));
+[void](rplaca $genv (cons (cons ([symb]::intern("T")) $t) (car $genv)));
 regist_subr $genv { param($args_); return (cons (car $args_) (car (cdr $args_)));} "cons";
 regist_subr $genv { param($args_); return (car (car $args_)); } "car";
 regist_subr $genv { param($args_); return (cdr (car $args_)); } "cdr";
@@ -1321,7 +1321,7 @@ function print_pipe
 
 function lreadtop ($src)
 {
-	return (cons (new-object symb "do") (lread $src));
+	return (cons ([symb]::intern("do")) (lread $src));
 }
 
 function lread ($src)
@@ -1361,14 +1361,14 @@ function lread ($src)
 			[void]($co = find_co_brackets $src.substring($idx + 1));
 			if ($buff[1])
 			{
-				[void]($tree.add((list (new-object symb "to-vect")`
+				[void]($tree.add((list ([symb]::intern("to-vect"))`
 						(wrap_readmacros (lread $src.substring($idx + 1, $co))`
 						 $buff[1]))));
 				[void]($buff[1] = $nil);
 			}
 			else
 			{
-				[void]($tree.add((cons (new-object symb "vect")`
+				[void]($tree.add((cons ([symb]::intern("vect"))`
 					(lread $src.substring($idx + 1, $co)))));
 			}
 			[void]($idx += $co + 1);
@@ -1398,27 +1398,27 @@ function lread ($src)
 		elseif ("'" -eq $c)
 		{
 			[void](growth $tree $buff);
-			$buff[1] = cons (new-object symb "quote") $buff[1];
+			$buff[1] = cons ([symb]::intern("quote")) $buff[1];
 		}
 		elseif ("``" -eq $c)
 		{
 			[void](growth $tree $buff);
-			$buff[1] = cons (new-object symb "quasiquote") $buff[1];
+			$buff[1] = cons ([symb]::intern("quasiquote")) $buff[1];
 		}
 		elseif ("," -eq $c)
 		{
 			[void](growth $tree $buff);
-			$buff[1] = cons (new-object symb "unquote") $buff[1];
+			$buff[1] = cons ([symb]::intern("unquote")) $buff[1];
 		}
 		elseif ("@" -eq $c)
 		{
 			[void](growth $tree $buff);
-			$buff[1] = cons (new-object symb "splicing") $buff[1];
+			$buff[1] = cons ([symb]::intern("splicing")) $buff[1];
 		}
 		elseif ("^" -eq $c)
 		{
 			[void](growth $tree $buff);
-			$buff[1] = cons (new-object symb "print") $buff[1];
+			$buff[1] = cons ([symb]::intern("print")) $buff[1];
 		}
 		else
 		{
