@@ -50,7 +50,7 @@ class Interpreter
 
 		public static Symb intern (string name)
 		{
-			if (name.containsKey(name)) { return Symb.identifiers[name]; }
+			if (Symb.identifiers.containsKey(name)) { return Symb.identifiers[name]; }
 			var newsym = new Symb(name);
 			Symb.identifiers[name] = newsym;
 			return newsym;
