@@ -94,12 +94,45 @@ function! Eq (a, b) abort
 	return (a:a is a:b) ? g:t : g:nil
 endfunction
 
+function! Equal (a, b) abort
+	let cond = 0
+	let typ = Ltype(a).name
+	if a is b
+		let cond = 1
+	elseif typ == Ltype(b).name
+		if "<Symb>" == typ
+			let cond = (a.name == b.name)
+		elseif "<Cons>" == typ
+			let cond = ! (Equal(a.car, b.car) is g:nil || Equal(a.cdr, b.cdr) is g:nil)
+		elseif "<Queu>" == typ
+			let cond = Equal(a.exit, b.exit)
+		elseif "<Func>" == typ
+			let cond = ! (Equal(a.args, b.args) is g:nil || Equal(a.body, b.body) is g:nil || Equal(a.env, b.env) is g:nil)
+		elseif "<Spfm>" == typ
+			let cond = ! (Equal(a.proc, b.proc) is g:nil || Equal(a.name, b.name) is g:nil)
+		elseif "<Vect>" == typ
+			if len(a) == len(b)
+				let cond = 1
+				for idx in len(a)
+					if Equal(a[idx], b[idx]) is g:nil
+						let cond = 0
+						break
+					endif
+				endfor
+			endif
+		else
+			let cond = (a == b)
+		endif
+	endif
+	return cond ? g:t : g:nil
+endfunction
+
 
 function! FindidxEq (val, coll)
 	let rest = a:coll
 	let idx = 0
 	while Atom(rest) is g:nil
-		if Eq(val, Car(rest))
+		if ! (Eq(a:val, Car(rest)) is g:nil)
 			return idx
 		endif
 		let rest = Cdr(rest)
@@ -118,21 +151,21 @@ endfunction
 
 function! Last (o) abort
 	let typ = Ltype(a:o).name
-	if typ == "<Cons>"
+	if "<Cons>" == typ
 		let rest = a:o
 		while Atom(Cdr(rest)) is g:nil
 			let rest = Cdr(rest)
 		endwhile
 		return rest
-	elseif typ == "<Nil>"
+	elseif "<Nil>" == typ
 		return g:nil
-	elseif typ == "<Queu>"
+	elseif "<Queu>" == typ
 		return a:o.entr
-	elseif typ == "<Symb>"
+	elseif "<Symb>" == typ
 		return Intern(a:o.name[len(a:o.name) - 1])
-	elseif typ == "<Strn>"
+	elseif "<Strn>" == typ
 		return a:o[len(a:o) - 1]
-	elseif typ == "<Vect>"
+	elseif "<Vect>" == typ
 		return [a:o[len(a:o) - 1]]
 	endif
 	call Lthrow(erroid.type, "cannot apply last to " . Lprint(a:o))
@@ -166,6 +199,10 @@ function! List (...) abort
 		let lis = Cons(a:000[a:0 - idx - 1], lis)
 	endfor
 	return lis
+endfunction
+
+function! Mapeval (args, env)
+" TODO
 endfunction
 
 
@@ -283,6 +320,20 @@ function! TakeString (code)
 endfunction
 
 
+function! BindTree (treea, treeb) abort
+" TODO
+endfunction
+
+
+function! Assoc (alist, key)
+" TODO
+endfunction
+
+
+function! Seekenv (env, sym) abort
+" TODO
+endfunction
+
 function! WrapReadmacros (o, rmacs) abort
 	let wraped = a:o
 	let rest = a:rmacs
@@ -357,9 +408,52 @@ function! Lread (code) abort
 	return Nreverse(tree)
 endfunction
 
-function! Leval (expr) abort
-	" TODO
-	return a:expr
+function! Lreadtop (code) abort
+	return Cons(Intern("do"), Lread(a:code))
+endfunction
+
+function! Leval (expr, env) abort
+	let aexpr = a:expr
+	let aenv = a:env
+	while 1
+		let typ = Ltype(aexpr).name
+		if "<Cons>" == typ
+			let args = Cdr(aexpr)
+			let proc = Leval(Car(aexpr), aenv)
+			let ptyp = Ltype(proc).name
+			if "<Func>" == ptyp
+				let aexpr = proc.body
+				let aenv = Cons(BindTree(proc.args, Mapeval(args, aenv)), proc.env)
+			elseif "<Spfm>" == ptyp
+				if "if" == proc.name
+					let aexpr = Leval(Car(args), aenv) is g:nil ? Car(Cdr(Cdr(args))) : Car(Cdr(args))
+				elseif "do" == proc.name
+					let rest = args
+					while Atom(Cdr(rest)) is g:nil
+						call Leval(Car(rest), aenv)
+						let rest = Cdr(rest)
+					endwhile
+					let aexpr = Car(rest)
+				elseif "!" == proc.name
+					let aexpr = Lapply(Leval(Car(args), aenv), Cdr(args))
+				else
+					return proc.proc(aenv, args)
+				endif
+			elseif "<Subr>" == ptyp
+				return Lapply(proc, Mapeval(args, aenv))
+			else
+				call Lthrow(erroid.uncallable, Lprint(proc) . " is not callable.")
+			endif
+		elseif "<Symb>" == typ
+			return Seekenv(aenv, aexpr)
+		else
+			return aexpr
+		endif
+	endwhile
+endfunction
+
+function! Lapply (proc, args) abort
+" TODO
 endfunction
 
 function! Lprint (expr) abort
@@ -368,38 +462,38 @@ function! Lprint (expr) abort
 	let idx = 0
 	let rest = dup
 	while Atom(rest) is g:nil
-		let s += "$" . idx . " = " . LprintRec(Car(rest), dup, 0) . ", "
+		let s .= "$" . idx . " = " . LprintRec(Car(rest), dup, 0) . ", "
 
 		let rest = Cdr(rest)
 		let idx += 1
 	endwhile
-	let s += LprintRec(a:expr, dup, 1)
+	let s .= LprintRec(a:expr, dup, 1)
 	return s
 endfunction
 
 function! SeekDup (expr, printed, dup) abort
-	if ! (FindidxEq(a:expr, printed) is g:nil)
-		if ! (FindidxEq(a:expr, dup) is g:nil)
-			return [printed, dup]
+	if ! (FindidxEq(a:expr, a:printed) is g:nil)
+		if ! (FindidxEq(a:expr, a:dup) is g:nil)
+			return [a:printed, a:dup]
 		endif
-		return [printed, Cons(a:expr, dup)]
+		return [a:printed, Cons(a:expr, a:dup)]
 	endif
 	let typ = Ltype(a:expr).name
-	if typ == "<Cons>"
-		let res = SeekDup(Car(a:expr), Cons(a:expr, printed), dup)
+	if "<Cons>" == typ
+		let res = SeekDup(Car(a:expr), Cons(a:expr, a:printed), a:dup)
 		return SeekDup(Cdr(a:expr), res[0], res[1])
-	elseif typ == "<Queu>"
-		return SeekDup(a:expr.exit, Cons(a:expr, printed), dup)
-	elseif typ == "<Vect>"
-		let res = [Cons(a:expr, printed), dup]
+	elseif "<Queu>" == typ
+		return SeekDup(a:expr.exit, Cons(a:expr, a:printed), a:dup)
+	elseif "<Vect>" == typ
+		let res = [Cons(a:expr, a:printed), a:dup]
 		for elm in a:expr
 			let res = SeekDup(elm, res[0], res[1])
 		endfor
 		return res
-	elseif typ == "<Erro>"
-		return SeekDup(a:expr.estr, Cons(a:expr, printed), dup)
+	elseif "<Erro>" == typ
+		return SeekDup(a:expr.estr, Cons(a:expr, a:printed), a:dup)
 	endif
-	return [printed, dup]
+	return [a:printed, a:dup]
 endfunction
 
 function! LprintRec (expr, dup, rec) abort
