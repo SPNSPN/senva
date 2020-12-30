@@ -781,22 +781,10 @@ function find_co_paren (code)
 	for (let idx = 0; idx < code.length; ++idx)
 	{
 		let c = code.charAt(idx);
-		if (! sflg && "(" == c)
-		{
-			++layer;
-		}
-		else if (! sflg && ")" == c)
-		{
-			--layer;
-		}
-		else if ("\\" == c)
-		{
-			++idx;
-		}
-		else if ("\"" == c)
-		{
-			sflg = ! sflg;
-		}
+		if (! sflg && "(" == c) { ++layer; }
+		else if (! sflg && ")" == c) { --layer; }
+		else if ("\\" == c) { ++idx; }
+		else if ("\"" == c) { sflg = ! sflg; }
 
 		if (layer < 1) { return idx; }
 	}
@@ -810,22 +798,10 @@ function find_co_bracket (code)
 	for (let idx = 0; idx < code.length; ++idx)
 	{
 		let c = code.charAt(idx);
-		if (! sflg && "[" == c)
-		{
-			++layer;
-		}
-		else if (! sflg && "]" == c)
-		{
-			--layer;
-		}
-		else if ("\\" == c)
-		{
-			++idx;
-		}
-		else if ("\"" == c)
-		{
-			sflg = ! sflg;
-		}
+		if (! sflg && "[" == c) { ++layer; }
+		else if (! sflg && "]" == c) { --layer; }
+		else if ("\\" == c) { ++idx; }
+		else if ("\"" == c) { sflg = ! sflg; }
 
 		if (layer < 1) { return idx; }
 	}
@@ -1362,11 +1338,11 @@ function printcons_rec (coll, dup, rec)
 	{
 		return `(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})`;
 	}
-	if (findidx_eq(d, dup) !== nil)
+	if (findidx_eq(d, dup) === nil)
 	{
-		return `(${lprint_rec(a,  dup, rec)} . ${lprint_rec(d, dup, rec)})`;
+		return `(${lprint_rec(a, dup, rec)} ${lprint_rec(d, dup, rec).slice(1)}`;
 	}
-	return `(${lprint_rec(a, dup, rec)} ${lprint_rec(d, dup, rec).slice(1)}`;
+	return `(${lprint_rec(a, dup, rec)} . ${lprint_rec(d, dup, rec)})`;
 }
 
 
