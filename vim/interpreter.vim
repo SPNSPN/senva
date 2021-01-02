@@ -51,8 +51,26 @@ function! Cons (a, d) abort
 	return self
 endfunction
 
+function! Queu () abort
+	let self = {}
+	let self.type = g:typeid.queu
+	let self.entr = g:nil
+	let self.exit = self.entr
+	return self
+	" TODO
+endfunction
+
+function! Func () abort
+" TODO
+endfunction
+
+function! Spfm () abort
+" TODO
+endfunction
+
 let nil = Nil()
 let t = Intern("T")
+let genv = Cons(g:nil, g:nil)
 
 let typetable = {}
 let typetable[type(0)] = Intern("<Inum>")
@@ -172,7 +190,7 @@ function! Last (o) abort
 endfunction
 
 function! Nconc (colla, collb) abort
-	if Atom(colla) is g:t
+	if ! (Atom(colla) is g:nil)
 		return a:collb
 	endif
 	let las = Last(a:colla)
@@ -202,14 +220,16 @@ function! List (...) abort
 endfunction
 
 function! Mapeval (args, env)
-" TODO
+	let eargs = g:nil
+	let rest = a:args
+	while Atom(rest) is g:nil
+		let eargs = Cons(Leval(Car(rest), a:env), eargs)
+		let rest = Cdr(rest)
+	endwhile
+	return Nreverse(eargs)
 endfunction
 
 
-
-function! Lthrow (eid, emess) abort
-	throw "," . a:eid . "," . a:emess
-endfunction
 
 
 function! Inumable (str)
@@ -319,19 +339,59 @@ function! TakeString (code)
 	call Lthrow(erroid.syntax, "not found close double quote.")
 endfunction
 
+function! Cons2Vect (c) abort
+	let  arr = []
+	let rest = a:c
+	while Atom(rest) is g:nil
+		let arr = add(arr, Car(rest))
+		let rest = Cdr(rest)
+	endwhile
+	return arr
+endfunction
+
+
 
 function! BindTree (treea, treeb) abort
-" TODO
+	if a:treea is g:nil
+		return g:nil
+	endif
+	if ! (Atom(treea) is g:nil)
+		return List(Cons(treea, treeb))
+	endif
+	if ! (Atom(treeb) is g:nil || treeb is g:nil)
+		Lthrow(erroid.syntax, "cannot bind: " . Lprint(treea) . " and " . Lprint(treeb))
+	endif
+	try
+		return Nconc(BindTree(Car(treea), Car(treeb)), BindTree(Cdr(treea), Cdr(treeb)))
+	catch
+		Lthrow(erroid.syntax, "cannot bind: " . Lprint(treea) . " and " . Lprint(treeb))
+	endtry
 endfunction
 
 
 function! Assoc (alist, key)
-" TODO
+	let rest = a:alist
+	while Atom(rest) is g:nil
+		let e = Car(rest)
+		if Equal(Car(e), a:key)
+			return e
+		endif
+		let rest = Cdr(rest)
+	endwhile
+	return g:nil
 endfunction
 
 
 function! Seekenv (env, sym) abort
-" TODO
+	let rest = a:env
+	while Atom(rest) is g:nil
+		let val = Assoc(Car(rest), a:sym)
+		if ! (val is g:nil)
+			return Cdr(val)
+		endif
+		let rest = Cdr(rest)
+	endwhile
+	Lthrow(erroid.symbol, Lprint(sym) . " is not defined.")
 endfunction
 
 function! WrapReadmacros (o, rmacs) abort
@@ -453,8 +513,19 @@ function! Leval (expr, env) abort
 endfunction
 
 function! Lapply (proc, args) abort
-" TODO
+	let typ = Ltype(proc).name
+	if "<Func>" == typ
+		return Leval(proc.body, Cons(BindTree(proc.args, a:args), proc.env))
+	elseif "<Subr>" == typ
+		return call(proc, Cons2Vect(args))
+	endif
 endfunction
+
+function! Lthrow (eid, emess) abort
+	throw "," . a:eid . "," . a:emess
+endfunction
+
+
 
 function! Lprint (expr) abort
 	let dup = SeekDup(a:expr, g:nil, g:nil)[1]
@@ -531,7 +602,7 @@ function! PrintconsRec (coll, dup, rec) abort
 	let d = Cdr(a:coll)
 	if d is g:nil
 		return "(" . LprintRec(a, a:dup, a:rec) . ")"
-	elseif Atom(d)
+	elseif ! (Atom(d) is g:nil)
 		return "(" . LprintRec(a, a:dup, a:rec) . " . " . LprintRec(d, a:dup, a:rec) . ")"
 	elseif FindidxEq(d, a:dup) is g:nil
 		return "(" . LprintRec(a, a:dup, a:rec) . " " . strpart(LprintRec(d, a:dup, a:rec), 1)
@@ -539,40 +610,6 @@ function! PrintconsRec (coll, dup, rec) abort
 	return "(" . LprintRec(a, a:dup, a:rec) . " . " . LprintRec(d, a:dup, a:rec) . ")"
 endfunction
 
-function! LprintRaw (expr) abort
-	let typ = Ltype(a:expr).name
-	if "<Inum>" == typ || "<vim dict>" == typ || "<Fnum>" == typ
-		return string(a:expr)
-	endif
-	if "<Strn>" == typ
-		return '"' . a:expr . '"'
-	endif
-	if "<Subr>" == typ
-		return "<Subr " . string(a:expr) . ">"
-	endif
-	if "<Vect>" == typ
-		return "[" . join(map(a:expr, 'LprintRaw(v:val)'), " ") . "]"
-	endif
-	if "<Nil>" == typ
-		return "NIL"
-	endif
-	if "<Symb>" == typ
-		return a:expr.name
-	endif
-	if "<Cons>" == typ
-		" TODO printcons_rec
-		return "(" . LprintRaw(Car(a:expr)) . " . " . LprintRaw(Cdr(a:expr)) . ")"
-	endif
-	if "<Queu>" == typ
+function! Regist (name, obj) abort
 " TODO
-	endif
-	if "<Func>" == typ
-" TODO
-	endif
-	if "<Spfm>" == typ
-" TODO
-	endif
-	if "<Erro>" == typ
-" TODO
-	endif
 endfunction
