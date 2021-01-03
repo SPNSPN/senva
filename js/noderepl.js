@@ -18,8 +18,8 @@ function lload_node (path)
 	}
 	catch (erro)
 	{
-		throw erro;
-		//throw new snv.Erro(snv.ErroId.FileNotFound, `not found file: ${snv.lprint(path)}`);
+		//throw erro;
+		throw new snv.Erro(snv.ErroId.FileNotFound, `not found file: ${snv.lprint(path)}`);
 	}
 }
 
@@ -28,9 +28,9 @@ function llprin_node ()
 	Array.from(arguments).map(function (a)
 			{
 				process.stdout.write((a instanceof String || (typeof a) == "string")
-						? a : lprint(a));
+						? a : snv.lprint(a));
 			});
-	return nil;
+	return snv.nil;
 }
 
 snv.rplacd(snv.assoc(snv.car(snv.genv), new snv.Symb("load")), lload_node);

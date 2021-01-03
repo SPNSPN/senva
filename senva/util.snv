@@ -260,6 +260,10 @@
 		  (lambda (pred coll)
 			(find-if-idx-rec pred coll 0))))
 
+(define find-idx
+  (lambda (val coll)
+	(find-if-idx (lambda (e) (equal val e)) coll)))
+
 (define find
   (lambda (val coll)
 	(if coll
@@ -616,18 +620,23 @@
 
 (define vsplit (lambda (coll n) (apply zip (cut coll n))))
 
-(define dec->n-base (! let ((N-code "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
-					(! letrec ((n-base-rec
-							  (lambda (nr b ss)
-								(if (> nr 0)
-								  (n-base-rec (int (/ nr b)) b
-												(sprint (getat N-code (% nr b)) ss))
-								  ss))))
-					(lambda (n base) (if (equal 0 n) "0"
-									   (n-base-rec n base ""))))))
+(! let* ((N-code "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+		 (N-codelist (to-list N-code)))
+   (do (define dec->n-base 
+		 (! letrec ((n-base-rec
+					  (lambda (nr b ss)
+						(if (> nr 0)
+						  (n-base-rec (int (/ nr b)) b
+									  (sprint (getat N-code (% nr b)) ss))
+						  ss))))
+			(lambda (n base) (if (equal 0 n) "0"
+							   (n-base-rec n base "")))))
+	 (define n-base->dec
+	   (lambda (s base) (reduce (lambda (n e)
+								  (+ (* base n) (find-idx e N-codelist)))
+								(to-list s) 0)))))
 
-(define n-base->dec (lambda (s base)
-					  ))
+
 
 (define caar (lambda (o) (car (car o))))
 (define cadr (lambda (o) (car (cdr o))))

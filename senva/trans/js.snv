@@ -125,7 +125,8 @@
 							  " and ${lprint(vect2cons(Array.from(arguments)))}`)}})"))
    "seekenv(genv, intern(\"lambda\"))")
 
-(! trans::js::regist ! (trans::js::encode (senva::expand-syntax-proc
+; !
+(! trans::js::regist __21__ (trans::js::encode (senva::expand-syntax-proc
 									(car args) (cdr args) (environment)))
    "seekenv(genv, intern(\"!\"))")
 
@@ -164,7 +165,8 @@
 (! trans::js::regist new (sprint "new " (car args)
 							   "(" (trans::js::array (cdr args)) ")") 'lnew)
 
-(! trans::js::regist -> (sprint (join (cons (trans::js::encode (car args))
+; ->
+(! trans::js::regist __2D3E__ (sprint (join (cons (trans::js::encode (car args))
 											(cdr args)) ".")) 'attr)
 
 (! trans::js::regist processor "intern(\"javascript\")"
@@ -193,29 +195,42 @@
 
 (! trans::js::regist-op and " && " t 'land)
 (! trans::js::regist-op or " || " nil 'lor)
-(! trans::js::regist-op + " + " 0 'add)
-(! trans::js::regist-op - " - " 0 'sub)
-(! trans::js::regist-op * " * " 1 'mul)
-(! trans::js::regist-op / " / " 1 'div)
-(! trans::js::regist-op % " % " 0 'mod)
+; +
+(! trans::js::regist-op __2B__ " + " 0 'add)
+; -
+(! trans::js::regist-op __2D__ " - " 0 'sub)
+; *
+(! trans::js::regist-op __2A__ " * " 1 'mul)
+; /
+(! trans::js::regist-op __2F__ " / " 1 'div)
+; %
+(! trans::js::regist-op __25__ " % " 0 'mod)
 
-(! trans::js::regist-func > gt)
-(! trans::js::regist-func < lt)
-(! trans::js::regist-func >= ge)
-(! trans::js::regist-func <= le)
+; >
+(! trans::js::regist-func __3E__ gt)
+; <
+(! trans::js::regist-func __3C__ lt)
+; >=
+(! trans::js::regist-func __3E3D__ ge)
+; <=
+(! trans::js::regist-func __3C3D__ le)
 
 ; TODO replace bads to ascii code in 16n
 ; ex push! -> push__21__
 ;    util::sort -> util__3A3A__sort
 ;    map->hash -> map__2D3E__hash
 (define trans::js::rename-symb
-  (! let ((bads (to-list " \"#%&'(),.:;=?@[\\]^`{|}~"))
-		  (bbads (to-list " \"#%&'(),.:;=?@[\\]^`{|}~!*+-/<>"))
+  (! let ((bad-chs (to-list " \"#%&'(),.:;=?@[\\]^`{|}~!*+-/<>"))
 		  (underbar (car (to-list "_"))))
-	 (lambda (sym)
-	   (if (equal 1 (length sym))
-		 (if (find (car (to-list sym)) bads) '_ sym)
-		 (symbol (map (! fn (if (find $0 bbads) underbar $0)) (to-list sym)))))))
+	 (! letrec ((split-bads
+				  (lambda (chs))))
+		(lambda (sym)
+		  (! let (((goods . bads) (split-bads (to-list sym))))
+			 )))))
+
+(define trans::js::unname-symb
+  (lambda (sym)
+	()))
 
 (define trans::js::seekdefine
   (lambda (expr)
