@@ -33,6 +33,7 @@
 					  (throw 'undefined (sprint (processor) " don't support file::write."))))) ; TODO
 ;	'c++ ()
 ;	'cs ()
-;	'kotlin ()
+	'kotlin (do (define file::read (lambda (path) (fread (fopen path))))
+			  (define file::write (lambda (path str) (fwrite (fopen path) str nil))))
 ;	'powershell ()
 	t (throw 'undefined (sprint (processor) " don't support file-IO."))))

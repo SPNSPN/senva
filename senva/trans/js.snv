@@ -21,7 +21,7 @@
 	 (lambda (str) (string (reduce (! fn (! aif (assoc esc-seqs $1)
 											(append (cadr it) $0)
 											(cons $1 $0)))
-								   (nreverse (to-list str)) ())))))
+								   (nreverse (to-list str)) '())))))
 
 (define trans::js::put
   (lambda (obj)
@@ -104,7 +104,8 @@
 				  (sprint "(" (join (map trans::js::encode args) ,op) ")")))
 			  ,alt))))
 
-(! trans::js::regist if (sprint "(" (trans::js::encode (car args)) " !== nil)"
+; if
+(! trans::js::regist __6966__ (sprint "(" (trans::js::encode (car args)) " !== nil)"
 						" ? " (trans::js::encode (cadr args))
 						" : " (trans::js::encode (caddr args)))
    "seekenv(genv, intern(\"if\"))")
@@ -126,8 +127,14 @@
    "seekenv(genv, intern(\"lambda\"))")
 
 ; !
-(! trans::js::regist __21__ (trans::js::encode (senva::expand-syntax-proc
-									(car args) (cdr args) (environment)))
+(! trans::js::regist __21__ (trans::js::encode
+							  (maptree (! fn (if (eq '<symb> (type $0))
+											   (trans::js::rename-symb $0) $0))
+									   (senva::expand-syntax-proc
+										 (maptree
+										   (! fn (if (eq '<symb> (type $0))
+												   (trans::js::unname-symb $0) $0))
+										   (car args)) (cdr args) (environment))))
    "seekenv(genv, intern(\"!\"))")
 
 (! trans::js::regist define (sprint "(function () {"
@@ -140,7 +147,8 @@
 						  "; return " (car args) "})()")
    "seekenv(genv, intern(\"setq\"))")
 
-(! trans::js::regist do (! let ((jscs (map trans::js::encode args)))
+; do
+(! trans::js::regist __646F__ (! let ((jscs (map trans::js::encode args)))
 						   (sprint "(function () {"
 								   (join (rcons (tail-drop jscs 1)
 												(sprint "return " (back jscs)))
@@ -151,7 +159,8 @@
    (trans::js::quasiquote-put (car args))
    "seekenv(genv, intern(\"quasiquote\"))")
 
-(! trans::js::regist catch (sprint "(function () {try {return "
+; catch
+(! trans::js::regist __6361746368__ (sprint "(function () {try {return "
 						   (trans::js::encode (cadr args))
 						   "} catch (__sys_erro) {return "
 						   (trans::js::encode (car args))
@@ -181,11 +190,15 @@
 (! trans::js::regist-func list l)
 (! trans::js::regist-func int lint)
 (! trans::js::regist-func float lfloat)
-(! trans::js::regist-func to-list to_list)
-(! trans::js::regist-func to-vect to_vect)
-(! trans::js::regist-func to-queu to_queu)
+; to-list
+(! trans::js::regist-func to__2D__list to_list)
+; to-vect
+(! trans::js::regist-func to__2D__vect to_vect)
+; to-queu
+(! trans::js::regist-func to__2D__queu to_queu)
 (! trans::js::regist-func apply lapply)
-(! trans::js::regist-func throw lthrow)
+; throw
+(! trans::js::regist-func __7468726F77__ lthrow)
 (! trans::js::regist-func empty lempty)
 (! trans::js::regist-func print llprint)
 (! trans::js::regist-func prin llprin)
@@ -215,22 +228,94 @@
 ; <=
 (! trans::js::regist-func __3C3D__ le)
 
-; TODO replace bads to ascii code in 16n
+
+; TODO rename reserved-words.
+
+; replace bads to ascii code in 16n
 ; ex push! -> push__21__
 ;    util::sort -> util__3A3A__sort
 ;    map->hash -> map__2D3E__hash
-(define trans::js::rename-symb
-  (! let ((bad-chs (to-list " \"#%&'(),.:;=?@[\\]^`{|}~!*+-/<>"))
-		  (underbar (car (to-list "_"))))
-	 (! letrec ((split-bads
-				  (lambda (chs))))
+(! let ((reserved-words '(break case catch continue debugger default delete do else
+				  	finally for function if in instanceof new return switch this
+					throw try typeof var void while with class enum export extends
+					import super implements interface let package private protected
+					public static yield))
+		(bad-chs (to-list " !\"#$%&'()*+,-./:;<=>?@[\\]^`{|}~"))
+		(underbar (car (to-list "_"))))
+   (do (define trans::js::rename-symb
+	 (! letrec ((rename-bad
+				  (lambda (bc) (mapcat (! fn (to-list (dec->n-base $0 16))) bc)))
+				(split-bads
+				  (lambda (chs goods bads buf flg)
+					(if chs (! let ((c (car chs)))
+							   (if (find c bad-chs)
+								 (if flg (split-bads (cdr chs)
+													 (cons (reverse buf) goods)
+													 bads (list c) nil)
+								   (split-bads (cdr chs) goods bads
+											   (cons c buf) nil))
+								 (if flg (split-bads (cdr chs) goods bads
+													 (cons c buf) t)
+								   (split-bads (cdr chs) goods
+											   (cons (reverse buf) bads)
+											   (list c) t))))
+					  (if flg (list (cons (reverse buf) goods) bads flg)
+							  (list goods (cons (reverse buf) bads) flg)))))
+				(join-bads
+				  (lambda (a-chs b-chs joined flg)
+					(if flg (if a-chs
+							  (join-bads (cdr a-chs) b-chs
+										 (append (car a-chs) joined) nil)
+							  (if b-chs (join-bads nil b-chs joined nil) joined))
+					  (if b-chs
+						(join-bads a-chs (cdr b-chs)
+								   (append (list underbar underbar)
+										   (car b-chs)
+										   (list underbar underbar)
+										   joined) t)
+						(if a-chs (join-bads a-chs nil joined t) joined))))))
 		(lambda (sym)
-		  (! let (((goods . bads) (split-bads (to-list sym))))
-			 )))))
+		  (if (find sym reserved-words)
+			(symbol (append (list underbar underbar) (rename-bad (to-list sym))
+							(list underbar underbar)))
+			(! let (((goods bads flg) (split-bads (to-list sym) '() '() '() t)))
+			 (symbol
+			   (join-bads goods (map rename-bad bads) '() flg)))))))
+	 (define trans::js::unname-symb
+	   (! letrec ((unname (lambda (chs)
+							(map (! fn (n-base->dec $0 16)) (cut chs 2))))
+				  (rec
+					(lambda (chs splited buf flg cnt)
+					  (if flg (if chs (if (equal underbar (car chs))
+										(if (equal 0 cnt)
+										  (rec (cdr chs) splited (cons underbar buf)
+											   t 1)
+										  (rec (cdr chs)
+											   (cons (reverse (cdr buf)) splited)
+											   '() nil 0))
+										(rec (cdr chs) splited (cons (car chs) buf)
+											 t 0))
+									  (if buf
+										(reverse (cons (reverse buf) splited))
+										(reverse splited)))
+							  (if chs (if (equal underbar (car chs))
+										(if (equal 0 cnt)
+										  (rec (cdr chs) splited (cons underbar buf)
+											   nil 1)
+										  (rec (cdr chs)
+											   (cons (unname (reverse (cdr buf)))
+													 splited) '() t 0))
+										(rec (cdr chs) splited (cons (car chs) buf)
+											 nil 0))
+									  (if buf
+										(reverse (cons
+												   (append (list underbar underbar)
+														   (reverse buf)) splited))
+										(reverse (cons (list underbar underbar)
+													   splited))))))))
+		  (lambda (sym)
+			   (symbol (apply append (rec (to-list sym) '() '() t 0))))))))
 
-(define trans::js::unname-symb
-  (lambda (sym)
-	()))
 
 (define trans::js::seekdefine
   (lambda (expr)

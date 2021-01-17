@@ -1,5 +1,8 @@
 ;simple_ga.snv
 cpp symb intern
+not support queu default
+lapplyの実装をFuncとSubrで分ける（levalで2回型チェックしていて無駄、js実装はFuncがFunction(Subr)を継承しているので型を分ける必要がない）
+ベース言語では型指定関数を実装し、genelicはutil.snvで対応する (equal, last, to-list, to-vect, (to-queu), symbol, empty, getat, setat)
 senva/trans/pytest.snvテスト項目が古い、共通化したい
 js senva canvas game
 kotlin getc

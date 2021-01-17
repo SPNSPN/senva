@@ -1533,6 +1533,9 @@ fun make_genv (): Cons
 	regist(genv, "processor", Subr({Symb.intern("kotlin")}, "processor"))
 	regist_subr1(genv, "tee", ::tee)
 	regist(genv, "exit", Subr({args: ICons -> exitProcess(0)}, "exit"))
+	regist_subr1(genv, "fopen", {fname: String -> File(fname).absoluteFile})
+	regist_subr1(genv, "fread", {f: File -> f.readText()})
+	regist_subr3(genv, "fwrite", {f: File, s: String, addp: Any -> if (addp is Nil) f.writeText(s) else f.appendText(s)})
 
 	regist(genv, "quote", Spfm({env: ICons, args: ICons -> car(args)}, "quote"))
 

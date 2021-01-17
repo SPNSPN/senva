@@ -1,4 +1,5 @@
 import kotlin.system.exitProcess
+import java.io.File
 import senva.*
 
 fun CHECK (code: String, succ: Any?)
@@ -234,5 +235,9 @@ fun main (args: Array<String>)
 	CHECK("(processor)", "kotlin")
 	CHECK("(environment)", lprint(genv))
 	CHECK("(load \"senva/test.snv\")", "NIL")
+
+	CHECK("(fread (fopen \"src/interpreter.kt\"))", "\"${File("src/interpreter.kt").absoluteFile.readText()}\"")
+	CHECK("((lambda (f) (do (fwrite f \"abc\" nil) (fwrite f \"DEF\" t) (fread f))) (fopen \"/tmp/senva_kotlin_test.txt\"))", "\"abcDEF\"")
+	CHECK("((lambda (f) (do (fwrite f \"abc\" nil) (fwrite f \"DEF\" nil) (fread f))) (fopen \"/tmp/senva_kotlin_test.txt\"))", "\"DEF\"")
 }
 

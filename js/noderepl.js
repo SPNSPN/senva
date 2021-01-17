@@ -12,15 +12,14 @@ function lload_node (path)
 		throw new snv.Erro(snv.ErroId.Type, `cannot apply load to ${snv.lprint(path)}`);
 	}
 
-	try
-	{
+//	try
+//	{
 		return snv.leval(snv.lreadtop(fs.readFileSync(path, "utf-8")), snv.genv);
-	}
-	catch (erro)
-	{
-		//throw erro;
-		throw new snv.Erro(snv.ErroId.FileNotFound, `not found file: ${snv.lprint(path)}`);
-	}
+//	}
+//	catch (erro)
+//	{
+//		throw new snv.Erro(snv.ErroId.FileNotFound, `not found file: ${snv.lprint(path)}`);
+//	}
 }
 
 function llprin_node ()

@@ -141,7 +141,7 @@
 	 (lambda (func . colls)
 	(map-rec func colls ()))))
 
-(define maptree ; TODO
+(define maptree
   (lambda (func tree)
 	(if (atom tree)
 	  (if tree (func tree))
