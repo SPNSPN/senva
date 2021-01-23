@@ -15,7 +15,7 @@ fun CHECK (code: String, succ: Any?)
 	}
 }
 
-fun ECHECK (code: String, ceid: Int, succ: Any?)
+fun ECHECK (code: String, ceid: Any, succ: Any?)
 {
 	print("ECHECK: \"${code}\" -> ")
 	try
@@ -25,7 +25,7 @@ fun ECHECK (code: String, ceid: Int, succ: Any?)
 	catch (erro: Erro)
 	{
 		println("<Erro \"${erro.estr}\">")
-		if (ceid != erro.eid)
+		if (equal(ceid, erro.eid) is Nil)
 		{
 			throw Erro(444, "expect code: ${ceid}, but got code: ${erro.eid}")
 		}

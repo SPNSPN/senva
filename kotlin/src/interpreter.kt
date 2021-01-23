@@ -45,21 +45,21 @@ class Symb ()
 val nil = Nil()
 val t = Symb.intern("T")
 
-enum class ErroId (val value: Int)
+enum class ErroId (val value: Long)
 {
-	FullMemory			 (0)
-	, UnknownOpcode		 (1)
-	, OutOfEnvironment	 (2)
-	, Type				 (3)
-	, Symbol			 (4)
-	, Syntax			 (5)
-	, UnCallable		 (6)
-	, ArgsUnmatch		 (7)
-	, UnEvaluatable		 (8)
-	, FileNotFound		 (9)
+	FullMemory			 (0L)
+	, UnknownOpcode		 (1L)
+	, OutOfEnvironment	 (2L)
+	, Type				 (3L)
+	, Symbol			 (4L)
+	, Syntax			 (5L)
+	, UnCallable		 (6L)
+	, ArgsUnmatch		 (7L)
+	, UnEvaluatable		 (8L)
+	, FileNotFound		 (9L)
 }
 
-class Erro (val eid: Int, val estr: String) : Exception(estr)
+class Erro (val eid: Any, val estr: String) : Exception(estr)
 {
 	constructor (eid: ErroId, estr: String) : this(eid.value, estr)
 }
@@ -736,7 +736,7 @@ fun tee (obj: Any): Any
 fun nth (c: ICons, n: Long): Any
 {
 	var rest: Any = c
-	var idx = 0L
+	var idx = 0
 	while (idx < n)
 	{
 		if (rest is ICons) { rest = cdr(rest) }
@@ -1255,7 +1255,7 @@ fun lapply (proc: Any, args: ICons): Any
 	throw Erro(ErroId.UnCallable, "${lprint(proc)} is not callable.")
 }
 
-fun lthrow (eid: Int, estr: String)
+fun lthrow (eid: Any, estr: String)
 {
 	throw Erro(eid, estr)
 }

@@ -46,7 +46,7 @@
 				  (trans::js::encode (cadr obj))
 				  (reduce
 					(lambda (acm e)
-					  (if (eq 'splicing (car e))
+					  (if (and (eq '<cons> (type e)) (eq 'splicing (car e)))
 						(sprint "nconc(" (trans::js::encode (cadr e)) ", " acm ")")
 						(sprint "nconc(l(" (trans::js::quasiquote-put e) "), " acm ")")))
 					(reverse obj) "nil"))
@@ -181,11 +181,8 @@
 (! trans::js::regist processor "intern(\"javascript\")"
    (trans::js::encode ''javascript))
 
-; TODO re-replace ascii code to bads(original symbol)
-; ex util__3A3A__sort -> util::sort
-(! trans::js::regist load (do (load (car args))
-							(trans::js::encodetop (senva::readtop
-													(file::read (car args))))))
+(! trans::js::regist load (trans::js::encodetop
+							(senva::readtop (file::read (car args)))))
 
 (! trans::js::regist-func list l)
 (! trans::js::regist-func int lint)
@@ -325,6 +322,8 @@
 		(append (trans::js::seekdefine (car expr))
 				(trans::js::seekdefine (cdr expr)))))))
 
+; TODO pick load and conct files, before encode expr
+; To encode "load" shut global var into "do" form.
 (define trans::js::encodetop
   (lambda (expr_)
 	(! let* ((expr (maptree (! fn (if (eq '<symb> (type $0))

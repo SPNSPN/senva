@@ -604,9 +604,9 @@
 										(flatten form)))
 							<))
 				(keys (map (lambda (n) (symbol (sprint "$" n))) keynums))
-				(syms (map (lambda (argk) (symbol (sprint "_fn_arg_" argk))) keynums))
-				(_form (replacing form (zipc keys syms))))
-		  `(lambda ,syms ,_form)))))
+				(syms (map (lambda (argk) (symbol (sprint "fnarg::" argk))) keynums))
+				(form- (replacing form (zipc keys syms))))
+		  `(lambda ,syms ,form-)))))
 
 (define cut
   (! letrec ((cut-rec (lambda (rest rest-size size result)
@@ -675,6 +675,7 @@
 				(reduce (! fn (if (find $1 $0) $0 (cons $1 $0)))
 						(reverse colla) collb)))
 
+; class system
 (! let ((type-tree nil))
    (do (define obj::def- (lambda (sym- members- extends-)
 						   (! push type-tree (list sym- members- extends-))))
