@@ -9,31 +9,16 @@
 					 (do ((-> fin "close"))
 					     str))))
 			  (define file::write
-				(lambda (path str)
-				  (! let ((fout ((py "open") path "w")))
+				(lambda (path str addp)
+				  (! let ((fout ((py "open") path (if addp "a" "w"))))
 					 (do ((-> fout "write") str)
 					     ((-> fout "close")))))))
-	'javascript (do (define file::read
-		  (lambda (path)
-			(! let ((req (new "XMLHttpRequest")))
-			   (do ((-> req "open") "GET"
-									(sprint (-> (js "location") "origin") "/" path)
-									nil)
-;				   ((-> req "overrideMimeType") "text/plain; charset=UTF-8")
-				   ((-> req "setRequestHeader") "Pragma" "no-cache")
-				   ((-> req "setRequestHeader") "Cache-Control" "no-cache")
-				   ((-> req "setRequestHeader") "If-Modified-Since" "Thu, 01 Jun 1970 00:00:00 GMT")
-				   ((-> req "send") (js "null"))
-				   (if (equal 200 (-> req "status"))
-					 (-> req "responseText")
-					 (throw senva::error::file-not-found
-							(sprint "not found file: " path)))))))
-				  (define file::write
-					(lambda (path str)
-					  (throw 'undefined (sprint (processor) " don't support file::write."))))) ; TODO
+	'javascript (do (define file::read (lambda (path) (fread path)))
+				  (define file::write (lambda (path str addp) (fwrite path str addp))))
+;	'nodejs ()
 ;	'c++ ()
 ;	'cs ()
 	'kotlin (do (define file::read (lambda (path) (fread (fopen path))))
-			  (define file::write (lambda (path str) (fwrite (fopen path) str nil))))
+			  (define file::write (lambda (path str addp) (fwrite (fopen path) str addp))))
 ;	'powershell ()
 	t (throw 'undefined (sprint (processor) " don't support file-IO."))))

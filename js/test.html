@@ -307,6 +307,10 @@ CHECK("(processor)", "javascript");
 CHECK("(environment)", false);
 CHECK("(load \"senva/test.snv\")", "NIL");
 
+CHECK("(fread \"senva/sample/c.snv\")", "\"(define cc 4)\n\"");
+// CHECK("((lambda (f) (do (fwrite f "abc" nil) (fwrite f "DEF" t) (fread f))) "senva_javascript_test.txt")", "\"abcDEF\"");
+// CHECK("((lambda (f) (do (fwrite f "abc" nil) (fwrite f "DEF" nil) (fread f))) "senva_javascript_test.txt")", "\"DEF\"");
+
 CHECK("((js \"encodeURI\") \"%^<}\")", "\"%25%5E%3C%7D\"");
 CHECK("(-> \"abc\" \"length\")", 3);
 CHECK("(new \"Cons\" 1 2)", "(1 . 2)");

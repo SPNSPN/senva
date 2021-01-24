@@ -32,8 +32,10 @@ function llprin_node ()
 	return snv.nil;
 }
 
-snv.rplacd(snv.assoc(snv.car(snv.genv), new snv.Symb("load")), lload_node);
-snv.rplacd(snv.assoc(snv.car(snv.genv), new snv.Symb("prin")), llprin_node);
+snv.rplacd(snv.assoc(snv.car(snv.genv), snv.intern("load")), lload_node);
+snv.rplacd(snv.assoc(snv.car(snv.genv), snv.intern("prin")), llprin_node);
+snv.rplacd(snv.assoc(snv.car(snv.genv), snv.intern("processor"))
+		, function () { return snv.intern("nodejs"); });
 
 process.stdout.write("senva> ");
 reader.on("line", function (line)

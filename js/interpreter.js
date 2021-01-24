@@ -1151,6 +1151,24 @@ function tee (obj)
 	return obj;
 }
 
+function lfread (path)
+{
+	let req = new XMLHttpRequest();
+	req.open("GET", `${location.origin}/${path}`, false);
+	req.setRequestHeader("Pragma", "no-cache");
+	req.setRequestHeader("Cache-Control", "no-cache");
+	req.setRequestHeader("If-Modified-Since", "Thu, 01 Jun 1970 00:00:00 GMT");
+	req.send(null);
+	if (200 == req.status) { return req.responseText; }
+	throw new Erro(ErroId.FileNotFound, `not found file: ${path}`);
+}
+
+function lfwrite (path, str, addp)
+{
+	// TODO
+	throw new Erro(-1, "javascript don't support fwrite.")
+}
+
 function compile (func)
 {
 	let args = func.args;
@@ -1398,6 +1416,9 @@ regist("getat", lgetat);
 regist("setat", lsetat);
 regist("processor", function () { return intern("javascript"); });
 regist("tee", tee);
+// regist("exit", ); TODO
+regist("fread", lfread);
+regist("fwrite", lfwrite);
 regist("compile", compile);
 regist("js", eval);
 regist("->", attr);
@@ -1421,6 +1442,7 @@ regist("catch", new Spfm(lcatch, "catch"));
 (function (exports)
  {
  	"use strict";
+	exports.intern = intern;
 	exports.Symb = Symb;
 	exports.Erro = Erro;
 	exports.ErroId = ErroId;

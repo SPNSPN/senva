@@ -167,11 +167,12 @@
 						   "(__sys_erro.eid, __sys_erro.estr)}})()")
    "seekenv(genv, intern(\"catch\"))")
 
-(! trans::js::regist environment "genv" "seekenv(genv, intern(\"environment\"))"); TODO
+(! trans::js::regist environment "genv" "seekenv(genv, intern(\"environment\"))")
 
 (! trans::js::regist js (car args) 'eval)
 
-(! trans::js::regist new (sprint "new " (car args)
+; new
+(! trans::js::regist __6E6577__ (sprint "new " (car args)
 							   "(" (trans::js::array (cdr args)) ")") 'lnew)
 
 ; ->
@@ -202,6 +203,8 @@
 (! trans::js::regist-func type ltype)
 (! trans::js::regist-func getat lgetat)
 (! trans::js::regist-func setat lsetat)
+(! trans::js::regist-func fread lfread)
+(! trans::js::regist-func fwrite lfwrite)
 
 (! trans::js::regist-op and " && " t 'land)
 (! trans::js::regist-op or " || " nil 'lor)
@@ -225,8 +228,6 @@
 ; <=
 (! trans::js::regist-func __3C3D__ le)
 
-
-; TODO rename reserved-words.
 
 ; replace bads to ascii code in 16n
 ; ex push! -> push__21__

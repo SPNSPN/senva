@@ -5,6 +5,7 @@ typecheck.snv (environment)のSubr(car/cdr, rplaca/prlacd, etc)を型チェッ�
 debug::repl エラー時にスタックトレースと関数名、定義されているファイル・行数を表示する. loadをdebug::load, throwをdebug::throwに置き換え、throw時に定義箇所を表示できるようにする
 lapplyの実装をFuncとSubrで分ける（levalで2回型チェックしていて無駄、js実装はFuncがFunction(Subr)を継承しているので型を分ける必要がない）
 ベース言語では型指定関数を実装し、genelicはutil.snvで対応する (equal, last, to-list, to-vect, (to-queu), symbol, empty, getat, setat)
+typeclass S式で型を表現する ex) int -> int -> int := (int . (int . int))
 senva/trans/pytest.snvテスト項目が古い、共通化したい
 js senva canvas game
 kotlin getc
