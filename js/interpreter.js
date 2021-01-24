@@ -1160,7 +1160,7 @@ function lfread (path)
 	req.setRequestHeader("If-Modified-Since", "Thu, 01 Jun 1970 00:00:00 GMT");
 	req.send(null);
 	if (200 == req.status) { return req.responseText; }
-	throw new Erro(ErroId.FileNotFound, `not found file: ${path}`);
+	throw new Erro(ErroId.FileNotFound, `not found file: ${lprint(path)}`);
 }
 
 function lfwrite (path, str, addp)
