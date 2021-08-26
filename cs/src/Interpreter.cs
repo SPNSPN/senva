@@ -166,8 +166,8 @@ class Interpreter
 			: base(estr, inner) { this.eid = eid_; }
 		public Erro (ErroId eid_, string estr, System.Exception inner)
 			: base(estr, inner) { this.eid = (long)eid_; }
-		public Erro (System.Runtime.Serialization.SerializationInfo info
-				, System.Runtime.Serialization.StreamingContext context) {}
+		protected Erro (System.Runtime.Serialization.SerializationInfo info
+				, System.Runtime.Serialization.StreamingContext context) : base(info, context) {}
 	}
 
 	public class Subr

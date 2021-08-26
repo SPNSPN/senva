@@ -1,6 +1,7 @@
 ;simple_ga.snv
 cpp symb intern
 not support queu default
+loadを廃止して、eval, read, freadをデフォルトにする、(load path) <= (eval (read (fread path)) (environment))
 typecheck.snv (environment)のSubr(car/cdr, rplaca/prlacd, etc)を型チェック付きFunc(lambda (c) (if (eq '<cons> (type c)) (<Subr car> c) (throw 'type-error)))に置き換える、loadして使う
 debug::repl エラー時にスタックトレースと関数名、定義されているファイル・行数を表示する. loadをdebug::load, throwをdebug::throwに置き換え、throw時に定義箇所を表示できるようにする
 lapplyの実装をFuncとSubrで分ける（levalで2回型チェックしていて無駄、js実装はFuncがFunction(Subr)を継承しているので型を分ける必要がない）
